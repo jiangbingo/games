@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎮 游戏中心 - Jiangbin Games</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23667eea'/%3E%3Ctext x='16' y='22' font-size='20' text-anchor='middle' fill='white'%3E🎮%3C/text%3E%3C/svg%3E">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            background: rgba(255,255,255,0.2);
+            padding: 15px 25px;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            color: white;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        
+        .game-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        .game-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        .game-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .game-desc {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+        
+        .game-meta {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .tag {
+            background: #f0f0f0;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.3);
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2rem; }
+            .games-grid { grid-template-columns: 1fr; }
+            .stats { flex-direction: column; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎮 Jiangbin 游戏中心</h1>
+            <p>儿童逻辑游戏 + 经典游戏合集</p>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <span class="stat-number">15+</span>
+                    <span class="stat-label">游戏总数</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">69+</span>
+                    <span class="stat-label">关卡数量</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">3-6岁</span>
+                    <span class="stat-label">适合年龄</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 儿童逻辑游戏 -->
+        <div class="section">
+            <h2 class="section-title">🧒 儿童逻辑游戏</h2>
+            <div class="games-grid">
+                <a href="color-matching.html" class="game-card">
+                    <span class="game-icon">🎨</span>
+                    <h3 class="game-title">颜色配对</h3>
+                    <p class="game-desc">认识6种基本颜色，找到相同的颜色配对</p>
+                    <div class="game-meta">
+                        <span class="tag">认知启蒙</span>
+                        <span class="tag">3-4岁</span>
+                    </div>
+                </a>
+                
+                <a href="shape-puzzle.html" class="game-card">
+                    <span class="game-icon">⭐</span>
+                    <h3 class="game-title">形状拼图</h3>
+                    <p class="game-desc">完成可爱的动物拼图，认识各种形状</p>
+                    <div class="game-meta">
+                        <span class="tag">逻辑思维</span>
+                        <span class="tag">4-5岁</span>
+                    </div>
+                </a>
+                
+                <a href="memory-cards.html" class="game-card">
+                    <span class="game-icon">🧠</span>
+                    <h3 class="game-title">记忆翻牌</h3>
+                    <p class="game-desc">锻炼记忆力，4x3卡片配对游戏</p>
+                    <div class="game-meta">
+                        <span class="tag">记忆力</span>
+                        <span class="tag">4-6岁</span>
+                    </div>
+                </a>
+                
+                <a href="animal-sounds.html" class="game-card">
+                    <span class="game-icon">🎵</span>
+                    <h3 class="game-title">动物叫声</h3>
+                    <p class="game-desc">听声音猜动物，认识各种动物</p>
+                    <div class="game-meta">
+                        <span class="tag">音乐声音</span>
+                        <span class="tag">3-4岁</span>
+                    </div>
+                </a>
+                
+                <a href="drawing-board.html" class="game-card">
+                    <span class="game-icon">🎨</span>
+                    <h3 class="game-title">涂鸦板</h3>
+                    <p class="game-desc">Canvas自由绘画，发挥创意</p>
+                    <div class="game-meta">
+                        <span class="tag">创意绘画</span>
+                        <span class="tag">3-6岁</span>
+                    </div>
+                </a>
+                
+                <a href="find-differences.html" class="game-card">
+                    <span class="game-icon">🔍</span>
+                    <h3 class="game-title">找不同</h3>
+                    <p class="game-desc">观察两幅图，找出不同之处</p>
+                    <div class="game-meta">
+                        <span class="tag">观察力</span>
+                        <span class="tag">4-6岁</span>
+                    </div>
+                </a>
+                
+                <a href="picture-recognition.html" class="game-card">
+                    <span class="game-icon">🖼️</span>
+                    <h3 class="game-title">看图识物</h3>
+                    <p class="game-desc">认识动物、水果、交通工具</p>
+                    <div class="game-meta">
+                        <span class="tag">认知启蒙</span>
+                        <span class="tag">3-4岁</span>
+                    </div>
+                </a>
+                
+                <a href="shape-matching.html" class="game-card">
+                    <span class="game-icon">🔵</span>
+                    <h3 class="game-title">形状配对</h3>
+                    <p class="game-desc">匹配相同的形状，培养逻辑思维</p>
+                    <div class="game-meta">
+                        <span class="tag">逻辑思维</span>
+                        <span class="tag">3-5岁</span>
+                    </div>
+                </a>
+                
+                <a href="number-counting.html" class="game-card">
+                    <span class="game-icon">🔢</span>
+                    <h3 class="game-title">数字认知</h3>
+                    <p class="game-desc">学习数数，认识1-10数字</p>
+                    <div class="game-meta">
+                        <span class="tag">认知启蒙</span>
+                        <span class="tag">3-5岁</span>
+                    </div>
+                </a>
+                
+                <a href="pattern-match.html" class="game-card">
+                    <span class="game-icon">🔷</span>
+                    <h3 class="game-title">模式匹配</h3>
+                    <p class="game-desc">发现规律，完成模式序列</p>
+                    <div class="game-meta">
+                        <span class="tag">逻辑思维</span>
+                        <span class="tag">4-6岁</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <!-- 经典游戏 -->
+        <div class="section">
+            <h2 class="section-title">🎯 经典游戏</h2>
+            <div class="games-grid">
+                <a href="classic-games/snake-game.html" class="game-card">
+                    <span class="game-icon">🐍</span>
+                    <h3 class="game-title">贪吃蛇</h3>
+                    <p class="game-desc">经典贪吃蛇游戏，4种模式，3种速度</p>
+                    <div class="game-meta">
+                        <span class="tag">经典游戏</span>
+                        <span class="tag">全年龄</span>
+                    </div>
+                </a>
+                
+                <a href="classic-games/tetris-ink.html" class="game-card">
+                    <span class="game-icon">🧱</span>
+                    <h3 class="game-title">水墨方块</h3>
+                    <p class="game-desc">中国风水墨俄罗斯方块，传统美学</p>
+                    <div class="game-meta">
+                        <span class="tag">经典游戏</span>
+                        <span class="tag">全年龄</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p>Made with ❤️ by Jiangbin Games</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">
+                <a href="https://github.com/jiangbingo/games" style="color: white; text-decoration: none;">GitHub</a> • 
+                <a href="https://vercel.com" style="color: white; text-decoration: none;">Powered by Vercel</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

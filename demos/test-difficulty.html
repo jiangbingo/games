@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自适应难度测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        button.active {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .result-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-entry {
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        .result-entry.correct {
+            border-left: 3px solid #4CAF50;
+        }
+
+        .result-entry.wrong {
+            border-left: 3px solid #f44336;
+        }
+
+        .result-entry.adjustment {
+            border-left: 3px solid #ff9800;
+            background: rgba(255, 152, 0, 0.2);
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .scenario-description {
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 自适应难度系统测试</h1>
+
+        <div class="test-section">
+            <h2>选择测试场景</h2>
+            <div class="scenario-description">
+                <strong>场景1 - 天才儿童：</strong>正确率90%，快速反应
+                <br><strong>场景2 - 普通儿童：</strong>正确率70%，中等速度
+                <br><strong>场景3 - 困难儿童：</strong>正确率40%，反应较慢
+                <br><strong>场景4 - 波动表现：</strong>正确时很快，错误时很慢
+            </div>
+            <div class="button-group">
+                <button onclick="runScenario('genius')">🌟 天才儿童</button>
+                <button onclick="runScenario('normal')">👶 普通儿童</button>
+                <button onclick="runScenario('struggling')">📉 困难儿童</button>
+                <button onclick="runScenario('fluctuating')">📊 波动表现</button>
+                <button onclick="clearResults()">🗑️ 清空结果</button>
+            </div>
+
+            <div class="metrics">
+                <div class="metric-card">
+                    <div class="metric-value" id="total-games">0</div>
+                    <div class="metric-label">总游戏次数</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="current-level">1</div>
+                    <div class="metric-label">当前关卡</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="accuracy">0%</div>
+                    <div class="metric-label">正确率</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="avg-time">0s</div>
+                    <div class="metric-label">平均用时</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="recommended-level">1</div>
+                    <div class="metric-label">推荐关卡</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="adjustments">0</div>
+                    <div class="metric-label">难度调整次数</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>测试结果</h2>
+            <div class="result-box" id="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>算法说明</h2>
+            <div style="font-size: 14px; line-height: 1.8;">
+                <p><strong>📊 评估指标：</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li>正确率：记录最近5次游戏的正确率</li>
+                    <li>响应时间：与目标时间对比（标准时间为关卡配置的displayTime）</li>
+                    <li>连续表现：追踪连续成功/失败次数</li>
+                </ul>
+
+                <p><strong>⚙️ 调整阈值：</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li>提升难度：正确率 ≥ 80% 且连续成功5次</li>
+                    <li>提升难度：响应时间 < 70%标准时间</li>
+                    <li>降低难度：正确率 < 50%</li>
+                    <li>降低难度：响应时间 > 200%标准时间</li>
+                    <li>降低难度：连续失败3次</li>
+                </ul>
+
+                <p><strong>🎯 难度参数：</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li>记忆游戏：每级调整显示时间±500ms，每5级增加1张卡片</li>
+                    <li>字母游戏：每10级增加1张卡片</li>
+                    <li>等级范围：1-50关</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/difficulty.js"></script>
+    <script>
+        const userId = 'test_user_001';
+        const gameId = 'memory-match';
+        let adjustmentCount = 0;
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('total-games').textContent = '0';
+            document.getElementById('current-level').textContent = '1';
+            document.getElementById('accuracy').textContent = '0%';
+            document.getElementById('avg-time').textContent = '0s';
+            document.getElementById('recommended-level').textContent = '1';
+            document.getElementById('adjustments').textContent = '0';
+            adjustmentCount = 0;
+
+            const manager = new DifficultyManager();
+            manager.resetUserStats(userId, gameId);
+        }
+
+        function addResult(text, type = 'normal') {
+            const resultsDiv = document.getElementById('results');
+            const entry = document.createElement('div');
+            entry.className = `result-entry ${type}`;
+            entry.textContent = text;
+            resultsDiv.appendChild(entry);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function updateMetrics(total, accuracy, avgTime, level, recommended) {
+            document.getElementById('total-games').textContent = total;
+            document.getElementById('accuracy').textContent = `${(accuracy * 100).toFixed(0)}%`;
+            document.getElementById('avg-time').textContent = `${(avgTime / 1000).toFixed(1)}s`;
+            document.getElementById('current-level').textContent = level;
+            document.getElementById('recommended-level').textContent = recommended;
+            document.getElementById('adjustments').textContent = adjustmentCount;
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function simulateGame(level, isCorrect, responseTime, targetTime) {
+            const manager = new DifficultyManager();
+
+            const result = manager.recordPerformance(userId, gameId, {
+                level,
+                isCorrect,
+                responseTime,
+                targetTime,
+                score: isCorrect ? 10 : 0
+            });
+
+            const summary = manager.getPerformanceSummary(userId, gameId);
+
+            const statusIcon = isCorrect ? '✅' : '❌';
+            const timeRatio = (responseTime / targetTime).toFixed(2);
+            addResult(`第${summary.totalGames}关: ${statusIcon} 用时${(responseTime/1000).toFixed(1)}s (${timeRatio}倍标准)`, isCorrect ? 'correct' : 'wrong');
+
+            if (result.shouldAdjust) {
+                const message = manager.generateAdjustmentMessage(result);
+                adjustmentCount++;
+                addResult(`🎯 ${message.message}`, 'adjustment');
+            }
+
+            updateMetrics(
+                summary.totalGames,
+                summary.accuracy,
+                summary.avgResponseTime,
+                level,
+                summary.recommendedLevel
+            );
+
+            return result;
+        }
+
+        async function runScenario(scenario) {
+            clearResults();
+            addResult(`🎬 开始测试场景: ${scenario}`, 'adjustment');
+            await sleep(500);
+
+            let level = 1;
+
+            switch (scenario) {
+                case 'genius':
+                    await runGeniusScenario(level);
+                    break;
+                case 'normal':
+                    await runNormalScenario(level);
+                    break;
+                case 'struggling':
+                    await runStrugglingScenario(level);
+                    break;
+                case 'fluctuating':
+                    await runFluctuatingScenario(level);
+                    break;
+            }
+
+            addResult(`🎬 测试完成！`, 'adjustment');
+        }
+
+        async function runGeniusScenario(level) {
+            const manager = new DifficultyManager();
+            const baseTargetTime = 4000;
+
+            for (let i = 0; i < 15; i++) {
+                const targetTime = Math.max(2000, baseTargetTime - (level * 50));
+                const result = await simulateGame(level, true, targetTime * 0.4, targetTime);
+                await sleep(300);
+
+                if (result.recommendation === 'increase') {
+                    level = result.newLevel;
+                }
+            }
+        }
+
+        async function runNormalScenario(level) {
+            const baseTargetTime = 4000;
+
+            for (let i = 0; i < 15; i++) {
+                const targetTime = Math.max(2000, baseTargetTime - (level * 50));
+                const isCorrect = Math.random() > 0.3;
+                const responseTime = targetTime * (isCorrect ? 0.9 : 1.5);
+
+                await simulateGame(level, isCorrect, responseTime, targetTime);
+                await sleep(300);
+
+                if (level > 5) {
+                    level = Math.max(1, level - 1);
+                }
+            }
+        }
+
+        async function runStrugglingScenario(level) {
+            const baseTargetTime = 4000;
+
+            for (let i = 0; i < 15; i++) {
+                const targetTime = Math.max(2000, baseTargetTime - (level * 50));
+                const isCorrect = Math.random() > 0.6;
+                const responseTime = targetTime * (isCorrect ? 1.8 : 2.5);
+
+                await simulateGame(level, isCorrect, responseTime, targetTime);
+                await sleep(300);
+            }
+        }
+
+        async function runFluctuatingScenario(level) {
+            const baseTargetTime = 4000;
+
+            for (let i = 0; i < 15; i++) {
+                const targetTime = Math.max(2000, baseTargetTime - (level * 50));
+
+                if (i % 2 === 0) {
+                    await simulateGame(level, true, targetTime * 0.5, targetTime);
+                } else {
+                    await simulateGame(level, false, targetTime * 2.2, targetTime);
+                }
+                await sleep(300);
+            }
+        }
+
+        clearResults();
+    </script>
+</body>
+</html>

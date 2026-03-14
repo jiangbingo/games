@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>分类测试</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
+        .category-tabs { margin: 20px 0; }
+        .category-tab {
+            padding: 10px 20px;
+            margin: 5px;
+            background: white;
+            border: 2px solid #ddd;
+            cursor: pointer;
+        }
+        .category-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .game-card {
+            padding: 20px;
+            margin: 10px 0;
+            background: white;
+            border: 1px solid #ddd;
+        }
+        .game-card.hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>分类筛选测试</h1>
+    
+    <div class="category-tabs">
+        <button class="category-tab active" data-category="all">全部游戏</button>
+        <button class="category-tab" data-category="cognitive">🎨 认知</button>
+        <button class="category-tab" data-category="logic">🧩 逻辑</button>
+    </div>
+    
+    <div class="game-card" data-category="cognitive">认知游戏1</div>
+    <div class="game-card" data-category="cognitive">认知游戏2</div>
+    <div class="game-card" data-category="logic">逻辑游戏1</div>
+    <div class="game-card" data-category="logic">逻辑游戏2</div>
+    
+    <script>
+        console.log('脚本开始执行');
+        
+        const tabs = document.querySelectorAll('.category-tab');
+        const cards = document.querySelectorAll('.game-card');
+        
+        console.log('找到标签:', tabs.length);
+        console.log('找到卡片:', cards.length);
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const category = this.dataset.category;
+                console.log('点击:', category);
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                cards.forEach(card => {
+                    if (category === 'all') {
+                        card.classList.remove('hidden');
+                    } else {
+                        if (card.dataset.category === category) {
+                            card.classList.remove('hidden');
+                        } else {
+                            card.classList.add('hidden');
+                        }
+                    }
+                });
+            });
+        });
+        
+        console.log('事件绑定完成');
+    </script>
+</body>
+</html>

@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>形状拼拼乐 - 儿童逻辑思维游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        #app {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            min-height: calc(100vh - 40px);
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #f0f0f0;
+        }
+
+        .game-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: clamp(20px, 5vw, 28px);
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .game-icon {
+            font-size: clamp(30px, 7vw, 40px);
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .mode-btn {
+            padding: 8px 16px;
+            font-size: clamp(12px, 3vw, 14px);
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            font-weight: bold;
+        }
+
+        .mode-btn.preset {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .mode-btn.free {
+            background: #6c757d;
+            color: white;
+        }
+
+        .mode-btn.active {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+        }
+
+        .game-area {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .target-area {
+            margin-bottom: 30px;
+        }
+
+        .target-label {
+            font-size: clamp(16px, 4vw, 18px);
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .target-canvas {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            background: #f8f9fa;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .pieces-area {
+            margin-top: 30px;
+        }
+
+        .pieces-label {
+            font-size: clamp(16px, 4vw, 18px);
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .pieces-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 15px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .piece-btn {
+            width: clamp(70px, 16vw, 100px);
+            height: clamp(70px, 16vw, 100px);
+            font-size: clamp(30px, 7vw, 50px);
+            background: white;
+            border: 3px solid #e0e0e0;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .piece-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border-color: #667eea;
+        }
+
+        .piece-btn:active {
+            transform: scale(0.95);
+        }
+
+        .piece-btn.placed {
+            background: #e9ecef;
+            border-color: #ced4da;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .piece-btn.dragging {
+            transform: scale(1.1);
+            opacity: 0.8;
+            z-index: 1000;
+        }
+
+        .stats-area {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 3px solid #f0f0f0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: clamp(14px, 3vw, 16px);
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: clamp(24px, 5vw, 32px);
+            font-weight: bold;
+            color: #333;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .action-btn {
+            padding: 12px 30px;
+            font-size: clamp(14px, 3vw, 16px);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            font-weight: bold;
+        }
+
+        .btn-replay {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-replay:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-clear {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-clear:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
+        }
+
+        .btn-home {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            animation: confettiFall 3s ease-out forwards;
+        }
+
+        @keyframes confettiFall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 15px;
+                border-radius: 15px;
+            }
+
+            .pieces-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+
+            .stats-area {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="game-container">
+            <div class="game-header">
+                <div class="game-title">
+                    <span class="game-icon">🧩⭐</span>
+                    <span>形状拼拼乐</span>
+                </div>
+                <div class="mode-buttons">
+                    <button class="mode-btn preset active" id="preset-btn">🏠 预设</button>
+                    <button class="mode-btn free" id="free-btn">🎨 自由</button>
+                </div>
+            </div>
+
+            <div class="game-area">
+                <div class="target-area">
+                    <div class="target-label">拖拽形状到正确位置</div>
+                    <canvas id="target-canvas" class="target-canvas" width="300" height="300"></canvas>
+                </div>
+
+                <div class="pieces-area">
+                    <div class="pieces-label">选择形状</div>
+                    <div class="pieces-grid" id="pieces-grid">
+                    </div>
+                </div>
+
+                <div class="stats-area">
+                    <div class="stat-item">
+                        <div class="stat-label">✅ 已拼</div>
+                        <div class="stat-value" id="placed-count">0/0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">🏆 得分</div>
+                        <div class="stat-value" id="score">0</div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn btn-clear" id="clear-btn">🗑️ 清空</button>
+                    <button class="action-btn btn-replay" id="replay-btn">🔄 重新开始</button>
+                    <button class="action-btn btn-home" id="home-btn">🏠 主菜单</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="celebration" id="celebration"></div>
+
+    <script>
+        /**
+         * 形状拼拼乐游戏
+         * 训练形状组合和空间思维
+         */
+        class ShapePuzzleGame {
+            constructor() {
+                this.canvas = null;
+                this.ctx = null;
+                this.currentMode = 'preset';
+                this.currentPreset = null;
+                this.pieces = [];
+                this.placedPieces = [];
+                this.draggingPiece = null;
+                this.score = 0;
+                this.canClick = true;
+
+                this.snapDistance = 30;
+
+                this.presetShapes = [
+                    { id: 'house1', name: '小房子', pieces: [
+                        { type: 'square', color: '#e74c3c', x: 150, y: 50, width: 60, height: 60 },
+                        { type: 'triangle', color: '#3498db', x: 150, y: 110, width: 60, height: 40 },
+                        { type: 'square', color: '#f1c40f', x: 150, y: 150, width: 20, height: 20 }
+                    ], difficulty: 1 },
+                    { id: 'tree1', name: '小树', pieces: [
+                        { type: 'rectangle', color: '#8b4513', x: 150, y: 120, width: 10, height: 80 },
+                        { type: 'circle', color: '#27ae60', x: 150, y: 80, width: 50, height: 50 }
+                    ], difficulty: 1 },
+                    { id: 'boat1', name: '小船', pieces: [
+                        { type: 'triangle', color: '#e74c3c', x: 150, y: 60, width: 60, height: 50 },
+                        { type: 'rectangle', color: '#3498db', x: 150, y: 110, width: 80, height: 10 }
+                    ], difficulty: 1 },
+                    { id: 'house2', name: '大房子', pieces: [
+                        { type: 'square', color: '#e74c3c', x: 150, y: 50, width: 80, height: 80 },
+                        { type: 'triangle', color: '#3498db', x: 150, y: 130, width: 80, height: 50 },
+                        { type: 'square', color: '#f1c40f', x: 130, y: 90, width: 15, height: 15 },
+                        { type: 'square', color: '#f1c40f', x: 155, y: 90, width: 15, height: 15 },
+                        { type: 'square', color: '#f1c40f', x: 180, y: 90, width: 15, height: 15 }
+                    ], difficulty: 2 },
+                    { id: 'flower1', name: '花朵', pieces: [
+                        { type: 'circle', color: '#f1c40f', x: 150, y: 60, width: 30, height: 30 },
+                        { type: 'rectangle', color: '#27ae60', x: 150, y: 90, width: 5, height: 60 },
+                        { type: 'circle', color: '#9b59b6', x: 150, y: 50, width: 20, height: 20 },
+                        { type: 'circle', color: '#9b59b6', x: 135, y: 65, width: 15, height: 15 },
+                        { type: 'circle', color: '#9b59b6', x: 165, y: 65, width: 15, height: 15 }
+                    ], difficulty: 2 },
+                    { id: 'car1', name: '汽车', pieces: [
+                        { type: 'rectangle', color: '#3498db', x: 150, y: 80, width: 80, height: 30 },
+                        { type: 'circle', color: '#2ecc71', x: 110, y: 110, width: 20, height: 20 },
+                        { type: 'circle', color: '#2ecc71', x: 190, y: 110, width: 20, height: 20 },
+                        { type: 'square', color: '#e74c3c', x: 150, y: 110, width: 20, height: 20 },
+                        { type: 'rectangle', color: '#95a5a6', x: 140, y: 100, width: 10, height: 10 }
+                    ], difficulty: 2 },
+                    { id: 'castle1', name: '城堡', pieces: [
+                        { type: 'square', color: '#9b59b6', x: 150, y: 50, width: 40, height: 40 },
+                        { type: 'square', color: '#9b59b6', x: 120, y: 50, width: 30, height: 30 },
+                        { type: 'square', color: '#9b59b6', x: 180, y: 50, width: 30, height: 30 },
+                        { type: 'triangle', color: '#e74c3c', x: 150, y: 90, width: 100, height: 40 },
+                        { type: 'rectangle', color: '#3498db', x: 140, y: 130, width: 20, height: 40 }
+                    ], difficulty: 3 },
+                    { id: 'rocket1', name: '火箭', pieces: [
+                        { type: 'rectangle', color: '#e74c3c', x: 150, y: 60, width: 30, height: 80 },
+                        { type: 'triangle', color: '#3498db', x: 150, y: 40, width: 30, height: 25 },
+                        { type: 'rectangle', color: '#f1c40f', x: 145, y: 80, width: 10, height: 20 },
+                        { type: 'triangle', color: '#2ecc71', x: 140, y: 140, width: 20, height: 20 },
+                        { type: 'triangle', color: '#2ecc71', x: 170, y: 140, width: 20, height: 20 }
+                    ], difficulty: 3 }
+                ];
+
+                this.freePieces = [
+                    { type: 'square', color: '#e74c3c', emoji: '🔺' },
+                    { type: 'circle', color: '#3498db', emoji: '🔵' },
+                    { type: 'triangle', color: '#2ecc71', emoji: '⬛' },
+                    { type: 'rectangle', color: '#f1c40f', emoji: '🟧' },
+                    { type: 'star', color: '#9b59b6', emoji: '⭐' },
+                    { type: 'square', color: '#e67e22', emoji: '🟠' }
+                ];
+
+                this.audioContext = null;
+
+                this.init();
+            }
+
+            /**
+             * 初始化游戏
+             */
+            init() {
+                this.canvas = document.getElementById('target-canvas');
+                this.ctx = this.canvas.getContext('2d');
+
+                this.bindEvents();
+                this.startPresetMode();
+            }
+
+            /**
+             * 绑定事件
+             */
+            bindEvents() {
+                document.getElementById('preset-btn').addEventListener('click', () => {
+                    this.switchMode('preset');
+                });
+
+                document.getElementById('free-btn').addEventListener('click', () => {
+                    this.switchMode('free');
+                });
+
+                document.getElementById('clear-btn').addEventListener('click', () => {
+                    this.clearCanvas();
+                });
+
+                document.getElementById('replay-btn').addEventListener('click', () => {
+                    if (this.currentMode === 'preset') {
+                        this.startPresetMode();
+                    } else {
+                        this.startFreeMode();
+                    }
+                });
+
+                document.getElementById('home-btn').addEventListener('click', () => {
+                    window.location.href = 'index.html';
+                });
+
+                // Canvas事件
+                this.canvas.addEventListener('mousedown', (e) => this.handleDragStart(e));
+                this.canvas.addEventListener('mousemove', (e) => this.handleDragMove(e));
+                this.canvas.addEventListener('mouseup', (e) => this.handleDragEnd(e));
+                this.canvas.addEventListener('mouseleave', (e) => this.handleDragEnd(e));
+
+                // 触摸事件
+                this.canvas.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const mouseEvent = new MouseEvent('mousedown', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                    this.handleDragStart(mouseEvent);
+                }, { passive: false });
+
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const mouseEvent = new MouseEvent('mousemove', {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY
+                    });
+                    this.handleDragMove(mouseEvent);
+                }, { passive: false });
+
+                this.canvas.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    const mouseEvent = new MouseEvent('mouseup', {});
+                    this.handleDragEnd(mouseEvent);
+                }, { passive: false });
+            }
+
+            /**
+             * 切换模式
+             */
+            switchMode(mode) {
+                this.currentMode = mode;
+
+                document.getElementById('preset-btn').classList.toggle('active', mode === 'preset');
+                document.getElementById('free-btn').classList.toggle('active', mode === 'free');
+
+                if (mode === 'preset') {
+                    this.startPresetMode();
+                } else {
+                    this.startFreeMode();
+                }
+            }
+
+            /**
+             * 开始预设模式
+             */
+            startPresetMode() {
+                this.clearCanvas();
+                this.currentPreset = this.presetShapes[Math.floor(Math.random() * this.presetShapes.length)];
+                this.pieces = [...this.currentPreset.pieces];
+                this.placedPieces = [];
+                this.renderPieces();
+                this.renderTarget();
+                this.updateStats();
+            }
+
+            /**
+             * 开始自由模式
+             */
+            startFreeMode() {
+                this.clearCanvas();
+                this.currentPreset = null;
+                this.pieces = [...this.freePieces];
+                this.placedPieces = [];
+                this.renderPieces();
+                this.updateStats();
+            }
+
+            /**
+             * 清空画布
+             */
+            clearCanvas() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.placedPieces = [];
+                this.renderPieces();
+                this.updateStats();
+            }
+
+            /**
+             * 渲染目标
+             */
+            renderTarget() {
+                if (!this.currentPreset) return;
+
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                this.currentPreset.pieces.forEach((piece, index) => {
+                    if (this.placedPieces.includes(index)) {
+                        this.drawPiece(piece);
+                    }
+                });
+            }
+
+            /**
+             * 渲染碎片按钮
+             */
+            renderPieces() {
+                const container = document.getElementById('pieces-grid');
+                container.innerHTML = '';
+
+                this.pieces.forEach((piece, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'piece-btn';
+                    if (this.placedPieces.includes(index)) {
+                        btn.classList.add('placed');
+                    }
+
+                    btn.textContent = piece.emoji || this.getShapeEmoji(piece.type);
+                    btn.dataset.index = index;
+
+                    this.addTouchFeedback(btn);
+
+                    btn.addEventListener('click', () => {
+                        this.handlePieceClick(index, btn);
+                    });
+
+                    container.appendChild(btn);
+                });
+            }
+
+            /**
+             * 获取形状emoji
+             */
+            getShapeEmoji(type) {
+                const emojis = {
+                    'square': '🔺',
+                    'circle': '🔵',
+                    'triangle': '⬛',
+                    'rectangle': '🟧',
+                    'star': '⭐'
+                };
+                return emojis[type] || '⬜';
+            }
+
+            /**
+             * 处理碎片点击
+             */
+            handlePieceClick(index, btn) {
+                if (this.placedPieces.includes(index)) return;
+
+                this.draggingPiece = {
+                    piece: this.pieces[index],
+                    index: index,
+                    btn: btn
+                };
+
+                btn.classList.add('dragging');
+            }
+
+            /**
+             * 处理拖拽开始
+             */
+            handleDragStart(e) {
+                if (!this.draggingPiece) return;
+
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                this.draggingPiece.offsetX = x;
+                this.draggingPiece.offsetY = y;
+            }
+
+            /**
+             * 处理拖拽移动
+             */
+            handleDragMove(e) {
+                if (!this.draggingPiece) return;
+
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                // 重绘
+                this.renderTarget();
+
+                // 绘制拖拽中的碎片
+                const piece = this.draggingPiece.piece;
+                this.ctx.save();
+                this.ctx.globalAlpha = 0.7;
+                this.drawPieceAt(piece, x, y);
+                this.ctx.restore();
+            }
+
+            /**
+             * 处理拖拽结束
+             */
+            handleDragEnd(e) {
+                if (!this.draggingPiece) return;
+
+                const piece = this.draggingPiece.piece;
+                const index = this.draggingPiece.index;
+
+                const rect = this.canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                if (this.currentMode === 'preset') {
+                    const targetX = piece.x + piece.width / 2;
+                    const targetY = piece.y + piece.height / 2;
+
+                    const distance = Math.hypot(x - targetX, y - targetY);
+
+                    if (distance < this.snapDistance) {
+                        this.placedPieces.push(index);
+                        this.playSnapSound();
+                        this.score += 10;
+                        this.updateStats();
+                        this.renderPieces();
+                        this.renderTarget();
+
+                        if (this.placedPieces.length === this.pieces.length) {
+                            this.showCelebration();
+                        }
+                    }
+                } else {
+                    this.placedPieces.push({
+                        piece: piece,
+                        x: x,
+                        y: y
+                    });
+
+                    this.playSnapSound();
+                    this.score += 10;
+                    this.updateStats();
+                    this.renderPieces();
+                    this.renderTarget();
+                }
+
+                this.draggingPiece.btn.classList.remove('dragging');
+                this.draggingPiece = null;
+            }
+
+            /**
+             * 绘制碎片
+             */
+            drawPiece(piece) {
+                this.drawPieceAt(piece, piece.x + piece.width / 2, piece.y + piece.height / 2);
+            }
+
+            /**
+             * 在指定位置绘制碎片
+             */
+            drawPieceAt(piece, centerX, centerY) {
+                this.ctx.fillStyle = piece.color;
+                this.ctx.strokeStyle = '#333';
+                this.ctx.lineWidth = 2;
+
+                switch (piece.type) {
+                    case 'square':
+                        this.ctx.fillRect(
+                            centerX - piece.width / 2,
+                            centerY - piece.height / 2,
+                            piece.width,
+                            piece.height
+                        );
+                        this.ctx.strokeRect(
+                            centerX - piece.width / 2,
+                            centerY - piece.height / 2,
+                            piece.width,
+                            piece.height
+                        );
+                        break;
+
+                    case 'rectangle':
+                        this.ctx.fillRect(
+                            centerX - piece.width / 2,
+                            centerY - piece.height / 2,
+                            piece.width,
+                            piece.height
+                        );
+                        this.ctx.strokeRect(
+                            centerX - piece.width / 2,
+                            centerY - piece.height / 2,
+                            piece.width,
+                            piece.height
+                        );
+                        break;
+
+                    case 'circle':
+                        this.ctx.beginPath();
+                        this.ctx.arc(centerX, centerY, piece.width / 2, 0, Math.PI * 2);
+                        this.ctx.fill();
+                        this.ctx.stroke();
+                        break;
+
+                    case 'triangle':
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(centerX, centerY - piece.height / 2);
+                        this.ctx.lineTo(centerX - piece.width / 2, centerY + piece.height / 2);
+                        this.ctx.lineTo(centerX + piece.width / 2, centerY + piece.height / 2);
+                        this.ctx.closePath();
+                        this.ctx.fill();
+                        this.ctx.stroke();
+                        break;
+
+                    case 'star':
+                        this.drawStar(centerX, centerY, 5, piece.width / 2, piece.width / 4);
+                        break;
+                }
+            }
+
+            /**
+             * 绘制星形
+             */
+            drawStar(cx, cy, spikes, outerRadius, innerRadius) {
+                let rot = Math.PI / 2 * 3;
+                let x = cx;
+                let y = cy;
+                const step = Math.PI / spikes;
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(cx, cy - outerRadius);
+
+                for (let i = 0; i < spikes; i++) {
+                    x = cx + Math.cos(rot) * outerRadius;
+                    y = cy + Math.sin(rot) * outerRadius;
+                    this.ctx.lineTo(x, y);
+                    rot += step;
+
+                    x = cx + Math.cos(rot) * innerRadius;
+                    y = cy + Math.sin(rot) * innerRadius;
+                    this.ctx.lineTo(x, y);
+                    rot += step;
+                }
+
+                this.ctx.lineTo(cx, cy - outerRadius);
+                this.ctx.closePath();
+                this.ctx.fill();
+                this.ctx.stroke();
+            }
+
+            /**
+             * 更新统计
+             */
+            updateStats() {
+                const placedCount = this.placedPieces.length;
+                const totalPieces = this.pieces.length;
+                document.getElementById('placed-count').textContent = `${placedCount}/${totalPieces}`;
+                document.getElementById('score').textContent = this.score;
+            }
+
+            /**
+             * 显示庆祝动画
+             */
+            showCelebration() {
+                const celebration = document.getElementById('celebration');
+                celebration.innerHTML = '';
+
+                const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'];
+                for (let i = 0; i < 50; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = Math.random() * 2 + 's';
+                    celebration.appendChild(confetti);
+                }
+
+                setTimeout(() => {
+                    celebration.innerHTML = '';
+                }, 3000);
+
+                this.playCelebrationSound();
+            }
+
+            /**
+             * 添加触摸反馈
+             */
+            addTouchFeedback(element) {
+                element.addEventListener('touchstart', () => {
+                    element.style.transform = 'scale(0.95)';
+                }, { passive: true });
+
+                element.addEventListener('touchend', () => {
+                    element.style.transform = 'scale(1)';
+                }, { passive: true });
+            }
+
+            /**
+             * 播放吸附音效
+             */
+            playSnapSound() {
+                try {
+                    const ctx = this.getAudioContext();
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+
+                    oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+                    gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+
+                    oscillator.start(ctx.currentTime);
+                    oscillator.stop(ctx.currentTime + 0.1);
+                } catch (error) {
+                    console.error('播放音效失败:', error);
+                }
+            }
+
+            /**
+             * 播放庆祝音效
+             */
+            playCelebrationSound() {
+                try {
+                    const ctx = this.getAudioContext();
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+
+                    notes.forEach((freq, index) => {
+                        const oscillator = ctx.createOscillator();
+                        const gainNode = ctx.createGain();
+
+                        oscillator.connect(gainNode);
+                        gainNode.connect(ctx.destination);
+
+                        oscillator.type = 'sine';
+                        oscillator.frequency.value = freq;
+
+                        const startTime = ctx.currentTime + index * 0.15;
+                        gainNode.gain.setValueAtTime(0.2, startTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.2);
+
+                        oscillator.start(startTime);
+                        oscillator.stop(startTime + 0.2);
+                    });
+                } catch (error) {
+                    console.error('播放音效失败:', error);
+                }
+            }
+
+            /**
+             * 获取音频上下文
+             */
+            getAudioContext() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                return this.audioContext;
+            }
+        }
+
+        // 启动游戏
+        window.addEventListener('DOMContentLoaded', () => {
+            new ShapePuzzleGame();
+        });
+    </script>
+</body>
+</html>

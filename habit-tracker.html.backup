@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小打卡 - 学习打卡养成游戏</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+    }
+
+    .app-container {
+      max-width: 600px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* 欢迎界面 */
+    .welcome-screen {
+      text-align: center;
+      padding: 32px;
+    }
+
+    .welcome-screen h1 {
+      font-size: clamp(28px, 6vw, 48px);
+      margin-bottom: 32px;
+    }
+
+    .welcome-screen p {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    .input-group {
+      margin-bottom: 24px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .input-group input:focus {
+      border-color: #667eea;
+    }
+
+    .pet-selection {
+      margin-bottom: 32px;
+    }
+
+    .pet-selection h3 {
+      font-size: 16px;
+      margin-bottom: 16px;
+      color: #333;
+    }
+
+    .pet-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .pet-card {
+      padding: 16px;
+      background: white;
+      border: 3px solid #ddd;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .pet-card:hover {
+      border-color: #667eea;
+      transform: translateY(-2px);
+    }
+
+    .pet-card.selected {
+      border-color: #667eea;
+      background: #f0f4ff;
+    }
+
+    .pet-emoji {
+      font-size: 48px;
+      margin-bottom: 8px;
+    }
+
+    .pet-name {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .btn {
+      padding: 12px 32px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* 主界面 */
+    .main-screen {
+      display: none;
+    }
+
+    .header {
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      font-size: 32px;
+    }
+
+    .user-stats {
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+    }
+
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .stat-icon {
+      font-size: 16px;
+    }
+
+    .stat-value {
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    /* 养成对象区域 */
+    .habit-area {
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .habit-object {
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .habit-emoji {
+      font-size: 64px;
+      margin-bottom: 8px;
+    }
+
+    .habit-name {
+      font-size: 16px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .habit-stats {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .habit-stat {
+      text-align: center;
+    }
+
+    .habit-stat-label {
+      display: block;
+      font-size: 12px;
+      color: #999;
+    }
+
+    .habit-stat-value {
+      font-weight: bold;
+      color: #333;
+    }
+
+    .habit-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .habit-btn {
+      flex: 1;
+      padding: 8px 12px;
+      background: #f0f0f0;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      touch-action: manipulation;
+    }
+
+    .habit-btn:hover {
+      background: #e0e0e0;
+    }
+
+    .habit-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* 任务区域 */
+    .tasks-area {
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .tasks-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 16px;
+    }
+
+    .task-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+    }
+
+    .task-card {
+      background: linear-gradient(135deg, #f5f7f5 0%, #c3e3c3 100%);
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .task-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .task-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .task-name {
+      font-size: 14px;
+      font-weight: bold;
+      color: white;
+      margin-bottom: 4px;
+    }
+
+    .task-desc {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 8px;
+    }
+
+    .task-progress {
+      font-size: 12px;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    .task-reward {
+      font-size: 14px;
+      color: #ffd700;
+      margin-bottom: 8px;
+    }
+
+    .checkin-btn {
+      width: 100%;
+      padding: 8px;
+      background: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #667eea;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      touch-action: manipulation;
+    }
+
+    .checkin-btn:hover {
+      background: #f0f0f0;
+    }
+
+    .checkin-btn:active {
+      transform: scale(0.95);
+    }
+
+    .checkin-btn.completed {
+      background: #4caf50;
+      color: white;
+    }
+
+    /* 数据管理区域 */
+    .data-area {
+      background: white;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      gap: 12px;
+    }
+
+    .data-btn {
+      flex: 1;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      touch-action: manipulation;
+    }
+
+    .data-btn:hover {
+      transform: translateY(-2px);
+    }
+
+    /* Toast 提示 */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%, 0);
+      padding: 12px 24px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    /* 解锁弹窗 */
+    .unlock-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+
+    .unlock-modal.show {
+      display: flex;
+    }
+
+    .unlock-card {
+      background: white;
+      padding: 32px;
+      border-radius: 16px;
+      text-align: center;
+      max-width: 320px;
+      width: 90%;
+    }
+
+    .unlock-icon {
+      font-size: 80px;
+      margin-bottom: 16px;
+    }
+
+    .unlock-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 12px;
+    }
+
+    .unlock-desc {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 600px) {
+      .task-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 欢迎界面 -->
+  <div class="welcome-screen" id="welcomeScreen">
+    <h1>🌟 欢迎来到小打卡 🌟</h1>
+    <p>帮助孩子养成好习惯的养成游戏</p>
+    
+    <div class="input-group">
+      <label for="nickname">孩子昵称</label>
+      <input type="text" id="nickname" placeholder="请输入昵称（2-10字符）" maxlength="10">
+    </div>
+    
+    <div class="pet-selection">
+      <h3>选择你的第一个小伙伴</h3>
+      <div class="pet-cards">
+        <div class="pet-card" data-pet="dog">
+          <div class="pet-emoji">🐶</div>
+          <div class="pet-name">小狗</div>
+        </div>
+        <div class="pet-card" data-pet="cat">
+          <div class="pet-emoji">🐱</div>
+          <div class="pet-name">小猫</div>
+        </div>
+        <div class="pet-card" data-pet="rabbit">
+          <div class="pet-emoji">🐰</div>
+          <div class="pet-name">兔子</div>
+        </div>
+      </div>
+    </div>
+    
+    <button class="btn" id="startBtn" disabled>开始冒险</button>
+  </div>
+
+  <!-- 主界面 -->
+  <div class="main-screen app-container" id="mainScreen">
+    <div class="header">
+      <div class="user-info">
+        <div class="avatar" id="avatar">👦</div>
+        <div>
+          <div id="userName">小明</div>
+          <div class="user-stats">
+            <div class="stat">
+              <span class="stat-icon">💰</span>
+              <span class="stat-value" id="coins">0</span>
+            </div>
+            <div class="stat">
+              <span class="stat-icon">⭐</span>
+              <span class="stat-value" id="points">0</span>
+            </div>
+            <div class="stat">
+              <span class="stat-icon">🔥</span>
+              <span class="stat-value" id="consecutiveDays">0天</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: #999;">等级</div>
+        <div style="font-size: 16px; font-weight: bold; color: #667eea;">Lv.<span id="level">1</span></div>
+      </div>
+    </div>
+
+    <div class="habit-area" id="habitArea">
+      <!-- 养成对象将在这里动态渲染 -->
+    </div>
+
+    <div class="tasks-area">
+      <div class="tasks-title">今日任务</div>
+      <div class="task-grid" id="taskGrid">
+        <!-- 任务卡片将在这里动态渲染 -->
+      </div>
+    </div>
+
+    <div class="data-area">
+      <button class="data-btn" id="exportBtn">📥 导出数据</button>
+      <button class="data-btn" id="importBtn">📤 导入数据</button>
+      <input type="file" id="importFile" accept=".json" style="display: none;">
+    </div>
+  </div>
+
+  <!-- Toast 提示 -->
+  <div class="toast" id="toast"></div>
+
+  <!-- 解锁弹窗 -->
+  <div class="unlock-modal" id="unlockModal">
+    <div class="unlock-card">
+      <div class="unlock-icon" id="unlockIcon">🌻</div>
+      <div class="unlock-title">🎉 解锁新系统！</div>
+      <div class="unlock-desc" id="unlockDesc">你现在可以种植自己的植物了！</div>
+      <button class="btn" id="unlockBtn">开始种植</button>
+    </div>
+  </div>
+
+  <script>
+    // ==================== 数据结构 ====================
+    const PETS = {
+      dog: { name: '小狗', emoji: '🐶' },
+      cat: { name: '小猫', emoji: '🐱' },
+      rabbit: { name: '兔子', emoji: '🐰' }
+    };
+
+    const PLANTS = {
+      sunflower: { name: '向日葵', emoji: '🌻' },
+      rose: { name: '玫瑰', emoji: '🌹' },
+      tulip: { name: '郁金香', emoji: '🌷' }
+    };
+
+    const TASKS = [
+      { id: 'exercise', name: '运动时间', desc: '每日运动30分钟', icon: '🏃', color: '#22C55E', frequency: 'daily', target: 1, reward: 5 },
+      { id: 'reading', name: '阅读理解', desc: '看图说话', icon: '📖', color: '#3B82F6', frequency: 'daily', target: 1, reward: 3 },
+      { id: 'writing', name: '写作练习', desc: '作文练习', icon: '✏️', color: '#A855F7', frequency: 'daily', target: 1, reward: 4 },
+      { id: 'math', name: '数学练习', desc: '口算题', icon: '🔢', color: '#F97316', frequency: 'multiple', target: 3, reward: 2 },
+      { id: 'listening', name: '英语听力', desc: '听力练习', icon: '🎧', color: '#06B6D4', frequency: 'daily', target: 1, reward: 3 },
+      { id: 'exam', name: '考试奖励', desc: '95分以上', icon: '📝', color: '#EF4444', frequency: 'daily', target: 1, reward: 10 }
+    ];
+
+    // ==================== 用户系统 ====================
+    class UserSystem {
+      constructor() {
+        this.storageKey = 'habit_tracker_user';
+      }
+
+      /**
+       * 创建新用户
+       * @param {string} name - 用户昵称
+       * @param {string} petType - 宠物类型
+       * @returns {Object} 用户数据
+       */
+      createUser(name, petType) {
+        const user = {
+          id: 'user_' + Date.now(),
+          name: name,
+          avatar: '👦',
+          coins: 0,
+          points: 0,
+          level: 1,
+          totalCheckIns: 0,
+          consecutiveDays: 0,
+          lastCheckInDate: null,
+          unlockedSystems: ['pet'],
+          createdAt: new Date().toISOString().split('T')[0]
+        };
+
+        const pet = {
+          type: 'pet',
+          name: PETS[petType].name,
+          emoji: PETS[petType].emoji,
+          level: 1,
+          exp: 0,
+          maxExp: 100,
+          hunger: 100,
+          happiness: 100,
+          lastFed: null,
+          lastPlayed: null
+        };
+
+        this.saveUser(user);
+        this.savePet(pet);
+
+        return user;
+      }
+
+      /**
+       * 加载用户数据
+       * @returns {Object|null} 用户数据
+       */
+      loadUser() {
+        try {
+          const data = localStorage.getItem(this.storageKey);
+          return data ? JSON.parse(data) : null;
+        } catch (error) {
+          console.error('加载用户数据失败:', error);
+          return null;
+        }
+      }
+
+      /**
+       * 保存用户数据
+       * @param {Object} user - 用户数据
+       */
+      saveUser(user) {
+        try {
+          localStorage.setItem(this.storageKey, JSON.stringify(user));
+        } catch (error) {
+          console.error('保存用户数据失败:', error);
+          showToast('保存失败，请检查存储空间');
+        }
+      }
+
+      /**
+       * 保存宠物数据
+       * @param {Object} pet - 宠物数据
+       */
+      savePet(pet) {
+        try {
+          localStorage.setItem('habit_tracker_pet', JSON.stringify(pet));
+        } catch (error) {
+          console.error('保存宠物数据失败:', error);
+        }
+      }
+
+      /**
+       * 加载宠物数据
+       * @returns {Object|null} 宠物数据
+       */
+      loadPet() {
+        try {
+          const data = localStorage.getItem('habit_tracker_pet');
+          return data ? JSON.parse(data) : null;
+        } catch (error) {
+          console.error('加载宠物数据失败:', error);
+          return null;
+        }
+      }
+
+      /**
+       * 加载植物数据
+       * @returns {Object|null} 植物数据
+       */
+      loadPlant() {
+        try {
+          const data = localStorage.getItem('habit_tracker_plant');
+          return data ? JSON.parse(data) : null;
+        } catch (error) {
+          console.error('加载植物数据失败:', error);
+          return null;
+        }
+      }
+
+      /**
+       * 保存植物数据
+       * @param {Object} plant - 植物数据
+       */
+      savePlant(plant) {
+        try {
+          localStorage.setItem('habit_tracker_plant', JSON.stringify(plant));
+        } catch (error) {
+          console.error('保存植物数据失败:', error);
+        }
+      }
+
+      /**
+       * 加载角色数据
+       * @returns {Object|null} 角色数据
+       */
+      loadCharacter() {
+        try {
+          const data = localStorage.getItem('habit_tracker_character');
+          return data ? JSON.parse(data) : null;
+        } catch (error) {
+          console.error('加载角色数据失败:', error);
+          return null;
+        }
+      }
+
+      /**
+       * 保存角色数据
+       * @param {Object} character - 角色数据
+       */
+      saveCharacter(character) {
+        try {
+          localStorage.setItem('habit_tracker_character', JSON.stringify(character));
+        } catch (error) {
+          console.error('保存角色数据失败:', error);
+        }
+      }
+
+      /**
+       * 加载任务进度
+       * @returns {Object} 任务进度数据
+       */
+      loadTaskProgress() {
+        try {
+          const data = localStorage.getItem('habit_tracker_tasks');
+          return data ? JSON.parse(data) : {};
+        } catch (error) {
+          console.error('加载任务进度失败:', error);
+          return {};
+        }
+      }
+
+      /**
+       * 保存任务进度
+       * @param {Object} tasks - 任务进度数据
+       */
+      saveTaskProgress(tasks) {
+        try {
+          localStorage.setItem('habit_tracker_tasks', JSON.stringify(tasks));
+        } catch (error) {
+          console.error('保存任务进度失败:', error);
+        }
+      }
+    }
+
+    // ==================== 任务系统 ====================
+    class TaskManager {
+      constructor(userSystem) {
+        this.userSystem = userSystem;
+        this.today = new Date().toISOString().split('T')[0];
+      }
+
+      /**
+       * 获取今日任务进度
+       * @returns {Object} 任务进度
+       */
+      getTodayTasks() {
+        const progress = this.userSystem.loadTaskProgress();
+        const todayProgress = {};
+
+        TASKS.forEach(task => {
+          const taskData = progress[task.id] || { currentCount: 0, completedDates: [] };
+          
+          // 检查是否是新的一天
+          if (!taskData.completedDates.includes(this.today)) {
+            todayProgress[task.id] = {
+              ...task,
+              currentCount: 0,
+              completedDates: taskData.completedDates
+            };
+          } else {
+            todayProgress[task.id] = {
+              ...task,
+              ...taskData
+            };
+          }
+        });
+
+        return todayProgress;
+      }
+
+      /**
+       * 打卡任务
+       * @param {string} taskId - 任务ID
+       * @returns {Object} 打卡结果
+       */
+      checkIn(taskId) {
+        const tasks = this.getTodayTasks();
+        const task = tasks[taskId];
+
+        if (!task) {
+          return { success: false, message: '任务不存在' };
+        }
+
+        // 检查是否已完成
+        if (task.frequency === 'daily' && task.currentCount >= task.target) {
+          return { success: false, message: '今日已完成该任务' };
+        }
+
+        if (task.currentCount >= task.target) {
+          return { success: false, message: '已完成今日目标' };
+        }
+
+        // 更新进度
+        task.currentCount++;
+
+        // 保存进度
+        const progress = this.userSystem.loadTaskProgress();
+        if (!progress[taskId]) {
+          progress[taskId] = { currentCount: 0, completedDates: [] };
+        }
+        progress[taskId].currentCount = task.currentCount;
+        
+        if (task.currentCount >= task.target) {
+          progress[taskId].completedDates.push(this.today);
+        }
+
+        this.userSystem.saveTaskProgress(progress);
+
+        return { success: true, reward: task.reward };
+      }
+    }
+
+    // ==================== 养成系统 ====================
+    class HabitSystem {
+      constructor(userSystem) {
+        this.userSystem = userSystem;
+      }
+
+      /**
+       * 喂食宠物
+       * @param {number} cost - 消耗金币
+       * @returns {Object} 操作结果
+       */
+      feedPet(cost = 10) {
+        const user = this.userSystem.loadUser();
+        const pet = this.userSystem.loadPet();
+
+        if (user.coins < cost) {
+          return { success: false, message: '金币不足' };
+        }
+
+        user.coins -= cost;
+        pet.hunger = Math.min(100, pet.hunger + 20);
+        pet.lastFed = new Date().toISOString();
+
+        this.userSystem.saveUser(user);
+        this.userSystem.savePet(pet);
+
+        return { success: true, hunger: pet.hunger };
+      }
+
+      /**
+       * 和宠物玩耍
+       * @param {number} cost - 消耗金币
+       * @returns {Object} 操作结果
+       */
+      playWithPet(cost = 10) {
+        const user = this.userSystem.loadUser();
+        const pet = this.userSystem.loadPet();
+
+        if (user.coins < cost) {
+          return { success: false, message: '金币不足' };
+        }
+
+        user.coins -= cost;
+        pet.happiness = Math.min(100, pet.happiness + 20);
+        pet.lastPlayed = new Date().toISOString();
+
+        this.userSystem.saveUser(user);
+        this.userSystem.savePet(pet);
+
+        return { success: true, happiness: pet.happiness };
+      }
+
+      /**
+       * 抚摸宠物
+       * @returns {Object} 操作结果
+       */
+      petPet() {
+        const pet = this.userSystem.loadPet();
+        pet.happiness = Math.min(100, pet.happiness + 5);
+        this.userSystem.savePet(pet);
+        return { success: true, happiness: pet.happiness };
+      }
+
+      /**
+       * 给植物浇水
+       * @returns {Object} 操作结果
+       */
+      waterPlant() {
+        const plant = this.userSystem.loadPlant();
+        if (!plant) {
+          return { success: false, message: '植物系统未解锁' };
+        }
+
+        plant.water = Math.min(100, plant.water + 30);
+        plant.lastWatered = new Date().toISOString();
+        this.userSystem.savePlant(plant);
+
+        return { success: true, water: plant.water };
+      }
+
+      /**
+       * 增加经验值
+       * @param {number} amount - 经验值数量
+       */
+      addExp(amount) {
+        const user = this.userSystem.loadUser();
+        const pet = this.userSystem.loadPet();
+
+        pet.exp += amount;
+
+        // 检查升级
+        if (pet.exp >= pet.maxExp) {
+          pet.level++;
+          pet.exp = 0;
+          pet.maxExp = Math.floor(pet.maxExp * 1.5);
+          this.userSystem.savePet(pet);
+          this.userSystem.saveUser(user);
+          showToast(`🎉 ${pet.name}升级到 Lv.${pet.level}！`);
+        } else {
+          this.userSystem.savePet(pet);
+        }
+      }
+    }
+
+    // ==================== UI控制器 ====================
+    class UIController {
+      constructor() {
+        this.userSystem = new UserSystem();
+        this.taskManager = new TaskManager(this.userSystem);
+        this.habitSystem = new HabitSystem(this.userSystem);
+        this.selectedPet = null;
+        this.setupEventListeners();
+      }
+
+      /**
+       * 设置事件监听器
+       */
+      setupEventListeners() {
+        // 昵称输入
+        const nicknameInput = document.getElementById('nickname');
+        nicknameInput.addEventListener('input', () => {
+          this.validateWelcomeForm();
+        });
+
+        // 宠物选择
+        document.querySelectorAll('.pet-card').forEach(card => {
+          card.addEventListener('click', () => {
+            document.querySelectorAll('.pet-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            this.selectedPet = card.dataset.pet;
+            this.validateWelcomeForm();
+          });
+        });
+
+        // 开始按钮
+        document.getElementById('startBtn').addEventListener('click', () => {
+          const name = nicknameInput.value.trim();
+          if (name && this.selectedPet) {
+            this.userSystem.createUser(name, this.selectedPet);
+            this.showMainScreen();
+          }
+        });
+
+        // 导出按钮
+        document.getElementById('exportBtn').addEventListener('click', () => {
+          this.exportData();
+        });
+
+        // 导入按钮
+        document.getElementById('importBtn').addEventListener('click', () => {
+          document.getElementById('importFile').click();
+        });
+
+        // 导入文件
+        document.getElementById('importFile').addEventListener('change', (e) => {
+          this.importData(e.target.files[0]);
+        });
+
+        // 解锁按钮
+        document.getElementById('unlockBtn').addEventListener('click', () => {
+          document.getElementById('unlockModal').classList.remove('show');
+        });
+      }
+
+      /**
+       * 验证欢迎表单
+       */
+      validateWelcomeForm() {
+        const nicknameInput = document.getElementById('nickname');
+        const name = nicknameInput.value.trim();
+        const nameLength = [...name].length;
+        const isValid = nameLength >= 2 && nameLength <= 10 && this.selectedPet;
+        document.getElementById('startBtn').disabled = !isValid;
+      }
+
+      /**
+       * 显示主界面
+       */
+      showMainScreen() {
+        document.getElementById('welcomeScreen').style.display = 'none';
+        document.getElementById('mainScreen').style.display = 'block';
+        this.updateUI();
+      }
+
+      /**
+       * 更新UI
+       */
+      updateUI() {
+        const user = this.userSystem.loadUser();
+        const pet = this.userSystem.loadPet();
+        const plant = this.userSystem.loadPlant();
+        const character = this.userSystem.loadCharacter();
+
+        // 更新用户信息
+        document.getElementById('userName').textContent = user.name;
+        document.getElementById('coins').textContent = user.coins;
+        document.getElementById('points').textContent = user.points;
+        document.getElementById('consecutiveDays').textContent = user.consecutiveDays + '天';
+        document.getElementById('level').textContent = user.level;
+
+        // 渲染养成对象
+        let habitHTML = '';
+
+        // 宠物
+        if (pet && user.unlockedSystems.includes('pet')) {
+          habitHTML += `
+            <div class="habit-object">
+              <div class="habit-emoji">${pet.emoji}</div>
+              <div class="habit-name">${pet.name} (Lv.${pet.level})</div>
+              <div class="habit-stats">
+                <div class="habit-stat">
+                  <div class="habit-stat-label">饱食度</div>
+                  <div class="habit-stat-value">${pet.hunger}/100</div>
+                </div>
+                <div class="habit-stat">
+                  <div class="habit-stat-label">快乐度</div>
+                  <div class="habit-stat-value">${pet.happiness}/100</div>
+                </div>
+                <div class="habit-stat">
+                  <div class="habit-stat-label">经验值</div>
+                  <div class="habit-stat-value">${pet.exp}/${pet.maxExp}</div>
+                </div>
+              </div>
+              <div class="habit-actions">
+                <button class="habit-btn" onclick="app.feedPet()">🍖 喂食 (10💰)</button>
+                <button class="habit-btn" onclick="app.playWithPet()">🎾 玩耍 (10💰)</button>
+                <button class="habit-btn" onclick="app.petPet()">💕 抚摸</button>
+              </div>
+            </div>
+          `;
+        }
+
+        // 植物
+        if (plant && user.unlockedSystems.includes('plant')) {
+          habitHTML += `
+            <div class="habit-object">
+              <div class="habit-emoji">${plant.emoji}</div>
+              <div class="habit-name">${plant.name} (第${plant.stage}阶段)</div>
+              <div class="habit-stats">
+                <div class="habit-stat">
+                  <div class="habit-stat-label">水分</div>
+                  <div class="habit-stat-value">${plant.water}/100</div>
+                </div>
+                <div class="habit-stat">
+                  <div class="habit-stat-label">成长值</div>
+                  <div class="habit-stat-value">${plant.growth}/${plant.maxGrowth}</div>
+                </div>
+              </div>
+              <div class="habit-actions">
+                <button class="habit-btn" onclick="app.waterPlant()">💧 浇水</button>
+              </div>
+            </div>
+          `;
+        }
+
+        // 角色
+        if (character && user.unlockedSystems.includes('character')) {
+          habitHTML += `
+            <div class="habit-object">
+              <div class="habit-emoji">${character.emoji}</div>
+              <div class="habit-name">${character.name} (Lv.${character.level})</div>
+              <div class="habit-stats">
+                <div class="habit-stat">
+                  <div class="habit-stat-label">经验值</div>
+                  <div class="habit-stat-value">${character.exp}/${character.maxExp}</div>
+                </div>
+                <div class="habit-stat">
+                  <div class="habit-stat-label">装备</div>
+                  <div class="habit-stat-value">${character.equipment.length}</div>
+                </div>
+                <div class="habit-stat">
+                  <div class="habit-stat-label">技能</div>
+                  <div class="habit-stat-value">${character.skills.length}</div>
+                </div>
+              </div>
+              <div class="habit-actions">
+                <button class="habit-btn">🗡️ 查看装备</button>
+                <button class="habit-btn">📚 查看技能</button>
+              </div>
+            </div>
+          `;
+        }
+
+        document.getElementById('habitArea').innerHTML = habitHTML;
+
+        // 渲染任务卡片
+        const tasks = this.taskManager.getTodayTasks();
+        let taskHTML = '';
+        
+        Object.values(tasks).forEach(task => {
+          const isCompleted = task.currentCount >= task.target;
+          const buttonText = isCompleted ? '✓ 已完成' : `+ 打卡`;
+          const buttonClass = isCompleted ? 'checkin-btn completed' : 'checkin-btn';
+          
+          taskHTML += `
+            <div class="task-card" style="background: linear-gradient(135deg, ${task.color} 0%, ${this.lightenColor(task.color)} 100%);">
+              <div class="task-icon">${task.icon}</div>
+              <div class="task-name">${task.name}</div>
+              <div class="task-desc">${task.desc}</div>
+              <div class="task-progress">${task.currentCount}/${task.target}</div>
+              <div class="task-reward">+${task.reward}💰</div>
+              <button class="${buttonClass}" onclick="app.handleCheckIn('${task.id}')" ${isCompleted ? 'disabled' : ''}>${buttonText}</button>
+            </div>
+          `;
+        });
+
+        document.getElementById('taskGrid').innerHTML = taskHTML;
+      }
+
+      /**
+       * 颜色变亮
+       * @param {string} color - 十六进制颜色
+       * @returns {string} 变亮后的颜色
+       */
+      lightenColor(color) {
+        const num = parseInt(color.replace('#', ''), 16);
+        const amt = Math.round(2.55 * 30);
+        const R = (num >> 16) + amt;
+        const G = (num >> 8 & 0x00FF) + amt;
+        const B = (num & 0x0000FF) + amt;
+        return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+          (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+          (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+      }
+
+      /**
+       * 处理打卡
+       * @param {string} taskId - 任务ID
+       */
+      handleCheckIn(taskId) {
+        const result = this.taskManager.checkIn(taskId);
+        
+        if (result.success) {
+          const user = this.userSystem.loadUser();
+          
+          // 发放奖励
+          user.coins += result.reward.amount;
+          user.totalCheckIns++;
+          
+          // 更新连续打卡天数
+          const today = new Date().toISOString().split('T')[0];
+          if (user.lastCheckInDate !== today) {
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            if (user.lastCheckInDate === yesterday) {
+              user.consecutiveDays++;
+            } else {
+              user.consecutiveDays = 1;
+            }
+            user.lastCheckInDate = today;
+          }
+
+          // 增加经验值
+          this.habitSystem.addExp(10);
+
+          // 检查解锁
+          this.checkUnlocks(user);
+
+          this.userSystem.saveUser(user);
+          this.updateUI();
+          showToast(`✅ 打卡成功！+${result.reward.amount}💰`);
+        } else {
+          showToast(result.message);
+        }
+      }
+
+      /**
+       * 检查解锁
+       * @param {Object} user - 用户数据
+       */
+      checkUnlocks(user) {
+        // 7天解锁植物
+        if (user.consecutiveDays >= 7 && !user.unlockedSystems.includes('plant')) {
+          user.unlockedSystems.push('plant');
+          const plant = {
+            type: 'plant',
+            name: PLANTS.sunflower.name,
+            emoji: PLANTS.sunflower.emoji,
+            stage: 1,
+            growth: 0,
+            maxGrowth: 100,
+            water: 100,
+            lastWatered: null
+          };
+          this.userSystem.savePlant(plant);
+          this.showUnlock('🌻', '你现在可以种植自己的植物了！', '开始种植');
+        }
+
+        // 21天解锁角色
+        if (user.consecutiveDays >= 21 && !user.unlockedSystems.includes('character')) {
+          user.unlockedSystems.push('character');
+          const character = {
+            type: 'character',
+            name: '小勇士',
+            emoji: '🦸',
+            level: 1,
+            exp: 0,
+            maxExp: 100,
+            equipment: [],
+            skills: []
+          };
+          this.userSystem.saveCharacter(character);
+          this.showUnlock('🦸', '你现在可以培养自己的角色了！', '开始冒险');
+        }
+      }
+
+      /**
+       * 显示解锁弹窗
+       * @param {string} icon - 图标
+       * @param {string} desc - 描述
+       * @param {string} buttonText - 按钮文字
+       */
+      showUnlock(icon, desc, buttonText) {
+        document.getElementById('unlockIcon').textContent = icon;
+        document.getElementById('unlockDesc').textContent = desc;
+        document.getElementById('unlockBtn').textContent = buttonText;
+        document.getElementById('unlockModal').classList.add('show');
+      }
+
+      /**
+       * 导出数据
+       */
+      exportData() {
+        const data = {
+          version: '1.0',
+          exportDate: new Date().toISOString(),
+          user: this.userSystem.loadUser(),
+          pet: this.userSystem.loadPet(),
+          plant: this.userSystem.loadPlant(),
+          character: this.userSystem.loadCharacter(),
+          tasks: this.userSystem.loadTaskProgress()
+        };
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `habit-tracker-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast('✅ 数据导出成功！');
+      }
+
+      /**
+       * 导入数据
+       * @param {File} file - JSON文件
+       */
+      importData(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = JSON.parse(e.target.result);
+            
+            if (!data.version || !data.user) {
+              showToast('❌ 文件格式不正确');
+              return;
+            }
+
+            this.userSystem.saveUser(data.user);
+            if (data.pet) this.userSystem.savePet(data.pet);
+            if (data.plant) this.userSystem.savePlant(data.plant);
+            if (data.character) this.userSystem.saveCharacter(data.character);
+            if (data.tasks) this.userSystem.saveTaskProgress(data.tasks);
+
+            showToast('✅ 数据导入成功！');
+            this.updateUI();
+          } catch (error) {
+            console.error('导入失败:', error);
+            showToast('❌ 导入失败，请检查文件格式');
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      /**
+       * 喂食宠物
+       */
+      feedPet() {
+        const result = this.habitSystem.feedPet();
+        if (result.success) {
+          showToast(`🍖 喂食成功！饱食度 +20`);
+          this.updateUI();
+        } else {
+          showToast(result.message);
+        }
+      }
+
+      /**
+       * 和宠物玩耍
+       */
+      playWithPet() {
+        const result = this.habitSystem.playWithPet();
+        if (result.success) {
+          showToast(`🎾 玩耍成功！快乐度 +20`);
+          this.updateUI();
+        } else {
+          showToast(result.message);
+        }
+      }
+
+      /**
+       * 抚摸宠物
+       */
+      petPet() {
+        const result = this.habitSystem.petPet();
+        showToast(`💕 抚摸成功！快乐度 +5`);
+        this.updateUI();
+      }
+
+      /**
+       * 给植物浇水
+       */
+      waterPlant() {
+        const result = this.habitSystem.waterPlant();
+        if (result.success) {
+          showToast(`💧 浇水成功！水分 +30`);
+          this.updateUI();
+        } else {
+          showToast(result.message);
+        }
+      }
+    }
+
+    // ==================== 工具函数 ====================
+    /**
+     * 显示Toast提示
+     * @param {string} message - 提示消息
+     */
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // ==================== 初始化应用 ====================
+    const app = new UIController();
+
+    // 检查是否已有用户
+    const user = app.userSystem.loadUser();
+    if (user) {
+      app.showMainScreen();
+    }
+  </script>
+</body>
+</html>

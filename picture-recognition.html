@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>看图识物</title>
+  <script src="https://unpkg.com/htmx.org"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .game {
+      background: white;
+      border-radius: 30px;
+      padding: 30px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 28px;
+    }
+    .categories {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 25px;
+    }
+    .cat-btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 15px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .cat-btn.active {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    .cat-btn[data-cat="animals"] { background: #FF6B6B; color: white; }
+    .cat-btn[data-cat="fruits"] { background: #4ECDC4; color: white; }
+    .cat-btn[data-cat="vehicles"] { background: #45B7D1; color: white; }
+    
+    .score-board {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-bottom: 25px;
+      font-size: 20px;
+    }
+    .score-item {
+      text-align: center;
+    }
+    .score-label {
+      color: #666;
+      font-size: 14px;
+    }
+    .score-value {
+      font-weight: bold;
+      font-size: 32px;
+    }
+    .score-value.correct { color: #4CAF50; }
+    .score-value.wrong { color: #FF5722; }
+    
+    .target-area {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .target-emoji {
+      font-size: 120px;
+      line-height: 1;
+      margin-bottom: 15px;
+      animation: bounce 2s infinite;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    .target-name {
+      font-size: 32px;
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .options {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-bottom: 25px;
+    }
+    .option-btn {
+      width: 100px;
+      height: 100px;
+      font-size: 60px;
+      border: 4px solid #ddd;
+      border-radius: 20px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .option-btn:hover {
+      transform: scale(1.1);
+      border-color: #667eea;
+    }
+    .option-btn:active {
+      transform: scale(0.95);
+    }
+    .option-btn.correct {
+      background: #4CAF50;
+      border-color: #4CAF50;
+      animation: pop 0.3s;
+    }
+    .option-btn.wrong {
+      background: #FF5722;
+      border-color: #FF5722;
+      animation: shake 0.3s;
+    }
+    @keyframes pop {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+    
+    .feedback {
+      text-align: center;
+      font-size: 48px;
+      min-height: 60px;
+    }
+  </style>
+</head>
+<body>
+  <div class="game">
+    <h1>🎯 看图识物</h1>
+    
+    <div class="categories">
+      <button class="cat-btn active" data-cat="animals" 
+              hx-trigger="click" hx-on="click: startGame('animals')">
+        🐾 动物
+      </button>
+      <button class="cat-btn" data-cat="fruits"
+              hx-trigger="click" hx-on="click: startGame('fruits')">
+        🍎 水果
+      </button>
+      <button class="cat-btn" data-cat="vehicles"
+              hx-trigger="click" hx-on="click: startGame('vehicles')">
+        🚗 交通
+      </button>
+    </div>
+    
+    <div class="score-board">
+      <div class="score-item">
+        <div class="score-label">正确</div>
+        <div class="score-value correct" id="correct">0</div>
+      </div>
+      <div class="score-item">
+        <div class="score-label">错误</div>
+        <div class="score-value wrong" id="wrong">0</div>
+      </div>
+    </div>
+    
+    <div class="target-area">
+      <div class="target-emoji" id="target-emoji">🐶</div>
+      <div class="target-name" id="target-name">小狗</div>
+    </div>
+    
+    <div class="options" id="options">
+      <button class="option-btn" hx-trigger="click" hx-on="click: check(this)">🐱</button>
+      <button class="option-btn" hx-trigger="click" hx-on="click: check(this)">🐶</button>
+      <button class="option-btn" hx-trigger="click" hx-on="click: check(this)">🐰</button>
+    </div>
+    
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <script>
+    // 游戏数据
+    const data = {
+      animals: [
+        {emoji: '🐶', name: '小狗'},
+        {emoji: '🐱', name: '小猫'},
+        {emoji: '🐰', name: '兔子'},
+        {emoji: '🦊', name: '狐狸'},
+        {emoji: '🐻', name: '熊'},
+        {emoji: '🐼', name: '熊猫'}
+      ],
+      fruits: [
+        {emoji: '🍎', name: '苹果'},
+        {emoji: '🍊', name: '橘子'},
+        {emoji: '🍋', name: '柠檬'},
+        {emoji: '🍇', name: '葡萄'},
+        {emoji: '🍓', name: '草莓'},
+        {emoji: '🍑', name: '桃子'}
+      ],
+      vehicles: [
+        {emoji: '🚗', name: '汽车'},
+        {emoji: '🚌', name: '公交车'},
+        {emoji: '🚓', name: '警车'},
+        {emoji: '🚑', name: '救护车'},
+        {emoji: '🚒', name: '消防车'},
+        {emoji: '🚕', name: '出租车'}
+      ]
+    };
+
+    let currentCategory = 'animals';
+    let currentTarget = null;
+    let score = {correct: 0, wrong: 0};
+    let canClick = true;
+
+    // 初始化游戏
+    function startGame(category) {
+      currentCategory = category;
+      
+      // 更新按钮状态
+      document.querySelectorAll('.cat-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.cat === category);
+      });
+      
+      nextRound();
+    }
+
+    // 下一轮
+    function nextRound() {
+      canClick = true;
+      document.getElementById('feedback').textContent = '';
+      
+      const items = data[currentCategory];
+      
+      // 随机选择目标
+      currentTarget = items[Math.floor(Math.random() * items.length)];
+      
+      // 显示目标
+      document.getElementById('target-emoji').textContent = currentTarget.emoji;
+      document.getElementById('target-name').textContent = currentTarget.name;
+      
+      // 生成选项（1个正确 + 2个错误）
+      const options = [currentTarget];
+      const otherItems = items.filter(item => item !== currentTarget);
+      
+      // 随机选2个错误选项
+      for (let i = 0; i < 2 && otherItems.length > 0; i++) {
+        const idx = Math.floor(Math.random() * otherItems.length);
+        options.push(otherItems.splice(idx, 1)[0]);
+      }
+      
+      // 打乱顺序
+      options.sort(() => Math.random() - 0.5);
+      
+      // 显示选项
+      const optionsDiv = document.getElementById('options');
+      optionsDiv.innerHTML = options.map(item => 
+        `<button class="option-btn" hx-trigger="click" hx-on="click: check(this)" data-emoji="${item.emoji}">${item.emoji}</button>`
+      ).join('');
+    }
+
+    // 检查答案
+    function check(btn) {
+      if (!canClick) return;
+      canClick = false;
+      
+      const isCorrect = btn.dataset.emoji === currentTarget.emoji;
+      
+      if (isCorrect) {
+        btn.classList.add('correct');
+        score.correct++;
+        document.getElementById('correct').textContent = score.correct;
+        document.getElementById('feedback').textContent = '✅';
+        
+        // 1秒后下一轮
+        setTimeout(nextRound, 1000);
+      } else {
+        btn.classList.add('wrong');
+        score.wrong++;
+        document.getElementById('wrong').textContent = score.wrong;
+        document.getElementById('feedback').textContent = '🤔';
+        
+        // 1.5秒后下一轮
+        setTimeout(nextRound, 1500);
+      }
+    }
+
+    // 启动游戏
+    startGame('animals');
+  </script>
+</body>
+</html>

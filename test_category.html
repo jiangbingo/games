@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>分类测试</title>
+    <style>
+        .category-tab { padding: 10px; cursor: pointer; }
+        .category-tab.active { background: #667eea; color: white; }
+        .game-card { padding: 20px; margin: 10px; background: #f0f0f0; }
+        .game-card.hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="category-tabs">
+        <button class="category-tab active" data-category="all">全部</button>
+        <button class="category-tab" data-category="cognitive">认知</button>
+    </div>
+    <div class="game-card" data-category="cognitive">认知游戏</div>
+    <div class="game-card" data-category="logic">逻辑游戏</div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM加载完成');
+            const categoryTabs = document.querySelectorAll('.category-tab');
+            const gameCards = document.querySelectorAll('.game-card');
+            
+            console.log('找到分类标签:', categoryTabs.length);
+            console.log('找到游戏卡片:', gameCards.length);
+            
+            categoryTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const category = this.dataset.category;
+                    console.log('点击分类:', category);
+                    
+                    categoryTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    gameCards.forEach(card => {
+                        if (category === 'all') {
+                            card.classList.remove('hidden');
+                        } else {
+                            const cardCategory = card.dataset.category;
+                            if (cardCategory === category) {
+                                card.classList.remove('hidden');
+                            } else {
+                                card.classList.add('hidden');
+                            }
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

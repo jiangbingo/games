@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>水墨方块 - 俄罗斯方块</title>
+    <style>
+        /* ==================== 全局样式 ==================== */
+        @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* 中国传统色彩 */
+            --bg-paper: #F2E6CE;
+            --bg-paper-dark: #E8DCC8;
+            --ink-black: #2B2B2B;
+            --chinese-red: #C23531;
+            --imperial-yellow: #E1C315;
+            --jade-green: #749F83;
+            --porcelain-blue: #61A0A8;
+            --celadon: #91C7AE;
+            --ochre: #D48265;
+            --deep-navy: #2F4554;
+            --slate: #546570;
+        }
+
+        body {
+            font-family: 'Noto Serif SC', 'KaiTi', 'STKaiti', serif;
+            background: var(--bg-paper);
+            background-image:
+                radial-gradient(ellipse at 20% 30%, rgba(255,255,255,0.3) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 70%, rgba(200,180,150,0.2) 0%, transparent 50%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* ==================== 标题样式 ==================== */
+        .game-title {
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: clamp(32px, 6vw, 48px);
+            color: var(--chinese-red);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            text-align: center;
+            letter-spacing: 8px;
+            position: relative;
+        }
+
+        .game-title::before,
+        .game-title::after {
+            content: '◆';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.5em;
+            color: var(--imperial-yellow);
+        }
+
+        .game-title::before {
+            left: -30px;
+        }
+
+        .game-title::after {
+            right: -30px;
+        }
+
+        /* ==================== 游戏主容器 ==================== */
+        .game-container {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 900px;
+        }
+
+        /* ==================== 游戏画布区域 ==================== */
+        .game-board-wrapper {
+            position: relative;
+            padding: 15px;
+            background: linear-gradient(135deg, #8B4513 0%, #654321 100%);
+            border-radius: 8px;
+            box-shadow:
+                0 10px 30px rgba(0,0,0,0.3),
+                inset 0 2px 0 rgba(255,255,255,0.1);
+        }
+
+        .game-board-wrapper::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border: 2px solid var(--imperial-yellow);
+            border-radius: 4px;
+            pointer-events: none;
+        }
+
+        #gameCanvas {
+            display: block;
+            background: var(--bg-paper);
+            border-radius: 2px;
+        }
+
+        /* ==================== 侧边栏 ==================== */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 180px;
+        }
+
+        .info-box {
+            background: linear-gradient(145deg, rgba(255,255,255,0.8), rgba(255,255,255,0.4));
+            border: 2px solid var(--ink-black);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+        }
+
+        .info-box h3 {
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 20px;
+            color: var(--ink-black);
+            margin-bottom: 10px;
+            text-align: center;
+            border-bottom: 1px solid var(--ink-black);
+            padding-bottom: 8px;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 16px;
+        }
+
+        .info-label {
+            color: var(--ink-black);
+            font-weight: bold;
+        }
+
+        .info-value {
+            color: var(--chinese-red);
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 22px;
+        }
+
+        /* 下一个方块预览 */
+        #nextCanvas {
+            display: block;
+            margin: 0 auto;
+            background: var(--bg-paper-dark);
+            border: 1px solid var(--ink-black);
+            border-radius: 4px;
+        }
+
+        /* 操作说明 */
+        .controls-info {
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 5px 0;
+        }
+
+        .key-badge {
+            display: inline-block;
+            min-width: 28px;
+            padding: 2px 6px;
+            background: var(--ink-black);
+            color: var(--bg-paper);
+            border-radius: 4px;
+            text-align: center;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        /* ==================== 按钮区域 ==================== */
+        .button-container {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .game-btn {
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 20px;
+            padding: 12px 30px;
+            border: 3px solid var(--chinese-red);
+            background: linear-gradient(145deg, var(--chinese-red), #A02020);
+            color: var(--bg-paper);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .game-btn:hover::before {
+            left: 100%;
+        }
+
+        .game-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.2);
+        }
+
+        .game-btn:active {
+            transform: translateY(1px);
+            box-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+        }
+
+        .game-btn.secondary {
+            background: linear-gradient(145deg, var(--ink-black), #1a1a1a);
+            border-color: var(--ink-black);
+        }
+
+        /* ==================== 移动端控制 ==================== */
+        .mobile-controls {
+            display: none;
+            width: 100%;
+            max-width: 350px;
+            margin-top: 25px;
+        }
+
+        .mobile-dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 15px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 12px;
+        }
+
+        .mobile-btn {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 24px;
+            padding: 15px;
+            border: 2px solid var(--ink-black);
+            background: linear-gradient(145deg, #fff, #e0e0e0);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 4px 0 var(--ink-black);
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .mobile-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 var(--ink-black);
+        }
+
+        .mobile-btn.rotate {
+            background: linear-gradient(145deg, var(--porcelain-blue), #4a8090);
+            color: white;
+        }
+
+        .mobile-btn.down {
+            background: linear-gradient(145deg, var(--jade-green), #5a7f63);
+            color: white;
+        }
+
+        /* ==================== 游戏结束/暂停遮罩 ==================== */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .overlay.active {
+            display: flex;
+        }
+
+        .overlay-content {
+            text-align: center;
+            padding: 40px 60px;
+            background: linear-gradient(145deg, var(--bg-paper), var(--bg-paper-dark));
+            border: 4px solid var(--chinese-red);
+            border-radius: 15px;
+            box-shadow: 0 0 50px rgba(194,53,49,0.5);
+            animation: overlayPop 0.4s ease;
+        }
+
+        @keyframes overlayPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .overlay-title {
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 48px;
+            color: var(--chinese-red);
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .overlay-score {
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: var(--ink-black);
+        }
+
+        .overlay-score span {
+            color: var(--chinese-red);
+            font-family: 'Ma Shan Zheng', cursive;
+            font-size: 36px;
+        }
+
+        /* ==================== 中国结装饰 ==================== */
+        .chinese-knot {
+            position: fixed;
+            width: 80px;
+            height: 80px;
+            opacity: 0.6;
+            z-index: -1;
+        }
+
+        .chinese-knot.top-left {
+            top: 20px;
+            left: 20px;
+        }
+
+        .chinese-knot.bottom-right {
+            bottom: 20px;
+            right: 20px;
+            transform: rotate(180deg);
+        }
+
+        /* ==================== 响应式设计 ==================== */
+        @media (max-width: 768px) {
+            .game-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .sidebar {
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 15px;
+            }
+
+            .info-box {
+                min-width: 140px;
+            }
+
+            .mobile-controls {
+                display: block;
+            }
+
+            .game-title::before,
+            .game-title::after {
+                display: none;
+            }
+        }
+
+        @media (max-width: 400px) {
+            #gameCanvas {
+                width: 250px;
+                height: 500px;
+            }
+
+            .sidebar {
+                min-width: 100%;
+            }
+
+            .info-box {
+                flex: 1;
+                min-width: 120px;
+            }
+        }
+
+        /* ==================== 消除动画 ==================== */
+        @keyframes lineClear {
+            0% {
+                opacity: 1;
+                transform: scaleX(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scaleX(1.1);
+                background: var(--imperial-yellow);
+            }
+            100% {
+                opacity: 0;
+                transform: scaleX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 中国结装饰 -->
+    <svg class="chinese-knot top-left" viewBox="0 0 100 100">
+        <path fill="#C23531" d="M50 10 C30 10 20 25 20 40 C20 50 30 55 40 60 L40 70 C30 68 25 72 25 80 C25 90 35 95 50 95 C65 95 75 90 75 80 C75 72 70 68 60 70 L60 60 C70 55 80 50 80 40 C80 25 70 10 50 10 Z"/>
+    </svg>
+    <svg class="chinese-knot bottom-right" viewBox="0 0 100 100">
+        <path fill="#C23531" d="M50 10 20 10 C30 25 20 40 C20 50 30 55 40 60 L40 70 C30 68 25 72 25 80 C25 90 35 95 50 95 C65 95 75 90 75 80 C75 72 70 68 60 70 L60 60 C70 55 80 50 80 40 C80 25 70 10 50 10 Z"/>
+    </svg>
+
+    <!-- 游戏标题 -->
+    <h1 class="game-title">水墨方块</h1>
+
+    <!-- 游戏主容器 -->
+    <div class="game-container">
+        <!-- 游戏画布 -->
+        <div class="game-board-wrapper">
+            <canvas id="gameCanvas" width="300" height="600"></canvas>
+        </div>
+
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <!-- 下一个方块 -->
+            <div class="info-box">
+                <h3>下一个</h3>
+                <canvas id="nextCanvas" width="100" height="100"></canvas>
+            </div>
+
+            <!-- 分数信息 -->
+            <div class="info-box">
+                <h3>游戏数据</h3>
+                <div class="info-item">
+                    <span class="info-label">得分</span>
+                    <span class="info-value" id="score">0</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">等级</span>
+                    <span class="info-value" id="level">1</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">行数</span>
+                    <span class="info-value" id="lines">0</span>
+                </div>
+            </div>
+
+            <!-- 操作说明 -->
+            <div class="info-box">
+                <h3>操作说明</h3>
+                <div class="controls-info">
+                    <div class="control-item">
+                        <span class="key-badge">←→</span>
+                        <span>左右移动</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key-badge">↑</span>
+                        <span>旋转</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key-badge">↓</span>
+                        <span>加速下落</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key-badge">空格</span>
+                        <span>快速下落</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key-badge">P</span>
+                        <span>暂停/继续</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 按钮区域 -->
+    <div class="button-container">
+        <button class="game-btn" id="startBtn">开始游戏</button>
+        <button class="game-btn secondary" id="pauseBtn">暂停</button>
+        <button class="game-btn secondary" id="restartBtn">重新开始</button>
+    </div>
+
+    <!-- 移动端虚拟按键 -->
+    <div class="mobile-controls">
+        <div class="mobile-dpad">
+            <div></div>
+            <button class="mobile-btn rotate" id="btnRotate">↻</button>
+            <div></div>
+            <button class="mobile-btn" id="btnLeft">←</button>
+            <button class="mobile-btn down" id="btnDown">↓</button>
+            <button class="mobile-btn" id="btnRight">→</button>
+            <div></div>
+            <button class="mobile-btn" id="btnDrop">⬇</button>
+            <div></div>
+        </div>
+    </div>
+
+    <!-- 游戏结束遮罩 -->
+    <div class="overlay" id="gameOverOverlay">
+        <div class="overlay-content">
+            <div class="overlay-title" id="overlayTitle">游戏结束</div>
+            <div class="overlay-score">最终得分: <span id="finalScore">0</span></div>
+            <button class="game-btn" id="overlayRestartBtn">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * 水墨方块 - 俄罗斯方块游戏
+         * 融入中国传统文化元素
+         */
+
+        // ==================== 游戏常量 ====================
+        const COLS = 10;           // 列数
+        const ROWS = 20;           // 行数
+        const BLOCK_SIZE = 30;     // 方块大小
+        const EMPTY = 0;           // 空单元格
+
+        // 中国传统色彩对应的方块类型
+        const COLORS = {
+            I: '#546570',  // 竹节灰 - 简约线条
+            O: '#E1C315',  // 帝王黄 - 回纹
+            T: '#2F4554',  // 玄青 - 太极
+            S: '#91C7AE',  // 青瓷 - 祥云
+            Z: '#D48265',  // 赭石 - 祥云
+            J: '#61A0A8',  // 青花 - 青花瓷
+            L: '#749F83'   // 翠玉 - 翠竹
+        };
+
+        // 方块形状定义 (4种旋转状态)
+        const SHAPES = {
+            I: [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]],
+            O: [[1,1], [1,1]],
+            T: [[0,1,0], [1,1,1], [0,0,0]],
+            S: [[0,1,1], [1,1,0], [0,0,0]],
+            Z: [[1,1,0], [0,1,1], [0,0,0]],
+            J: [[1,0,0], [1,1,1], [0,0,0]],
+            L: [[0,0,1], [1,1,1], [0,0,0]]
+        };
+
+        const SHAPE_KEYS = Object.keys(SHAPES);
+
+        // ==================== 游戏状态 ====================
+        let board = [];              // 游戏棋盘
+        let currentPiece = null;     // 当前方块
+        let nextPiece = null;        // 下一个方块
+        let score = 0;               // 得分
+        let level = 1;               // 等级
+        let lines = 0;               // 消除行数
+        let gameState = 'idle';      // idle/playing/paused/gameover
+        let dropInterval = 1000;     // 下落间隔(ms)
+        let lastDropTime = 0;        // 上次下落时间
+        let animationId = null;      // 动画帧ID
+
+        // 音效上下文
+        let audioCtx = null;
+
+        // ==================== DOM元素 ====================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const nextCanvas = document.getElementById('nextCanvas');
+        const nextCtx = nextCanvas.getContext('2d');
+
+        const scoreEl = document.getElementById('score');
+        const levelEl = document.getElementById('level');
+        const linesEl = document.getElementById('lines');
+
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const restartBtn = document.getElementById('restartBtn');
+
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        const overlayTitle = document.getElementById('overlayTitle');
+        const finalScore = document.getElementById('finalScore');
+        const overlayRestartBtn = document.getElementById('overlayRestartBtn');
+
+        // 移动端按钮
+        const btnLeft = document.getElementById('btnLeft');
+        const btnRight = document.getElementById('btnRight');
+        const btnRotate = document.getElementById('btnRotate');
+        const btnDown = document.getElementById('btnDown');
+        const btnDrop = document.getElementById('btnDrop');
+
+        // ==================== 音频系统 ====================
+        /**
+         * 初始化音频上下文
+         */
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        /**
+         * 播放音效 - 使用Web Audio API合成
+         */
+        function playSound(type) {
+            if (!audioCtx) return;
+
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            switch(type) {
+                case 'rotate':
+                    // 旋转 - 木鱼声
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.1);
+                    gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.1);
+                    break;
+
+                case 'drop':
+                    // 落下 - 低沉声响
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(200, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.15);
+                    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.15);
+                    break;
+
+                case 'clear':
+                    // 消除 - 叮咚声(五声音阶)
+                    const notes = [523, 587, 659, 698, 784]; // C5, D5, E5, F5, G5
+                    notes.forEach((freq, i) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.08);
+                        gain.gain.setValueAtTime(0.1, audioCtx.currentTime + i * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.08 + 0.2);
+                        osc.start(audioCtx.currentTime + i * 0.08);
+                        osc.stop(audioCtx.currentTime + i * 0.08 + 0.2);
+                    });
+                    break;
+
+                case 'levelup':
+                    // 升级 - 上升音阶
+                    const upNotes = [392, 523, 659, 784, 880]; // G4, C5, E5, G5, A5
+                    upNotes.forEach((freq, i) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.1);
+                        gain.gain.setValueAtTime(0.12, audioCtx.currentTime + i * 0.1);
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.1 + 0.3);
+                        osc.start(audioCtx.currentTime + i * 0.1);
+                        osc.stop(audioCtx.currentTime + i * 0.1 + 0.3);
+                    });
+                    break;
+
+                case 'gameover':
+                    // 结束 - 下降音
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(400, audioCtx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(50, audioCtx.currentTime + 0.8);
+                    gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+                    oscillator.start(audioCtx.currentTime);
+                    oscillator.stop(audioCtx.currentTime + 0.8);
+                    break;
+            }
+        }
+
+        // ==================== 绘制函数 ====================
+
+        /**
+         * 绘制祥云纹 - 用于S型方块(赭石色)
+         */
+        function drawCloudPattern(ctx, x, y, size, color) {
+            ctx.save();
+            ctx.strokeStyle = lightenColor(color, 30);
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+
+            // 绘制简化祥云
+            ctx.beginPath();
+            ctx.arc(x + size*0.3, y + size*0.4, size*0.15, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(x + size*0.6, y + size*0.5, size*0.12, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x + size*0.2, y + size*0.5);
+            ctx.quadraticCurveTo(x + size*0.4, y + size*0.3, x + size*0.7, y + size*0.45);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        /**
+         * 绘制回纹 - 用于O型方块(帝王黄)
+         */
+        function drawHuiPattern(ctx, x, y, size, color) {
+            ctx.save();
+            ctx.strokeStyle = darkenColor(color, 20);
+            ctx.lineWidth = 2;
+
+            // 外框
+            const margin = size * 0.2;
+            ctx.strokeRect(x + margin, y + margin, size - margin*2, size - margin*2);
+
+            // 内框
+            const innerMargin = size * 0.35;
+            ctx.strokeRect(x + innerMargin, y + innerMargin, size - innerMargin*2, size - innerMargin*2);
+
+            ctx.restore();
+        }
+
+        /**
+         * 绘制青花瓷纹 - 用于J型方块(青花蓝)
+         */
+        function drawPorcelainPattern(ctx, x, y, size, color) {
+            ctx.save();
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 1.5;
+
+            // 绘制蓝白相间的图案
+            const cx = x + size / 2;
+            const cy = y + size / 2;
+
+            // 圆形纹饰
+            ctx.beginPath();
+            ctx.arc(cx, cy, size * 0.25, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 放射线
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(angle) * size * 0.15, cy + Math.sin(angle) * size * 0.15);
+                ctx.lineTo(cx + Math.cos(angle) * size * 0.35, cy + Math.sin(angle) * size * 0.35);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        /**
+         * 绘制太极图 - 用于T型方块(玄青色)
+         */
+        function drawTaiChiPattern(ctx, x, y, size, color) {
+            ctx.save();
+            const cx = x + size / 2;
+            const cy = y + size / 2;
+            const r = size * 0.35;
+
+            // 太极轮廓
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 1.5;
+
+            // 外圆
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // S曲线
+            ctx.beginPath();
+            ctx.arc(cx, cy - r/2, r/2, Math.PI/2, Math.PI*1.5);
+            ctx.arc(cx, cy + r/2, r/2, -Math.PI/2, Math.PI/2);
+            ctx.stroke();
+
+            // 阴阳点
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(cx, cy - r/2, r/5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(cx, cy + r/2, r/5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        /**
+         * 绘制竹节纹 - 用于I型方块
+         */
+        function drawBambooPattern(ctx, x, y, size, color) {
+            ctx.save();
+            ctx.strokeStyle = darkenColor(color, 15);
+            ctx.lineWidth = 2;
+
+            // 竹节横线
+            const y1 = y + size * 0.3;
+            const y2 = y + size * 0.7;
+            ctx.beginPath();
+            ctx.moveTo(x + size*0.15, y1);
+            ctx.lineTo(x + size*0.85, y1);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x + size*0.15, y2);
+            ctx.lineTo(x + size*0.85, y2);
+            ctx.stroke();
+
+            // 竹节节点
+            ctx.fillStyle = darkenColor(color, 25);
+            ctx.beginPath();
+            ctx.arc(x + size*0.5, y1, 3, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + size*0.5, y2, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        /**
+         * 绘制翠竹纹 - 用于L型方块
+         */
+        function drawJadePattern(ctx, x, y, size, color) {
+            ctx.save();
+            ctx.strokeStyle = lightenColor(color, 20);
+            ctx.lineWidth = 2;
+
+            // 竹叶形装饰
+            ctx.beginPath();
+            ctx.moveTo(x + size*0.2, y + size*0.8);
+            ctx.quadraticCurveTo(x + size*0.3, y + size*0.5, x + size*0.5, y + size*0.3);
+            ctx.quadraticCurveTo(x + size*0.7, y + size*0.5, x + size*0.8, y + size*0.8);
+            ctx.stroke();
+
+            // 叶脉
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x + size*0.4, y + size*0.45);
+            ctx.lineTo(x + size*0.5, y + size*0.6);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        /**
+         * 绘制青瓷纹 - 用于S型方块另一种颜色
+         */
+        function drawCeladonPattern(ctx, x, y, size, color) {
+            ctx.save();
+            ctx.strokeStyle = darkenColor(color, 10);
+            ctx.lineWidth = 1.5;
+
+            // 水波纹
+            ctx.beginPath();
+            ctx.moveTo(x + size*0.1, y + size*0.5);
+            ctx.quadraticCurveTo(x + size*0.3, y + size*0.3, x + size*0.5, y + size*0.5);
+            ctx.quadraticCurveTo(x + size*0.7, y + size*0.7, x + size*0.9, y + size*0.5);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(x + size*0.2, y + size*0.7);
+            ctx.quadraticCurveTo(x + size*0.4, y + size*0.5, x + size*0.6, y + size*0.7);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        /**
+         * 颜色辅助函数
+         */
+        function lightenColor(hex, percent) {
+            const num = parseInt(hex.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.min(255, (num >> 16) + amt);
+            const G = Math.min(255, ((num >> 8) & 0x00FF) + amt);
+            const B = Math.min(255, (num & 0x0000FF) + amt);
+            return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+        }
+
+        function darkenColor(hex, percent) {
+            const num = parseInt(hex.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.max(0, (num >> 16) - amt);
+            const G = Math.max(0, ((num >> 8) & 0x00FF) - amt);
+            const B = Math.max(0, (num & 0x0000FF) - amt);
+            return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+        }
+
+        /**
+         * 根据方块类型绘制图案
+         */
+        function drawBlockPattern(ctx, type, x, y, size, color) {
+            switch(type) {
+                case 'I': drawBambooPattern(ctx, x, y, size, color); break;
+                case 'O': drawHuiPattern(ctx, x, y, size, color); break;
+                case 'T': drawTaiChiPattern(ctx, x, y, size, color); break;
+                case 'S': drawCeladonPattern(ctx, x, y, size, color); break;
+                case 'Z': drawCloudPattern(ctx, x, y, size, color); break;
+                case 'J': drawPorcelainPattern(ctx, x, y, size, color); break;
+                case 'L': drawJadePattern(ctx, x, y, size, color); break;
+            }
+        }
+
+        /**
+         * 绘制单个方块
+         */
+        function drawBlock(context, x, y, color, size = BLOCK_SIZE) {
+            const padding = 1;
+
+            // 主体填充
+            context.fillStyle = color;
+            context.fillRect(x + padding, y + padding, size - padding*2, size - padding*2);
+
+            // 边框效果
+            context.strokeStyle = darkenColor(color, 30);
+            context.lineWidth = 2;
+            context.strokeRect(x + padding, y + padding, size - padding*2, size - padding*2);
+
+            // 高光效果
+            context.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            context.fillRect(x + padding, y + padding, size - padding*2, 4);
+
+            // 绘制传统图案
+            if (color !== '#2B2B2B') {
+                drawBlockPattern(context, Object.keys(COLORS).find(k => COLORS[k] === color) || 'O',
+                                x + padding, y + padding, size - padding*2, color);
+            }
+        }
+
+        /**
+         * 绘制游戏棋盘
+         */
+        function drawBoard() {
+            // 清空画布
+            ctx.fillStyle = '#F2E6CE';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 绘制网格线
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.lineWidth = 0.5;
+
+            for (let col = 0; col <= COLS; col++) {
+                ctx.beginPath();
+                ctx.moveTo(col * BLOCK_SIZE, 0);
+                ctx.lineTo(col * BLOCK_SIZE, canvas.height);
+                ctx.stroke();
+            }
+
+            for (let row = 0; row <= ROWS; row++) {
+                ctx.beginPath();
+                ctx.moveTo(0, row * BLOCK_SIZE);
+                ctx.lineTo(canvas.width, row * BLOCK_SIZE);
+                ctx.stroke();
+            }
+
+            // 绘制已落下的方块
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if (board[row][col]) {
+                        drawBlock(ctx, col * BLOCK_SIZE, row * BLOCK_SIZE, board[row][col]);
+                    }
+                }
+            }
+        }
+
+        /**
+         * 绘制当前方块
+         */
+        function drawCurrentPiece() {
+            if (!currentPiece) return;
+
+            const { shape, color, x, y } = currentPiece;
+
+            for (let row = 0; row < shape.length; row++) {
+                for (let col = 0; col < shape[row].length; col++) {
+                    if (shape[row][col]) {
+                        drawBlock(ctx, (x + col) * BLOCK_SIZE, (y + row) * BLOCK_SIZE, color);
+                    }
+                }
+            }
+        }
+
+        /**
+         * 绘制下一个方块预览
+         */
+        function drawNextPiece() {
+            // 清空预览画布
+            nextCtx.fillStyle = '#E8DCC8';
+            nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+
+            if (!nextPiece) return;
+
+            const { shape, color } = nextPiece;
+            const previewSize = 25;
+            const offsetX = (nextCanvas.width - shape[0].length * previewSize) / 2;
+            const offsetY = (nextCanvas.height - shape.length * previewSize) / 2;
+
+            for (let row = 0; row < shape.length; row++) {
+                for (let col = 0; col < shape[row].length; col++) {
+                    if (shape[row][col]) {
+                        drawBlock(nextCtx, offsetX + col * previewSize, offsetY + row * previewSize, color, previewSize);
+                    }
+                }
+            }
+        }
+
+        /**
+         * 绘制游戏（主渲染函数）
+         */
+        function render() {
+            drawBoard();
+            drawCurrentPiece();
+        }
+
+        // ==================== 游戏逻辑 ====================
+
+        /**
+         * 初始化游戏棋盘
+         */
+        function initBoard() {
+            board = [];
+            for (let row = 0; row < ROWS; row++) {
+                board[row] = [];
+                for (let col = 0; col < COLS; col++) {
+                    board[row][col] = EMPTY;
+                }
+            }
+        }
+
+        /**
+         * 随机生成方块
+         */
+        function randomPiece() {
+            const type = SHAPE_KEYS[Math.floor(Math.random() * SHAPE_KEYS.length)];
+            return {
+                type: type,
+                shape: JSON.parse(JSON.stringify(SHAPES[type])), // 深拷贝
+                color: COLORS[type],
+                x: Math.floor(COLS / 2) - Math.floor(SHAPES[type][0].length / 2),
+                y: 0,
+                rotation: 0
+            };
+        }
+
+        /**
+         * 旋转方块
+         */
+        function rotatePiece() {
+            if (!currentPiece) return;
+
+            const shape = currentPiece.shape;
+            const N = shape.length;
+            const rotated = [];
+
+            // 矩阵旋转
+            for (let i = 0; i < N; i++) {
+                rotated[i] = [];
+                for (let j = 0; j < N; j++) {
+                    rotated[i][j] = shape[N - 1 - j][i];
+                }
+            }
+
+            // 检查旋转后是否合法
+            if (!checkCollision(currentPiece.x, currentPiece.y, rotated)) {
+                currentPiece.shape = rotated;
+                currentPiece.rotation = (currentPiece.rotation + 1) % 4;
+                playSound('rotate');
+            } else {
+                // 墙踢（Wall Kick）- 尝试左右移动
+                const kicks = [-1, 1, -2, 2];
+                for (const kick of kicks) {
+                    if (!checkCollision(currentPiece.x + kick, currentPiece.y, rotated)) {
+                        currentPiece.x += kick;
+                        currentPiece.shape = rotated;
+                        currentPiece.rotation = (currentPiece.rotation + 1) % 4;
+                        playSound('rotate');
+                        return;
+                    }
+                }
+            }
+        }
+
+        /**
+         * 检查碰撞
+         */
+        function checkCollision(x, y, shape) {
+            for (let row = 0; row < shape.length; row++) {
+                for (let col = 0; col < shape[row].length; col++) {
+                    if (shape[row][col]) {
+                        const newX = x + col;
+                        const newY = y + row;
+
+                        // 边界检查
+                        if (newX < 0 || newX >= COLS || newY >= ROWS) {
+                            return true;
+                        }
+
+                        // 棋盘占用检查
+                        if (newY >= 0 && board[newY][newX]) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        /**
+         * 方块落地
+         */
+        function lockPiece() {
+            if (!currentPiece) return;
+
+            const { shape, color, x, y } = currentPiece;
+
+            // 将方块固定到棋盘
+            for (let row = 0; row < shape.length; row++) {
+                for (let col = 0; col < shape[row].length; col++) {
+                    if (shape[row][col]) {
+                        const boardY = y + row;
+                        const boardX = x + col;
+
+                        if (boardY >= 0 && boardY < ROWS && boardX >= 0 && boardX < COLS) {
+                            board[boardY][boardX] = color;
+                        }
+                    }
+                }
+            }
+
+            playSound('drop');
+
+            // 检查并消除行
+            clearLines();
+
+            // 检查游戏结束
+            if (y <= 0) {
+                gameOver();
+                return;
+            }
+
+            // 生成下一个方块
+            spawnPiece();
+        }
+
+        /**
+         * 消除行
+         */
+        function clearLines() {
+            let linesCleared = 0;
+
+            for (let row = ROWS - 1; row >= 0; row--) {
+                let full = true;
+                for (let col = 0; col < COLS; col++) {
+                    if (!board[row][col]) {
+                        full = false;
+                        break;
+                    }
+                }
+
+                if (full) {
+                    // 移除该行
+                    board.splice(row, 1);
+                    // 在顶部添加新行
+                    board.unshift(new Array(COLS).fill(EMPTY));
+                    linesCleared++;
+                    row++; // 重新检查当前行
+                }
+            }
+
+            if (linesCleared > 0) {
+                // 更新得分
+                const points = [0, 100, 300, 500, 800]; // 1-4行得分
+                score += points[linesCleared] || points[4] * linesCleared;
+                lines += linesCleared;
+
+                // 升级检查
+                const newLevel = Math.floor(lines / 10) + 1;
+                if (newLevel > level) {
+                    level = newLevel;
+                    dropInterval = Math.max(100, 1000 - (level - 1) * 100);
+                    playSound('levelup');
+                } else {
+                    playSound('clear');
+                }
+
+                updateUI();
+            }
+        }
+
+        /**
+         * 生成新方块
+         */
+        function spawnPiece() {
+            currentPiece = nextPiece || randomPiece();
+            nextPiece = randomPiece();
+
+            // 检查生成位置是否有碰撞
+            if (checkCollision(currentPiece.x, currentPiece.y, currentPiece.shape)) {
+                gameOver();
+                return;
+            }
+
+            drawNextPiece();
+        }
+
+        /**
+         * 方块下落
+         */
+        function moveDown() {
+            if (!currentPiece || gameState !== 'playing') return;
+
+            if (!checkCollision(currentPiece.x, currentPiece.y + 1, currentPiece.shape)) {
+                currentPiece.y++;
+            } else {
+                lockPiece();
+            }
+
+            render();
+        }
+
+        /**
+         * 方块左移
+         */
+        function moveLeft() {
+            if (!currentPiece || gameState !== 'playing') return;
+
+            if (!checkCollision(currentPiece.x - 1, currentPiece.y, currentPiece.shape)) {
+                currentPiece.x--;
+                render();
+            }
+        }
+
+        /**
+         * 方块右移
+         */
+        function moveRight() {
+            if (!currentPiece || gameState !== 'playing') return;
+
+            if (!checkCollision(currentPiece.x + 1, currentPiece.y, currentPiece.shape)) {
+                currentPiece.x++;
+                render();
+            }
+        }
+
+        /**
+         * 快速下落
+         */
+        function hardDrop() {
+            if (!currentPiece || gameState !== 'playing') return;
+
+            while (!checkCollision(currentPiece.x, currentPiece.y + 1, currentPiece.shape)) {
+                currentPiece.y++;
+            }
+
+            lockPiece();
+            render();
+        }
+
+        /**
+         * 更新UI显示
+         */
+        function updateUI() {
+            scoreEl.textContent = score;
+            levelEl.textContent = level;
+            linesEl.textContent = lines;
+        }
+
+        /**
+         * 游戏循环
+         */
+        function gameLoop(timestamp) {
+            if (gameState !== 'playing') return;
+
+            if (!lastDropTime) lastDropTime = timestamp;
+
+            const elapsed = timestamp - lastDropTime;
+
+            if (elapsed >= dropInterval) {
+                moveDown();
+                lastDropTime = timestamp;
+            }
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        /**
+         * 开始游戏
+         */
+        function startGame() {
+            initAudio();
+            initBoard();
+
+            score = 0;
+            level = 1;
+            lines = 0;
+            dropInterval = 1000;
+
+            nextPiece = randomPiece();
+            spawnPiece();
+
+            gameState = 'playing';
+            lastDropTime = 0;
+
+            updateUI();
+            render();
+
+            gameOverOverlay.classList.remove('active');
+
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            animationId = requestAnimationFrame(gameLoop);
+
+            startBtn.textContent = '游戏中';
+            startBtn.disabled = true;
+        }
+
+        /**
+         * 暂停游戏
+         */
+        function pauseGame() {
+            if (gameState === 'playing') {
+                gameState = 'paused';
+                cancelAnimationFrame(animationId);
+                pauseBtn.textContent = '继续';
+            } else if (gameState === 'paused') {
+                gameState = 'playing';
+                lastDropTime = performance.now();
+                animationId = requestAnimationFrame(gameLoop);
+                pauseBtn.textContent = '暂停';
+            }
+        }
+
+        /**
+         * 重新开始
+         */
+        function restartGame() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+
+            gameState = 'idle';
+            startBtn.textContent = '开始游戏';
+            startBtn.disabled = false;
+            pauseBtn.textContent = '暂停';
+            gameOverOverlay.classList.remove('active');
+
+            initBoard();
+            score = 0;
+            level = 1;
+            lines = 0;
+            dropInterval = 1000;
+
+            updateUI();
+            render();
+        }
+
+        /**
+         * 游戏结束
+         */
+        function gameOver() {
+            gameState = 'gameover';
+            cancelAnimationFrame(animationId);
+
+            playSound('gameover');
+
+            finalScore.textContent = score;
+            overlayTitle.textContent = lines >= 200 ? '恭喜通关' : '再接再厉';
+            overlayTitle.style.color = lines >= 200 ? '#E1C315' : '#C23531';
+
+            gameOverOverlay.classList.add('active');
+
+            startBtn.textContent = '开始游戏';
+            startBtn.disabled = false;
+        }
+
+        // ==================== 事件监听 ====================
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            if (gameState === 'gameover' || gameState === 'idle') return;
+
+            // 阻止默认行为
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                e.preventDefault();
+            }
+
+            switch(e.key) {
+                case 'ArrowLeft':
+                    moveLeft();
+                    break;
+                case 'ArrowRight':
+                    moveRight();
+                    break;
+                case 'ArrowDown':
+                    moveDown();
+                    break;
+                case 'ArrowUp':
+                    rotatePiece();
+                    render();
+                    break;
+                case ' ':
+                    hardDrop();
+                    render();
+                    break;
+                case 'p':
+                case 'P':
+                    pauseGame();
+                    break;
+            }
+        });
+
+        // 按钮事件
+        startBtn.addEventListener('click', startGame);
+        pauseBtn.addEventListener('click', pauseGame);
+        restartBtn.addEventListener('click', restartGame);
+        overlayRestartBtn.addEventListener('click', () => {
+            gameOverOverlay.classList.remove('active');
+            startGame();
+        });
+
+        // 移动端触摸控制
+        function addTouchEvent(element, action) {
+            const handleTouch = (e) => {
+                e.preventDefault();
+                if (gameState === 'playing') {
+                    action();
+                }
+            };
+
+            element.addEventListener('touchstart', handleTouch, { passive: false });
+            element.addEventListener('mousedown', handleTouch);
+        }
+
+        addTouchEvent(btnLeft, moveLeft);
+        addTouchEvent(btnRight, moveRight);
+        addTouchEvent(btnRotate, () => { rotatePiece(); render(); });
+        addTouchEvent(btnDown, moveDown);
+        addTouchEvent(btnDrop, () => { hardDrop(); render(); });
+
+        // 窗口大小改变时暂停
+        window.addEventListener('resize', () => {
+            if (gameState === 'playing') {
+                pauseGame();
+            }
+        });
+
+        // ==================== 初始化 ====================
+
+        // 初始化显示
+        initBoard();
+        render();
+
+        console.log('水墨方块 - 俄罗斯方块游戏已加载');
+        console.log('操作说明:');
+        console.log('← → : 左右移动');
+        console.log('↑ : 旋转');
+        console.log('↓ : 加速下落');
+        console.log('空格 : 快速下落');
+        console.log('P : 暂停/继续');
+    </script>
+
+<style>
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.inland-security-footer {
+  position: fixed;
+  z-index: 10;
+  bottom: 0;
+  right: 0;
+  width: fit-content;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tooltip-container {
+  position: relative;
+}
+
+.trigger-content {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background-color: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.minimax-link {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 300;
+  color: #adadad;
+  text-decoration: none;
+}
+
+.minimax-link:visited {
+  color: #adadad;
+}
+
+.minimax-link:hover {
+  color: #666666;
+}
+
+.tooltip-content {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  padding-bottom: 16px; /* 8px 内容间距 + 8px 用于鼠标移动的透明区域 */
+  font-size: 12px;
+  line-height: 17px;
+  background-color: #fafafa;
+  border-radius: 12px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  color: #171717;
+}
+
+/* 创建透明的连接区域，让鼠标可以平滑移动到 tooltip */
+.tooltip-content::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 16px;
+}
+
+.tooltip-container:hover .tooltip-content {
+  display: flex;
+}
+
+.info-section {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.beian-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #171717;
+}
+
+.beian-icon {
+  width: 14px;
+  height: 14px;
+  margin-right: 2px;
+}
+
+.underline-text {
+  color: #171717;
+  text-decoration: underline;
+}
+
+.underline-text:hover {
+  color: #000000;
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+  .trigger-content {
+    background-color: transparent;
+  }
+
+  .minimax-link,
+  .minimax-link:visited {
+    color: #666666;
+  }
+
+  .minimax-link:hover {
+    color: #adadad;
+  }
+
+  .tooltip-content {
+    background-color: #262626;
+    color: #ededed;
+  }
+
+  .beian-link,
+  .underline-text {
+    color: #ededed;
+  }
+
+  .underline-text:hover {
+    color: #ffffff;
+  }
+}
+
+</style>
+<div class="inland-security-footer">
+  <div class="tooltip-container">
+    <div class="trigger-content">
+      <a href="https://www.minimaxi.com/" target="_blank" rel="noreferrer" class="minimax-link">
+        <span>© 2026 MiniMax</span>
+      </a>
+    </div>
+    <div class="tooltip-content">
+      <section class="info-section">
+        <span>上海稀宇科技有限公司</span>
+      </section>
+
+      <section class="info-section">
+        <a class="beian-link" href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31010402010179" target="_blank" rel="noreferrer">
+          <img alt="hailuo-beian-icon" src="https://cdn.hailuoai.com/hailuo-video-web/public_assets/223037d3-79fd-4db0-a456-749f38a6a14b.png" class="beian-icon">
+          <span class="underline-text">沪公网安备31010402010179号</span>
+        </a>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer" class="underline-text">
+          沪ICP备2023003282号-38
+        </a>
+      </section>
+
+      <section class="info-section">
+        <span>模型名称：MiniMax</span>
+        <span>备案号：Shanghai-MiniMax-202505230046</span>
+      </section>
+
+      <section class="info-section">
+        <a href="https://agent.minimaxi.com/doc/zh/terms-of-service.html" target="_blank" rel="noreferrer" class="underline-text">
+          用户协议
+        </a>
+        <a href="https://agent.minimaxi.com/doc/zh/privacy-policy.html" target="_blank" rel="noreferrer" class="underline-text">
+          隐私政策
+        </a>
+      </section>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

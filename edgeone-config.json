@@ -1,0 +1,49 @@
+{
+  "version": "1.0",
+  "name": "kids-logic-games",
+  "description": "儿童逻辑思维游戏 - 适合3岁儿童的网页游戏集",
+  "deployment": {
+    "type": "static",
+    "provider": "tencent-edgeone",
+    "settings": {
+      "staticWebsite": {
+        "indexPage": "index.html",
+        "errorPage": "index.html",
+        "compress": true,
+        "cache": {
+          "enabled": true,
+          "rules": [
+            {
+              "fileTypes": [".css", ".js"],
+              "maxAge": 86400
+            },
+            {
+              "fileTypes": [".html"],
+              "maxAge": 3600
+            }
+          ]
+        }
+      }
+    }
+  },
+  "optimizations": {
+    "mobile": {
+      "enabled": true,
+      "viewport": "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no",
+      "touchOptimized": true
+    },
+    "performance": {
+      "minifyCSS": true,
+      "minifyJS": true,
+      "imageOptimization": true
+    }
+  },
+  "security": {
+    "https": true,
+    "headers": {
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
+      "X-XSS-Protection": "1; mode=block"
+    }
+  }
+}

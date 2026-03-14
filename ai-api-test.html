@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BigModel API 集成测试</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f7;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      color: #1d1d1f;
+      font-size: 28px;
+      margin-bottom: 24px;
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 8px;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+
+    .status.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .status.error {
+      background: #ffebee;
+      color: #c62828;
+    }
+
+    .status.info {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    button {
+      background: #007AFF;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+      margin: 8px 0;
+      font-weight: 500;
+    }
+
+    button:hover {
+      background: #0051D5;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .test-result {
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(0,0,0,0.1);
+      border-top-color: #007AFF;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .emoji-list {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 12px 0;
+    }
+
+    .emoji-card {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 BigModel API 测试</h1>
+
+    <div id="status" class="status info">
+      <span class="spinner"></span>正在初始化...
+    </div>
+
+    <button id="testMemoryBtn" onclick="testMemoryGame()" disabled>
+      测试记忆游戏生成
+    </button>
+
+    <button id="testShapeBtn" onclick="testShapeGame()" disabled>
+      测试形状游戏生成
+    </button>
+
+    <button id="testSoundBtn" onclick="testSoundGame()" disabled>
+      测试声音游戏生成
+    </button>
+
+    <button onclick="clearResults()">清除结果</button>
+
+    <div id="results"></div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/bigmodel-client.js"></script>
+  <script src="js/ai-game-generator.js"></script>
+
+  <script>
+    const statusDiv = document.getElementById('status')
+    const resultsDiv = document.getElementById('results')
+    const buttons = [
+      document.getElementById('testMemoryBtn'),
+      document.getElementById('testShapeBtn'),
+      document.getElementById('testSoundBtn')
+    ]
+
+    // 初始化
+    function init() {
+      try {
+        // 检查 API Key
+        if (hasApiKey()) {
+          showStatus('success', '✅ API Key 已配置')
+          enableButtons()
+        } else {
+          showStatus('info', '⚠️ 未配置 API Key，将使用 Mock 模式')
+          aiGenerator.setApiMode('mock')
+          enableButtons()
+        }
+
+        // 检查 BigModel 客户端
+        if (typeof bigModelClient !== 'undefined') {
+          console.log('✅ BigModel 客户端已加载')
+        } else {
+          showStatus('error', '❌ BigModel 客户端未加载')
+        }
+
+      } catch (error) {
+        showStatus('error', `❌ 初始化失败: ${error.message}`)
+        console.error('初始化错误:', error)
+      }
+    }
+
+    // 显示状态
+    function showStatus(type, message) {
+      statusDiv.className = `status ${type}`
+      statusDiv.innerHTML = message
+    }
+
+    // 启用按钮
+    function enableButtons() {
+      buttons.forEach(btn => btn.disabled = false)
+    }
+
+    // 禁用按钮
+    function disableButtons() {
+      buttons.forEach(btn => btn.disabled = true)
+    }
+
+    // 清除结果
+    function clearResults() {
+      resultsDiv.innerHTML = ''
+    }
+
+    // 显示结果
+    function showResult(title, data, error = null) {
+      const timestamp = new Date().toLocaleTimeString()
+      let html = `<div class="test-result">`
+
+      if (error) {
+        html += `<strong>[${timestamp}] ${title} - 失败</strong>\n\n`
+        html += `错误: ${error.message}\n`
+      } else {
+        html += `<strong>[${timestamp}] ${title} - 成功</strong>\n\n`
+        html += `来源: ${data.fallback ? 'Mock (降级)' : 'API 生成'}\n`
+        html += `缓存: ${data.fromCache ? '是' : '否'}\n\n`
+        html += `数据:\n${JSON.stringify(data, null, 2)}`
+
+        // 如果是记忆游戏，显示卡片预览
+        if (data.emojis) {
+          html += `\n\n🎴 卡片预览:\n`
+          html += `<div class="emoji-list">`
+          data.emojis.forEach(emoji => {
+            html += `<div class="emoji-card">${emoji}</div>`
+          })
+          html += `</div>`
+        }
+      }
+
+      html += `</div>`
+      resultsDiv.innerHTML = html + resultsDiv.innerHTML
+    }
+
+    // 测试记忆游戏
+    async function testMemoryGame() {
+      showStatus('info', '<span class="spinner"></span>正在测试记忆游戏...')
+      disableButtons()
+
+      try {
+        const data = await aiGenerator.generateMemoryGame('水果', '4-5岁', '中等')
+        showResult('记忆游戏', data)
+        showStatus('success', '✅ 记忆游戏测试成功')
+      } catch (error) {
+        showResult('记忆游戏', null, error)
+        showStatus('error', `❌ 记忆游戏测试失败: ${error.message}`)
+      }
+
+      enableButtons()
+    }
+
+    // 测试形状游戏
+    async function testShapeGame() {
+      showStatus('info', '<span class="spinner"></span>正在测试形状游戏...')
+      disableButtons()
+
+      try {
+        const data = await aiGenerator.generateShapeGame('4-5岁', '中等')
+        showResult('形状游戏', data)
+        showStatus('success', '✅ 形状游戏测试成功')
+      } catch (error) {
+        showResult('形状游戏', null, error)
+        showStatus('error', `❌ 形状游戏测试失败: ${error.message}`)
+      }
+
+      enableButtons()
+    }
+
+    // 测试声音游戏
+    async function testSoundGame() {
+      showStatus('info', '<span class="spinner"></span>正在测试声音游戏...')
+      disableButtons()
+
+      try {
+        const data = await aiGenerator.generateSoundGame('农场', '4-5岁', '中等')
+        showResult('声音游戏', data)
+        showStatus('success', '✅ 声音游戏测试成功')
+      } catch (error) {
+        showResult('声音游戏', null, error)
+        showStatus('error', `❌ 声音游戏测试失败: ${error.message}`)
+      }
+
+      enableButtons()
+    }
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', init)
+  </script>
+</body>
+</html>

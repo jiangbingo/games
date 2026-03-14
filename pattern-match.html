@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>模式连连看 - 儿童逻辑思维游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        #app {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            min-height: calc(100vh - 40px);
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #f0f0f0;
+        }
+
+        .game-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: clamp(20px, 5vw, 28px);
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .game-icon {
+            font-size: clamp(30px, 7vw, 40px);
+        }
+
+        .level-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: clamp(14px, 3vw, 16px);
+            font-weight: bold;
+        }
+
+        .game-area {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .instruction {
+            font-size: clamp(18px, 4vw, 22px);
+            color: #333;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .pattern-sequence {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .pattern-item {
+            width: clamp(60px, 15vw, 80px);
+            height: clamp(60px, 15vw, 80px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(30px, 7vw, 50px);
+            background: #f8f9fa;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .pattern-item.blank {
+            background: #fff3cd;
+            border: 3px dashed #ffc107;
+            color: #ffc107;
+        }
+
+        .pattern-item.filled {
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .options-area {
+            margin-top: 40px;
+        }
+
+        .options-title {
+            font-size: clamp(16px, 4vw, 18px);
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .option-btn {
+            width: clamp(80px, 18vw, 120px);
+            height: clamp(80px, 18vw, 120px);
+            font-size: clamp(35px, 8vw, 55px);
+            background: white;
+            border: 3px solid #e0e0e0;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .option-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border-color: #667eea;
+        }
+
+        .option-btn:active {
+            transform: scale(0.95);
+        }
+
+        .option-btn.correct {
+            background: #28a745;
+            border-color: #28a745;
+            animation: bounce 0.5s ease;
+        }
+
+        .option-btn.wrong {
+            background: #dc3545;
+            border-color: #dc3545;
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .stats-area {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 3px solid #f0f0f0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: clamp(14px, 3vw, 16px);
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: clamp(24px, 5vw, 32px);
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-value.correct {
+            color: #28a745;
+        }
+
+        .stat-value.wrong {
+            color: #dc3545;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .action-btn {
+            padding: 12px 30px;
+            font-size: clamp(14px, 3vw, 16px);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            font-weight: bold;
+        }
+
+        .btn-replay {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-replay:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-home {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            animation: confettiFall 3s ease-out forwards;
+        }
+
+        @keyframes confettiFall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 15px;
+                border-radius: 15px;
+            }
+
+            .pattern-sequence {
+                gap: 10px;
+            }
+
+            .options-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+
+            .stats-area {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="game-container">
+            <div class="game-header">
+                <div class="game-title">
+                    <span class="game-icon">🔗</span>
+                    <span>模式连连看</span>
+                </div>
+                <div class="level-badge" id="level-badge">Level 1/10</div>
+            </div>
+
+            <div class="game-area">
+                <div class="instruction" id="instruction">找出问号是什么？</div>
+
+                <div class="pattern-sequence" id="pattern-sequence">
+                    <!-- Pattern items will be generated here -->
+                </div>
+
+                <div class="options-area">
+                    <div class="options-title">选择正确的答案</div>
+                    <div class="options-grid" id="options-grid">
+                        <!-- Options will be generated here -->
+                    </div>
+                </div>
+
+                <div class="stats-area">
+                    <div class="stat-item">
+                        <div class="stat-label">✅ 正确</div>
+                        <div class="stat-value correct" id="correct-count">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">❌ 错误</div>
+                        <div class="stat-value wrong" id="wrong-count">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">🏆 得分</div>
+                        <div class="stat-value" id="score">0</div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn btn-replay" id="replay-btn">🔄 重新开始</button>
+                    <button class="action-btn btn-home" id="home-btn">🏠 主菜单</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="celebration" id="celebration"></div>
+
+    <script>
+        /**
+         * 模式连连看游戏
+         * 训练模式识别和预测思维
+         */
+        class PatternMatchGame {
+            constructor() {
+                this.currentLevel = 1;
+                this.maxLevels = 10;
+                this.score = 0;
+                this.correctCount = 0;
+                this.wrongCount = 0;
+                this.currentSequence = [];
+                this.currentPattern = '';
+                this.currentBlanks = [];
+                this.currentBlanksIndex = 0;
+                this.canClick = true;
+
+                // 主题库
+                this.themes = {
+                    colors: ['🔴', '🔵', '🟢', '🟡', '🟣', '🟠'],
+                    fruits: ['🍎', '🍊', '🍋', '🍇', '🍓', '🍑', '🍌'],
+                    animals: ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼'],
+                    shapes: ['🔺', '🟡', '🔵', '⭐', '💜', '🔷'],
+                    vehicles: ['🚗', '🚌', '🚓', '🚑', '🚒', '🚕']
+                };
+
+                // 关卡配置
+                this.levelConfig = [
+                    // Level 1-3: ABAB模式（2元素重复）
+                    {
+                        level: 1,
+                        pattern: 'ABAB',
+                        sequenceLength: 4,
+                        blanks: 1,
+                        options: 2,
+                        difficulty: 1
+                    },
+                    {
+                        level: 2,
+                        pattern: 'ABAB',
+                        sequenceLength: 5,
+                        blanks: 1,
+                        options: 2,
+                        difficulty: 1
+                    },
+                    {
+                        level: 3,
+                        pattern: 'ABAB',
+                        sequenceLength: 6,
+                        blanks: 2,
+                        options: 3,
+                        difficulty: 1
+                    },
+
+                    // Level 4-7: ABCABC模式（3元素重复）
+                    {
+                        level: 4,
+                        pattern: 'ABCABC',
+                        sequenceLength: 6,
+                        blanks: 2,
+                        options: 3,
+                        difficulty: 2
+                    },
+                    {
+                        level: 5,
+                        pattern: 'ABCABC',
+                        sequenceLength: 7,
+                        blanks: 2,
+                        options: 3,
+                        difficulty: 2
+                    },
+                    {
+                        level: 6,
+                        pattern: 'ABCABC',
+                        sequenceLength: 8,
+                        blanks: 3,
+                        options: 4,
+                        difficulty: 2
+                    },
+
+                    // Level 8-10: 复杂模式（不规则重复）
+                    {
+                        level: 8,
+                        pattern: 'AAB',
+                        sequenceLength: 6,
+                        blanks: 2,
+                        options: 4,
+                        difficulty: 3
+                    },
+                    {
+                        level: 9,
+                        pattern: 'ABBA',
+                        sequenceLength: 8,
+                        blanks: 3,
+                        options: 4,
+                        difficulty: 3
+                    },
+                    {
+                        level: 10,
+                        pattern: 'ABCBA',
+                        sequenceLength: 9,
+                        blanks: 3,
+                        options: 4,
+                        difficulty: 3
+                    }
+                ];
+
+                this.audioContext = null;
+                this.init();
+            }
+
+            /**
+             * 初始化游戏
+             */
+            init() {
+                this.bindEvents();
+                this.startLevel(1);
+            }
+
+            /**
+             * 绑定事件
+             */
+            bindEvents() {
+                document.getElementById('replay-btn').addEventListener('click', () => {
+                    this.startLevel(1);
+                });
+
+                document.getElementById('home-btn').addEventListener('click', () => {
+                    window.location.href = 'index.html';
+                });
+            }
+
+            /**
+             * 开始关卡
+             */
+            startLevel(level) {
+                this.currentLevel = level;
+                this.currentBlanksIndex = 0;
+                this.canClick = true;
+
+                // 更新UI
+                document.getElementById('level-badge').textContent = `Level ${level}/${this.maxLevels}`;
+
+                // 生成关卡
+                this.generateLevel(level);
+
+                // 渲染
+                this.renderSequence();
+                this.renderOptions();
+            }
+
+            /**
+             * 生成关卡
+             */
+            generateLevel(level) {
+                const config = this.levelConfig[level - 1];
+                if (!config) return;
+
+                // 随机选择主题
+                const themeKeys = Object.keys(this.themes);
+                const themeKey = themeKeys[Math.floor(Math.random() * themeKeys.length)];
+                const elements = this.themes[themeKey];
+
+                // 根据模式生成序列
+                this.currentPattern = config.pattern;
+                this.currentSequence = this.generateSequenceFromPattern(config.pattern, elements);
+
+                // 随机选择问号位置
+                const availablePositions = this.currentSequence.map((_, index) => index);
+                this.currentBlanks = [];
+                for (let i = 0; i < config.blanks; i++) {
+                    const randomIndex = Math.floor(Math.random() * availablePositions.length);
+                    const position = availablePositions.splice(randomIndex, 1)[0];
+                    this.currentBlanks.push(position);
+                }
+
+                // 排序问号位置
+                this.currentBlanks.sort((a, b) => a - b);
+            }
+
+            /**
+             * 根据模式生成序列
+             */
+            generateSequenceFromPattern(pattern, elements) {
+                const uniqueElements = pattern.split('').filter((item, index, self) =>
+                    self.indexOf(item) === index
+                );
+                const neededElements = uniqueElements.length;
+
+                // 随机选择需要的元素
+                const selectedElements = [];
+                const shuffledElements = [...elements].sort(() => Math.random() - 0.5);
+                for (let i = 0; i < neededElements && i < shuffledElements.length; i++) {
+                    selectedElements.push(shuffledElements[i]);
+                }
+
+                // 确保有足够的元素
+                if (selectedElements.length < neededElements) {
+                    for (let i = 0; i < neededElements; i++) {
+                        selectedElements.push(elements[i % elements.length]);
+                    }
+                }
+
+                // 创建元素映射
+                const elementMap = {};
+                uniqueElements.forEach((patternChar, index) => {
+                    elementMap[patternChar] = selectedElements[index];
+                });
+
+                // 生成序列
+                const sequence = [];
+                for (let i = 0; i < pattern.length; i++) {
+                    const patternChar = pattern[i];
+                    sequence.push(elementMap[patternChar]);
+                }
+
+                return sequence;
+            }
+
+            /**
+             * 渲染序列
+             */
+            renderSequence() {
+                const container = document.getElementById('pattern-sequence');
+                container.innerHTML = '';
+
+                this.currentSequence.forEach((element, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'pattern-item';
+                    item.textContent = element;
+
+                    if (this.currentBlanks.includes(index)) {
+                        item.classList.add('blank');
+                        item.dataset.blankIndex = this.currentBlanks.indexOf(index);
+                        item.textContent = '❓';
+                    }
+
+                    container.appendChild(item);
+                });
+            }
+
+            /**
+             * 渲染选项
+             */
+            renderOptions() {
+                const config = this.levelConfig[this.currentLevel - 1];
+                const container = document.getElementById('options-grid');
+                container.innerHTML = '';
+
+                // 创建选项（1个正确+干扰项）
+                const options = [];
+
+                // 添加正确答案
+                this.currentBlanks.forEach((position) => {
+                    options.push({
+                        element: this.currentSequence[position],
+                        isCorrect: true,
+                        blankPosition: position
+                    });
+                });
+
+                // 添加干扰项
+                const elements = [...new Set(this.currentSequence)];
+                const correctElements = this.currentBlanks.map(pos => this.currentSequence[pos]);
+                const wrongElements = elements.filter(el => !correctElements.includes(el));
+
+                while (options.length < config.options && wrongElements.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * wrongElements.length);
+                    options.push({
+                        element: wrongElements[randomIndex],
+                        isCorrect: false,
+                        blankPosition: -1
+                    });
+                    wrongElements.splice(randomIndex, 1);
+                }
+
+                // 打乱选项
+                options.sort(() => Math.random() - 0.5);
+
+                // 渲染选项按钮
+                options.forEach((option, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.textContent = option.element;
+                    btn.dataset.element = option.element;
+                    btn.dataset.isCorrect = option.isCorrect;
+
+                    // 添加触摸反馈
+                    this.addTouchFeedback(btn);
+
+                    // 添加点击事件
+                    btn.addEventListener('click', () => this.selectOption(option, btn));
+                    btn.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        this.selectOption(option, btn);
+                    }, { passive: false });
+
+                    container.appendChild(btn);
+                });
+            }
+
+            /**
+             * 选择选项
+             */
+            selectOption(option, btnElement) {
+                if (!this.canClick) return;
+                this.canClick = false;
+
+                const isCorrect = option.isCorrect;
+
+                if (isCorrect) {
+                    btnElement.classList.add('correct');
+                    this.playSuccessSound();
+                    this.fillBlank(option.element);
+                } else {
+                    btnElement.classList.add('wrong');
+                    this.playErrorSound();
+                    this.wrongCount++;
+                    this.updateStats();
+                }
+
+                // 1秒后检查是否完成
+                setTimeout(() => {
+                    this.checkLevelComplete();
+                }, 1000);
+            }
+
+            /**
+             * 填充问号
+             */
+            fillBlank(element) {
+                const blankIndex = this.currentBlanksIndex;
+                if (blankIndex >= this.currentBlanks.length) {
+                    this.canClick = true;
+                    return;
+                }
+
+                const position = this.currentBlanks[blankIndex];
+                const blankElement = document.querySelector(`.pattern-item[data-blank-index="${blankIndex}"]`);
+
+                if (blankElement) {
+                    blankElement.textContent = element;
+                    blankElement.classList.remove('blank');
+                    blankElement.classList.add('filled');
+
+                    this.correctCount++;
+                    this.updateStats();
+                    this.currentBlanksIndex++;
+
+                    // 如果还有问号，启用点击
+                    if (this.currentBlanksIndex < this.currentBlanks.length) {
+                        this.canClick = true;
+                    }
+                }
+            }
+
+            /**
+             * 检查关卡是否完成
+             */
+            checkLevelComplete() {
+                if (this.currentBlanksIndex >= this.currentBlanks.length) {
+                    // 所有问号都已填完，进入下一关
+                    this.score += 10 * this.currentLevel;
+                    this.updateStats();
+
+                    // 显示庆祝
+                    this.showCelebration();
+
+                    // 2秒后进入下一关
+                    setTimeout(() => {
+                        if (this.currentLevel < this.maxLevels) {
+                            this.startLevel(this.currentLevel + 1);
+                        } else {
+                            // 完成所有关卡
+                            this.showCompleteMessage();
+                        }
+                    }, 2000);
+                } else {
+                    this.canClick = true;
+                }
+            }
+
+            /**
+             * 更新统计
+             */
+            updateStats() {
+                document.getElementById('correct-count').textContent = this.correctCount;
+                document.getElementById('wrong-count').textContent = this.wrongCount;
+                document.getElementById('score').textContent = this.score;
+            }
+
+            /**
+             * 显示庆祝动画
+             */
+            showCelebration() {
+                const celebration = document.getElementById('celebration');
+                celebration.innerHTML = '';
+
+                // 创建彩带
+                const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'];
+                for (let i = 0; i < 50; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = Math.random() * 2 + 's';
+                    celebration.appendChild(confetti);
+                }
+
+                // 3秒后清除
+                setTimeout(() => {
+                    celebration.innerHTML = '';
+                }, 3000);
+
+                this.playCelebrationSound();
+            }
+
+            /**
+             * 显示完成消息
+             */
+            showCompleteMessage() {
+                const celebration = document.getElementById('celebration');
+                celebration.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%; background: rgba(0,0,0,0.7);">
+                        <div style="background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 300px;">
+                            <div style="font-size: 60px; margin-bottom: 20px;">🎉</div>
+                            <div style="font-size: 24px; color: #667eea; font-weight: bold; margin-bottom: 10px;">太棒了！</div>
+                            <div style="font-size: 18px; color: #666; margin-bottom: 20px;">你完成了所有关卡！</div>
+                            <div style="font-size: 20px; color: #333; font-weight: bold; margin-bottom: 20px;">
+                                总分: ${this.score}
+                            </div>
+                            <button onclick="location.reload()" style="
+                                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                color: white;
+                                border: none;
+                                padding: 12px 30px;
+                                border-radius: 25px;
+                                font-size: 16px;
+                                font-weight: bold;
+                                cursor: pointer;
+                                touch-action: manipulation;
+                            ">🔄 再玩一次</button>
+                        </div>
+                    </div>
+                `;
+
+                this.playCelebrationSound();
+            }
+
+            /**
+             * 添加触摸反馈
+             */
+            addTouchFeedback(element) {
+                element.addEventListener('touchstart', () => {
+                    element.style.transform = 'scale(0.95)';
+                }, { passive: true });
+
+                element.addEventListener('touchend', () => {
+                    element.style.transform = 'scale(1)';
+                }, { passive: true });
+            }
+
+            /**
+             * 播放成功音效
+             */
+            playSuccessSound() {
+                try {
+                    const ctx = this.getAudioContext();
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+
+                    oscillator.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+                    oscillator.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.1); // E5
+                    oscillator.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.2); // G5
+
+                    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+
+                    oscillator.start(ctx.currentTime);
+                    oscillator.stop(ctx.currentTime + 0.3);
+                } catch (error) {
+                    console.error('播放音效失败:', error);
+                }
+            }
+
+            /**
+             * 播放错误音效
+             */
+            playErrorSound() {
+                try {
+                    const ctx = this.getAudioContext();
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+
+                    oscillator.frequency.setValueAtTime(392, ctx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(261.63, ctx.currentTime + 0.2);
+
+                    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+
+                    oscillator.start(ctx.currentTime);
+                    oscillator.stop(ctx.currentTime + 0.2);
+                } catch (error) {
+                    console.error('播放音效失败:', error);
+                }
+            }
+
+            /**
+             * 播放庆祝音效
+             */
+            playCelebrationSound() {
+                try {
+                    const ctx = this.getAudioContext();
+                    const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+
+                    notes.forEach((freq, index) => {
+                        const oscillator = ctx.createOscillator();
+                        const gainNode = ctx.createGain();
+
+                        oscillator.connect(gainNode);
+                        gainNode.connect(ctx.destination);
+
+                        oscillator.type = 'sine';
+                        oscillator.frequency.value = freq;
+
+                        const startTime = ctx.currentTime + index * 0.15;
+                        gainNode.gain.setValueAtTime(0.2, startTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.2);
+
+                        oscillator.start(startTime);
+                        oscillator.stop(startTime + 0.2);
+                    });
+                } catch (error) {
+                    console.error('播放音效失败:', error);
+                }
+            }
+
+            /**
+             * 获取音频上下文
+             */
+            getAudioContext() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                return this.audioContext;
+            }
+        }
+
+        // 启动游戏
+        window.addEventListener('DOMContentLoaded', () => {
+            new PatternMatchGame();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>找不同小侦探 - 儿童逻辑思维游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        #app {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            min-height: calc(100vh - 40px);
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #f0f0f0;
+        }
+
+        .game-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: clamp(20px, 5vw, 28px);
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .game-icon {
+            font-size: clamp(30px, 7vw, 40px);
+        }
+
+        .level-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: clamp(14px, 3vw, 16px);
+            font-weight: bold;
+        }
+
+        .game-area {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .scene-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .scene-panel {
+            background: #f8f9fa;
+            border: 3px solid #e0e0e0;
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+            min-height: 300px;
+        }
+
+        .scene-panel.left {
+            border-color: #667eea;
+        }
+
+        .scene-panel.right {
+            border-color: #764ba2;
+            cursor: pointer;
+        }
+
+        .scene-emoji {
+            font-size: clamp(40px, 8vw, 60px);
+            display: inline-block;
+            margin: 5px;
+            transition: transform 0.2s ease;
+        }
+
+        .scene-emoji:hover {
+            transform: scale(1.1);
+        }
+
+        .difference-marker {
+            position: absolute;
+            width: clamp(40px, 8vw, 60px);
+            height: clamp(40px, 8vw, 60px);
+            border: 4px solid #e74c3c;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: markerPop 0.3s ease;
+        }
+
+        @keyframes markerPop {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .stats-area {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 3px solid #f0f0f0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: clamp(14px, 3vw, 16px);
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: clamp(24px, 5vw, 32px);
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-value.found {
+            color: #28a745;
+        }
+
+        .stat-value.hints {
+            color: #ffc107;
+        }
+
+        .hint-btn {
+            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: clamp(14px, 3vw, 16px);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .hint-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
+        }
+
+        .hint-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .action-btn {
+            padding: 12px 30px;
+            font-size: clamp(14px, 3vw, 16px);
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            font-weight: bold;
+        }
+
+        .btn-replay {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-replay:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-home {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-home:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            animation: confettiFall 3s ease-out forwards;
+        }
+
+        @keyframes confettiFall {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        .hint-highlight {
+            position: absolute;
+            width: clamp(45px, 9vw, 65px);
+            height: clamp(45px, 9vw, 65px);
+            border: 3px dashed #ffc107;
+            border-radius: 10px;
+            pointer-events: none;
+            animation: hintPulse 1s ease-in-out 3;
+        }
+
+        @keyframes hintPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .scene-container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .scene-emoji {
+                font-size: clamp(30px, 6vw, 50px);
+            }
+
+            .stats-area {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="game-container">
+            <div class="game-header">
+                <div class="game-title">
+                    <span class="game-icon">🔍👀</span>
+                    <span>找不同小侦探</span>
+                </div>
+                <div class="level-badge" id="level-badge">Level 1/5</div>
+            </div>
+
+            <div class="game-area">
+                <div class="scene-container">
+                    <div class="scene-panel left" id="left-scene">
+                    </div>
+                    <div class="scene-panel right" id="right-scene">
+                    </div>
+                </div>
+
+                <button class="hint-btn" id="hint-btn">💡 使用提示 (<span id="hint-count">3</span>)</button>
+
+                <div class="stats-area">
+                    <div class="stat-item">
+                        <div class="stat-label">🔍 找到</div>
+                        <div class="stat-value found" id="found-count">0/3</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">🏆 得分</div>
+                        <div class="stat-value" id="score">0</div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="action-btn btn-replay" id="replay-btn">🔄 下一关</button>
+                    <button class="action-btn btn-home" id="home-btn">🏠 主菜单</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="celebration" id="celebration"></div>
+
+    <script>
+        /**
+         * 找不同小侦探游戏
+         * 训练观察力和细节识别
+         */
+        class FindDifferencesGame {
+            constructor() {
+                this.currentLevel = 1;
+                this.maxLevels = 5;
+                this.score = 0;
+                this.foundCount = 0;
+                this.totalDifferences = 3;
+                this.hintsRemaining = 3;
+                this.foundPositions = [];
+                this.differences = [];
+                this.canClick = true;
+
+                this.sceneThemes = {
+                    farm: {
+                        name: '农场',
+                        baseElements: ['🐶', '🐱', '🐰', '🌸', '🌻', '🏠', '🚜', '🌻'],
+                        differences: [
+                            { from: '🐶', to: '🐺', hint: '小动物不一样' },
+                            { from: '🌸', to: '🌼', hint: '花朵颜色不一样' }
+                        ]
+                    },
+                    ocean: {
+                        name: '海洋',
+                        baseElements: ['🐟', '🐠', '🐡', '🌊', '🏝️', '🦀', '⭐', '🌙'],
+                        differences: [
+                            { from: '🐟', to: '🐬', hint: '大鱼不一样' },
+                            { from: '⭐', to: '💫', hint: '星星不一样' }
+                        ]
+                    },
+                    park: {
+                        name: '公园',
+                        baseElements: ['🌳', '🌳', '🌻', '⚽', '🏀', '🎨', '🧒', '🏸'],
+                        differences: [
+                            { from: '⚽', to: '🏈', hint: '球不一样' },
+                            { from: '🌳', to: '🌴', hint: '树不一样' }
+                        ]
+                    },
+                    space: {
+                        name: '太空',
+                        baseElements: ['🚀', '🛸', '🌍', '🌙', '⭐', '💫', '☄️', '👨🚀'],
+                        differences: [
+                            { from: '🚀', to: '🛩', hint: '飞船不一样' },
+                            { from: '⭐', to: '✨', hint: '星星不一样' }
+                        ]
+                    },
+                    garden: {
+                        name: '花园',
+                        baseElements: ['🌸', '🌻', '🌷', '🌺', '🦋', '🐝', '🌿', '🍀'],
+                        differences: [
+                            { from: '🌸', to: '🌹', hint: '花不一样' },
+                            { from: '🐝', to: '🐞', hint: '昆虫不一样' }
+                        ]
+                    }
+                };
+
+                this.levelConfig = [
+                    { level: 1, theme: 'farm', elementCount: 8, differenceCount: 3, difficulty: 1 },
+                    { level: 2, theme: 'ocean', elementCount: 10, differenceCount: 3, difficulty: 1 },
+                    { level: 3, theme: 'park', elementCount: 12, differenceCount: 4, difficulty: 2 },
+                    { level: 4, theme: 'space', elementCount: 14, differenceCount: 4, difficulty: 2 },
+                    { level: 5, theme: 'garden', elementCount: 16, differenceCount: 5, difficulty: 3 }
+                ];
+
+                this.audioContext = null;
+
+                this.init();
+            }
+
+            /**
+             * 初始化游戏
+             */
+            init() {
+                this.bindEvents();
+                this.startLevel(1);
+            }
+
+            /**
+             * 绑定事件
+             */
+            bindEvents() {
+                document.getElementById('replay-btn').addEventListener('click', () => {
+                    if (this.currentLevel < this.maxLevels) {
+                        this.startLevel(this.currentLevel + 1);
+                    } else {
+                        this.startLevel(1);
+                    }
+                });
+
+                document.getElementById('home-btn').addEventListener('click', () => {
+                    window.location.href = 'index.html';
+                });
+
+                document.getElementById('hint-btn').addEventListener('click', () => {
+                    this.useHint();
+                });
+
+                const rightScene = document.getElementById('right-scene');
+                rightScene.addEventListener('click', (e) => {
+                    this.handleClick(e);
+                });
+            }
+
+            /**
+             * 开始关卡
+             */
+            startLevel(level) {
+                this.currentLevel = level;
+                this.foundCount = 0;
+                this.hintsRemaining = 3;
+                this.foundPositions = [];
+                this.canClick = true;
+
+                document.getElementById('level-badge').textContent = `Level ${level}/${this.maxLevels}`;
+                document.getElementById('hint-count').textContent = this.hintsRemaining;
+                document.getElementById('hint-btn').disabled = false;
+
+                this.generateLevel(level);
+                this.renderScenes();
+                this.updateStats();
+            }
+
+            /**
+             * 生成关卡
+             */
+            generateLevel(level) {
+                const config = this.levelConfig[level - 1];
+                if (!config) return;
+
+                const theme = this.sceneThemes[config.theme];
+                this.totalDifferences = config.differenceCount;
+
+                // 生成基础场景
+                let baseElements = [...theme.baseElements]
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, config.elementCount);
+
+                // 添加差异
+                const differences = [...theme.differences]
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, config.differenceCount);
+
+                const availablePositions = [];
+                for (let i = 0; i < config.elementCount; i++) {
+                    availablePositions.push(i);
+                }
+
+                this.differences = [];
+                differences.forEach((diff) => {
+                    const randomIndex = Math.floor(Math.random() * availablePositions.length);
+                    const position = availablePositions.splice(randomIndex, 1)[0];
+                    this.differences.push({
+                        ...diff,
+                        position: position,
+                        originalElement: baseElements[position]
+                    });
+                });
+
+                // 创建左右场景
+                this.leftScene = [...baseElements];
+                this.rightScene = [...baseElements];
+
+                // 在右图中应用差异
+                this.differences.forEach(diff => {
+                    this.rightScene[diff.position] = diff.to;
+                });
+            }
+
+            /**
+             * 渲染场景
+             */
+            renderScenes() {
+                const leftContainer = document.getElementById('left-scene');
+                const rightContainer = document.getElementById('right-scene');
+
+                leftContainer.innerHTML = this.leftScene.map((emoji, index) => 
+                    `<span class="scene-emoji" data-index="${index}">${emoji}</span>`
+                ).join('');
+
+                rightContainer.innerHTML = this.rightScene.map((emoji, index) => 
+                    `<span class="scene-emoji" data-index="${index}">${emoji}</span>`
+                ).join('');
+            }
+
+            /**
+             * 处理点击
+             */
+            handleClick(e) {
+                if (!this.canClick) return;
+
+                const target = e.target;
+                if (!target.classList.contains('scene-emoji')) return;
+
+                const index = parseInt(target.dataset.index);
+
+                // 检查是否是差异
+                const difference = this.differences.find(diff => diff.position === index);
+
+                if (difference && !this.foundPositions.includes(index)) {
+                    // 找到差异
+                    this.foundPositions.push(index);
+                    this.foundCount++;
+
+                    this.markDifference(target);
+                    this.playSuccessSound();
+
+                    this.score += 10;
+                    this.updateStats();
+
+                    // 检查是否完成
+                    if (this.foundCount >= this.totalDifferences) {
+                        this.canClick = false;
+                        this.showCelebration();
+                    }
+                } else {
+                    // 点击错误位置
+                    this.playErrorSound();
+                    this.shakeElement(target);
+                }
+            }
+
+            /**
+             * 标记差异
+             */
+            markDifference(element) {
+                const marker = document.createElement('div');
+                marker.className = 'difference-marker';
+
+                const rect = element.getBoundingClientRect();
+                const containerRect = document.getElementById('right-scene').getBoundingClientRect();
+
+                const left = rect.left - containerRect.left;
+                const top = rect.top - containerRect.top;
+
+                marker.style.left = left + 'px';
+                marker.style.top = top + 'px';
+
+                document.getElementById('right-scene').appendChild(marker);
+            }
+
+            /**
+             * 使用提示
+             */
+            useHint() {
+                if (this.hintsRemaining <= 0) return;
+
+                const unfoundDifferences = this.differences.filter(
+                    diff => !this.foundPositions.includes(diff.position)
+                );
+
+                if (unfoundDifferences.length === 0) return;
+
+                const hint = unfoundDifferences[0];
+                const targetElement = document.querySelector(
+                    `#right-scene .scene-emoji[data-index="${hint.position}"]`
+                );
+
+                if (targetElement) {
+                    const highlight = document.createElement('div');
+                    highlight.className = 'hint-highlight';
+
+                    const rect = targetElement.getBoundingClientRect();
+                    const containerRect = document.getElementById('right-scene').getBoundingClientRect();
+
+                    highlight.style.left = (rect.left - containerRect.left - 5) + 'px';
+                    highlight.style.top = (rect.top - containerRect.top - 5) + 'px';
+
+                    document.getElementById('right-scene').appendChild(highlight);
+
+                    // 3秒后移除
+                    setTimeout(() => {
+                        highlight.remove();
+                    }, 3000);
+
+                    this.hintsRemaining--;
+                    document.getElementById('hint-count').textContent = this.hintsRemaining;
+
+                    if (this.hintsRemaining <= 0) {
+                        document.getElementById('hint-btn').disabled = true;
+                    }
+
+                    this.playHintSound();
+                }
+            }
+
+            /**
+             * 晃动元素
+             */
+            shakeElement(element) {
+                element.style.animation = 'none';
+                element.offsetHeight;
+                element.style.animation = 'shake 0.5s ease';
+            }
+
+            /**
+             * 更新统计
+             */
+            updateStats() {
+                document.getElementById('found-count').textContent = 
+                    `${this.foundCount}/${this.totalDifferences}`;
+                document.getElementById('score').textContent = this.score;
+            }
+
+            /**
+             * 显示庆祝动画
+             */
+            showCelebration() {
+                const celebration = document.getElementById('celebration');
+                celebration.innerHTML = '';
+
+                const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'];
+                for (let i = 0; i < 50; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = Math.random() * 2 + 's';
+                    celebration.appendChild(confetti);
+                }
+
+                setTimeout(() => {
+                    celebration.innerHTML = '';
+                }, 3000);
+
+                this.playCelebrationSound();
+
+                // 更新按钮文本
+                setTimeout(() => {
+                    const replayBtn = document.getElementById('replay-btn');
+                    if (this.currentLevel < this.maxLevels) {
+                        replayBtn.textContent = '🔄 下一关';
+                    } else {
+                        replayBtn.textContent = '🔄 重新开始';
+                    }
+                }, 2000);
+            }
+
+            /**
+             * 播放成功音效
+             */
+            playSuccessSound() {
+                try {
+                    const ctx = this.getAudioContext();
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+
+                    oscillator.frequency.setValueAtTime(523.25, ctx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.1);
+                    oscillator.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.2);
+
+                    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+
+                    oscillator.start(ctx.currentTime);
+                    oscillator.stop(ctx.currentTime + 0.3);
+                } catch (error) {
+                    console.error('播放音效失败:', error);
+                }
+            }
+
+            /**
+             * 播放错误音效
+             */
+            playErrorSound() {
+                try {
+                    const ctx = this.getAudioContext();
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+
+                    oscillator.frequency.setValueAtTime(392, ctx.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(261.63, ctx.currentTime + 0.2);
+
+                    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+
+                    oscillator.start(ctx.currentTime);
+                    oscillator.stop(ctx.currentTime + 0.2);
+                } catch (error) {
+                    console.error('播放音效失败:', error);
+                }
+            }
+
+            /**
+             * 播放提示音效
+             */
+            playHintSound() {
+                try {
+                    const ctx = this.getAudioContext();
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+
+                    oscillator.type = 'sine';
+                    oscillator.frequency.value = 440;
+
+                    gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+
+                    oscillator.start(ctx.currentTime);
+                    oscillator.stop(ctx.currentTime + 0.5);
+                } catch (error) {
+                    console.error('播放音效失败:', error);
+                }
+            }
+
+            /**
+             * 播放庆祝音效
+             */
+            playCelebrationSound() {
+                try {
+                    const ctx = this.getAudioContext();
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+
+                    notes.forEach((freq, index) => {
+                        const oscillator = ctx.createOscillator();
+                        const gainNode = ctx.createGain();
+
+                        oscillator.connect(gainNode);
+                        gainNode.connect(ctx.destination);
+
+                        oscillator.type = 'sine';
+                        oscillator.frequency.value = freq;
+
+                        const startTime = ctx.currentTime + index * 0.15;
+                        gainNode.gain.setValueAtTime(0.2, startTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.2);
+
+                        oscillator.start(startTime);
+                        oscillator.stop(startTime + 0.2);
+                    });
+                } catch (error) {
+                    console.error('播放音效失败:', error);
+                }
+            }
+
+            /**
+             * 获取音频上下文
+             */
+            getAudioContext() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                return this.audioContext;
+            }
+        }
+
+        // 启动游戏
+        window.addEventListener('DOMContentLoaded', () => {
+            new FindDifferencesGame();
+        });
+    </script>
+</body>
+</html>

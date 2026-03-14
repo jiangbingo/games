@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>数字认知游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+        
+        .game-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            padding: 20px;
+        }
+        
+        /* 顶部区域 */
+        .header {
+            text-align: center;
+            color: white;
+        }
+        
+        .title {
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 15px;
+        }
+        
+        .score-board {
+            font-size: 28px;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 30px;
+            border-radius: 20px;
+        }
+        
+        .star {
+            color: #FFD700;
+        }
+        
+        /* 目标数字区域 */
+        .target-area {
+            text-align: center;
+        }
+        
+        .target-label {
+            font-size: 32px;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .target-number {
+            width: 180px;
+            height: 180px;
+            background: white;
+            border-radius: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 100px;
+            font-weight: bold;
+            color: #11998e;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        /* 物品展示区 */
+        .items-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            max-width: 400px;
+            padding: 20px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 30px;
+        }
+        
+        .item {
+            font-size: 50px;
+            animation: itemBounce 0.5s ease;
+        }
+        
+        .item:nth-child(odd) {
+            animation-delay: 0.1s;
+        }
+        
+        @keyframes itemBounce {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        
+        /* 选项按钮 */
+        .options-area {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .option-btn {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 50px;
+            font-weight: bold;
+            color: #11998e;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+            touch-action: manipulation;
+        }
+        
+        .option-btn:active {
+            transform: scale(0.9);
+        }
+        
+        .option-btn.correct {
+            background: #4CAF50;
+            color: white;
+            animation: correctPop 0.5s ease;
+        }
+        
+        @keyframes correctPop {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        
+        .option-btn.wrong {
+            background: #f44336;
+            color: white;
+            animation: shake 0.5s ease;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        /* 反馈 */
+        .feedback {
+            font-size: 48px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .feedback.show {
+            opacity: 1;
+            animation: feedbackPop 0.5s ease;
+        }
+        
+        @keyframes feedbackPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        /* 家长控制 */
+        .parent-control {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 50%;
+            font-size: 12px;
+            color: rgba(255,255,255,0.3);
+            cursor: pointer;
+        }
+        
+        /* 设置面板 */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        
+        .settings-panel.show {
+            display: flex;
+        }
+        
+        .settings-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        
+        .settings-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .range-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .range-btn {
+            padding: 15px 30px;
+            font-size: 20px;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            color: white;
+        }
+        
+        .range-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .range-btn.easy { background: #4CAF50; }
+        .range-btn.medium { background: #FF9800; }
+        .range-btn.hard { background: #f44336; }
+        .range-btn.selected { box-shadow: 0 0 0 4px #333; }
+        
+        .close-settings {
+            padding: 15px 40px;
+            font-size: 20px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+        }
+        
+        /* 庆祝动画 */
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 50;
+        }
+        
+        .star-burst {
+            position: absolute;
+            font-size: 40px;
+            animation: starFall 2s ease-out forwards;
+        }
+        
+        @keyframes starFall {
+            0% { transform: translateY(-50px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <div class="title">数一数</div>
+            <div class="score-board">
+                <span class="star">⭐</span> <span id="score">0</span>
+            </div>
+        </div>
+        
+        <div class="target-area">
+            <div class="target-label">数一数有几个？</div>
+            <div class="items-area" id="itemsArea"></div>
+        </div>
+        
+        <div class="feedback" id="feedback"></div>
+        
+        <div class="options-area" id="optionsArea"></div>
+    </div>
+    
+    <button class="parent-control" ontouchstart="showSettings()">⚙️</button>
+    
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-content">
+            <div class="settings-title">家长设置</div>
+            <div class="range-options">
+                <button class="range-btn easy selected" ontouchstart="setRange('easy')">1-3 (简单)</button>
+                <button class="range-btn medium" ontouchstart="setRange('medium')">1-5 (中等)</button>
+                <button class="range-btn hard" ontouchstart="setRange('hard')">1-10 (困难)</button>
+            </div>
+            <button class="close-settings" ontouchstart="hideSettings()">确定</button>
+        </div>
+    </div>
+    
+    <div class="celebration" id="celebration"></div>
+
+    <script>
+        // ==================== 游戏配置 ====================
+        const CONFIG = {
+            range: 'easy',
+            maxNumbers: { easy: 3, medium: 5, hard: 10 },
+            autoNextDelay: 1500,
+            feedbackDuration: 800
+        };
+        
+        // 可爱的物品图标（水果和动物）
+        const ITEMS = ['🍎', '🍊', '🍋', '🍇', '🍓', '🐶', '🐱', '🐻', '🐰', '🦋', '⭐', '🌈', '🎈', '🧸', '🚗'];
+        
+        // ==================== 游戏状态 ====================
+        let gameState = {
+            score: 0,
+            targetNumber: 0,
+            isAnimating: false
+        };
+        
+        // ==================== 音效 ====================
+        function playSound(type) {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                const config = {
+                    correct: { freq: 523.25, duration: 0.15, type: 'sine' },
+                    wrong: { freq: 196.00, duration: 0.2, type: 'square' },
+                    celebrate: { freq: 880.00, duration: 0.2, type: 'sine' }
+                };
+                
+                const c = config[type] || config.correct;
+                oscillator.type = c.type;
+                oscillator.frequency.setValueAtTime(c.freq, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + c.duration);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + c.duration);
+            } catch(e) {}
+        }
+        
+        // ==================== 游戏核心 ====================
+        
+        function initGame() {
+            gameState.score = 0;
+            updateScore();
+            newRound();
+        }
+        
+        function newRound() {
+            if (gameState.isAnimating) return;
+            
+            const maxNum = CONFIG.maxNumbers[CONFIG.range];
+            
+            // 随机目标数字
+            gameState.targetNumber = Math.floor(Math.random() * maxNum) + 1;
+            
+            // 随机选择物品类型
+            const itemType = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+            
+            // 显示物品
+            const itemsArea = document.getElementById('itemsArea');
+            itemsArea.innerHTML = '';
+            
+            for (let i = 0; i < gameState.targetNumber; i++) {
+                const item = document.createElement('span');
+                item.className = 'item';
+                item.textContent = itemType;
+                item.style.animationDelay = (i * 0.1) + 's';
+                itemsArea.appendChild(item);
+            }
+            
+            // 创建选项（包含正确答案和2个干扰项）
+            const options = generateOptions(gameState.targetNumber, maxNum);
+            const optionsArea = document.getElementById('optionsArea');
+            optionsArea.innerHTML = '';
+            
+            options.forEach(num => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = num;
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    checkAnswer(num, btn);
+                }, { passive: false });
+                optionsArea.appendChild(btn);
+            });
+        }
+        
+        function generateOptions(correct, maxNum) {
+            const options = [correct];
+            
+            while (options.length < 3) {
+                let wrong = Math.floor(Math.random() * maxNum) + 1;
+                if (!options.includes(wrong)) {
+                    options.push(wrong);
+                }
+            }
+            
+            // 打乱顺序
+            return options.sort(() => Math.random() - 0.5);
+        }
+        
+        function checkAnswer(selected, btnElement) {
+            if (gameState.isAnimating) return;
+            gameState.isAnimating = true;
+            
+            const isCorrect = selected === gameState.targetNumber;
+            const feedback = document.getElementById('feedback');
+            
+            if (isCorrect) {
+                btnElement.classList.add('correct');
+                feedback.textContent = '数对了！🎉';
+                feedback.classList.add('show');
+                playSound('correct');
+                
+                gameState.score++;
+                updateScore();
+                
+                if (gameState.score % 5 === 0) {
+                    celebrate();
+                }
+                
+                setTimeout(() => {
+                    feedback.classList.remove('show');
+                    btnElement.classList.remove('correct');
+                    gameState.isAnimating = false;
+                    newRound();
+                }, CONFIG.autoNextDelay);
+                
+            } else {
+                btnElement.classList.add('wrong');
+                feedback.textContent = '再数一数！🤔';
+                feedback.classList.add('show');
+                playSound('wrong');
+                
+                setTimeout(() => {
+                    feedback.classList.remove('show');
+                    btnElement.classList.remove('wrong');
+                    gameState.isAnimating = false;
+                }, CONFIG.feedbackDuration);
+            }
+        }
+        
+        function updateScore() {
+            document.getElementById('score').textContent = gameState.score;
+        }
+        
+        function celebrate() {
+            playSound('celebrate');
+            const container = document.getElementById('celebration');
+            
+            for (let i = 0; i < 20; i++) {
+                const star = document.createElement('div');
+                star.className = 'star-burst';
+                star.textContent = '⭐';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 0.5 + 's';
+                container.appendChild(star);
+                
+                setTimeout(() => star.remove(), 2500);
+            }
+        }
+        
+        // ==================== 设置 ====================
+        function showSettings() {
+            document.getElementById('settingsPanel').classList.add('show');
+        }
+        
+        function hideSettings() {
+            document.getElementById('settingsPanel').classList.remove('show');
+        }
+        
+        function setRange(level) {
+            CONFIG.range = level;
+            
+            document.querySelectorAll('.range-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            document.querySelector(`.range-btn.${level}`).classList.add('selected');
+            
+            initGame();
+        }
+        
+        // ==================== 启动 ====================
+        document.addEventListener('DOMContentLoaded', initGame);
+        
+        // 防止双击缩放
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+        
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) e.preventDefault();
+            lastTouchEnd = now;
+        }, { passive: false });
+    </script>
+</body>
+</html>

@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>动物叫声 - 儿童游戏</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .tts-status {
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
+            padding: 15px 25px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            max-width: 600px;
+            width: 100%;
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        .tts-status.available {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+        }
+
+        .tts-status.unavailable {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+        }
+        
+        .mode-toggle {
+            margin-bottom: 20px;
+        }
+        
+        .mode-toggle button {
+            padding: 12px 24px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 0 5px;
+            transition: all 0.3s;
+        }
+        
+        .mode-toggle button.active {
+            background: #4CAF50;
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .mode-toggle button:not(.active) {
+            background: rgba(255,255,255,0.3);
+            color: white;
+        }
+        
+        .animals-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        .animal-btn {
+            background: white;
+            border: none;
+            border-radius: 20px;
+            padding: 20px;
+            font-size: 4em;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .animal-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.2);
+        }
+        
+        .animal-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .animal-btn .name {
+            font-size: 0.25em;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .guess-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 30px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+        }
+        
+        .guess-section h2 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .play-sound-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 30px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+        
+        .play-sound-btn:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        
+        .options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .option-btn {
+            padding: 15px;
+            font-size: 2em;
+            border: 2px solid #ddd;
+            border-radius: 15px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .option-btn:hover {
+            border-color: #4CAF50;
+            transform: scale(1.05);
+        }
+        
+        .option-btn.correct {
+            background: #4CAF50;
+            border-color: #4CAF50;
+            animation: pulse 0.5s;
+        }
+        
+        .option-btn.wrong {
+            background: #f44336;
+            border-color: #f44336;
+            animation: shake 0.5s;
+        }
+        
+        .score {
+            font-size: 1.5em;
+            color: #333;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        .tts-feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 15px;
+            font-size: 1.5em;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎵 动物叫声 🎵</h1>
+
+    <!-- TTS 状态显示 -->
+    <div id="ttsStatus" class="tts-status">
+        <span id="ttsStatusIcon">⏳</span>
+        <span id="ttsStatusText">检测语音功能...</span>
+    </div>
+
+    <div class="mode-toggle">
+        <button id="freePlayBtn" class="active" onclick="setMode('free')">自由模式</button>
+        <button id="guessBtn" onclick="setMode('guess')">猜一猜</button>
+    </div>
+    
+    <!-- 自由模式 -->
+    <div id="freePlayMode" class="animals-grid">
+        <button class="animal-btn" onclick="playSound('🐶')" hx-trigger="click">
+            <span>🐶</span>
+            <span class="name">小狗</span>
+        </button>
+        <button class="animal-btn" onclick="playSound('🐱')" hx-trigger="click">
+            <span>🐱</span>
+            <span class="name">小猫</span>
+        </button>
+        <button class="animal-btn" onclick="playSound('🐮')" hx-trigger="click">
+            <span>🐮</span>
+            <span class="name">奶牛</span>
+        </button>
+        <button class="animal-btn" onclick="playSound('🐷')" hx-trigger="click">
+            <span>🐷</span>
+            <span class="name">小猪</span>
+        </button>
+        <button class="animal-btn" onclick="playSound('🐸')" hx-trigger="click">
+            <span>🐸</span>
+            <span class="name">青蛙</span>
+        </button>
+        <button class="animal-btn" onclick="playSound('🦁')" hx-trigger="click">
+            <span>🦁</span>
+            <span class="name">狮子</span>
+        </button>
+        <button class="animal-btn" onclick="playSound('🐔')" hx-trigger="click">
+            <span>🐔</span>
+            <span class="name">公鸡</span>
+        </button>
+        <button class="animal-btn" onclick="playSound('🦆')" hx-trigger="click">
+            <span>🦆</span>
+            <span class="name">鸭子</span>
+        </button>
+    </div>
+    
+    <!-- 猜一猜模式 -->
+    <div id="guessMode" class="guess-section hidden">
+        <h2>🎯 猜猜是哪个动物？</h2>
+        <button class="play-sound-btn" onclick="playGuessSound()">🔊 播放声音</button>
+        <div class="options" id="guessOptions"></div>
+        <div class="score">得分: <span id="scoreValue">0</span></div>
+    </div>
+
+    <script>
+        // ==================== TTS 语音合成管理器 ====================
+
+        /**
+         * 语音合成管理器
+         * @description 管理 Web Speech API 的语音合成功能，提供优雅降级
+         */
+        class VoiceManager {
+            constructor() {
+                this.isAvailable = false;
+                this.voices = [];
+                this.chineseVoice = null;
+                this.currentUtterance = null;
+                this.isSpeaking = false;
+
+                this.init();
+            }
+
+            /**
+             * 初始化语音合成
+             */
+            init() {
+                // 检查 API 是否可用
+                if (!('speechSynthesis' in window) || !window.speechSynthesis) {
+                    console.log('浏览器不支持语音合成 API');
+                    this.updateStatus(false);
+                    return;
+                }
+
+                // 监听语音列表加载
+                if (window.speechSynthesis.onvoiceschanged !== undefined) {
+                    window.speechSynthesis.onvoiceschanged = () => this.loadVoices();
+                }
+
+                // 加载语音列表
+                this.loadVoices();
+
+                // 延迟检查，确保语音列表已加载
+                setTimeout(() => this.finalizeInit(), 500);
+            }
+
+            /**
+             * 加载可用语音列表
+             */
+            loadVoices() {
+                this.voices = window.speechSynthesis.getVoices();
+
+                // 查找中文语音
+                this.chineseVoice = this.voices.find(voice => {
+                    return voice.lang.includes('zh') ||
+                           voice.lang.includes('CN') ||
+                           voice.name.includes('中文') ||
+                           voice.name.includes('Chinese');
+                });
+
+                console.log('加载语音:', this.voices.length, '个');
+                if (this.chineseVoice) {
+                    console.log('找到中文语音:', this.chineseVoice.name);
+                }
+            }
+
+            /**
+             * 完成初始化
+             */
+            finalizeInit() {
+                if (this.voices.length > 0) {
+                    this.isAvailable = true;
+                    this.updateStatus(true);
+                } else {
+                    this.updateStatus(false);
+                }
+            }
+
+            /**
+             * 更新状态显示
+             */
+            updateStatus(available) {
+                const statusIcon = document.getElementById('ttsStatusIcon');
+                const statusText = document.getElementById('ttsStatusText');
+                const statusDiv = document.getElementById('ttsStatus');
+
+                if (!statusIcon || !statusText || !statusDiv) return;
+
+                if (available) {
+                    statusDiv.className = 'tts-status available';
+                    statusIcon.textContent = '✅';
+                    statusText.textContent = '语音功能可用（' + (this.chineseVoice ? '中文语音' : '默认语音') + '）';
+                } else {
+                    statusDiv.className = 'tts-status unavailable';
+                    statusIcon.textContent = '❌';
+                    statusText.textContent = '语音功能不可用，将使用文字反馈';
+                }
+            }
+
+            /**
+             * 朗读文字
+             * @param {string} text - 要朗读的文字
+             * @param {object} options - 可选参数
+             */
+            speak(text, options = {}) {
+                if (!this.isAvailable) {
+                    console.log('语音不可用:', text);
+                    this.showTextFeedback(text);
+                    return;
+                }
+
+                // 防止同时播放多个语音
+                if (this.isSpeaking) {
+                    window.speechSynthesis.cancel();
+                }
+
+                // 停止当前语音
+                window.speechSynthesis.cancel();
+
+                // 创建新的语音实例
+                const utterance = new SpeechSynthesisUtterance(text);
+
+                // 设置语音
+                utterance.voice = this.chineseVoice || this.voices[0];
+
+                // 设置参数（儿童友好的设置）
+                utterance.rate = options.rate !== undefined ? options.rate : 0.8;
+                utterance.pitch = options.pitch !== undefined ? options.pitch : 1.2;
+                utterance.volume = options.volume !== undefined ? options.volume : 1;
+
+                // 事件处理
+                utterance.onstart = () => {
+                    this.isSpeaking = true;
+                    console.log('开始朗读:', text);
+                };
+
+                utterance.onend = () => {
+                    this.isSpeaking = false;
+                    console.log('朗读完成:', text);
+                };
+
+                utterance.onerror = (e) => {
+                    this.isSpeaking = false;
+                    console.error('朗读失败:', e);
+                    this.showTextFeedback(text);
+                };
+
+                // 播放语音
+                window.speechSynthesis.speak(utterance);
+                this.currentUtterance = utterance;
+            }
+
+            /**
+             * 显示文字反馈（降级方案）
+             */
+            showTextFeedback(text) {
+                const feedback = document.createElement('div');
+                feedback.className = 'tts-feedback';
+                feedback.textContent = text;
+                document.body.appendChild(feedback);
+
+                setTimeout(() => {
+                    feedback.style.animation = 'fadeOut 0.3s ease';
+                    setTimeout(() => feedback.remove(), 300);
+                }, 1500);
+            }
+
+            /**
+             * 停止当前朗读
+             */
+            stop() {
+                if (this.isSpeaking) {
+                    window.speechSynthesis.cancel();
+                    this.isSpeaking = false;
+                }
+            }
+        }
+
+        // 创建全局语音管理器
+        const voiceManager = new VoiceManager();
+
+        // 鼓励语料库
+        const encouragements = {
+            correct: [
+                '答对了！太棒了！',
+                '真聪明！',
+                '做得好！',
+                '你真棒！',
+                '继续加油！'
+            ],
+            retry: [
+                '再试一次，你可以的！',
+                '没关系，再想想！',
+                '别灰心，继续努力！',
+                '相信自己，你能行！'
+            ],
+            complete: '恭喜你！完成了所有关卡！'
+        };
+
+        // 动物数据配置
+        const animals = {
+            '🐶': { name: '小狗', freq: 400, duration: 0.3, pattern: 'bark' },
+            '🐱': { name: '小猫', freq: 600, duration: 0.4, pattern: 'meow' },
+            '🐮': { name: '奶牛', freq: 150, duration: 0.8, pattern: 'moo' },
+            '🐷': { name: '小猪', freq: 300, duration: 0.5, pattern: 'oink' },
+            '🐸': { name: '青蛙', freq: 200, duration: 0.2, pattern: 'croak' },
+            '🦁': { name: '狮子', freq: 120, duration: 1.0, pattern: 'roar' },
+            '🐔': { name: '公鸡', freq: 500, duration: 0.6, pattern: 'crow' },
+            '🦆': { name: '鸭子', freq: 350, duration: 0.35, pattern: 'quack' }
+        };
+
+        let audioContext = null;
+        let currentMode = 'free';
+        let currentGuessAnimal = null;
+        let score = 0;
+
+        // 初始化音频上下文
+        function getAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioContext;
+        }
+
+        // 播放声音（核心函数）
+        function playSound(emoji) {
+            const audio = getAudioContext();
+            const animal = animals[emoji];
+            if (!animal) return;
+
+            const osc = audio.createOscillator();
+            const gain = audio.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audio.destination);
+            
+            // 根据动物类型设置不同的音效模式
+            switch(animal.pattern) {
+                case 'bark': // 狗叫
+                    playBark(audio, osc, gain, animal);
+                    break;
+                case 'meow': // 猫叫
+                    playMeow(audio, osc, gain, animal);
+                    break;
+                case 'moo': // 牛叫
+                    playMoo(audio, osc, gain, animal);
+                    break;
+                case 'oink': // 猪叫
+                    playOink(audio, osc, gain, animal);
+                    break;
+                case 'croak': // 青蛙
+                    playCroak(audio, osc, gain, animal);
+                    break;
+                case 'roar': // 狮子
+                    playRoar(audio, osc, gain, animal);
+                    break;
+                case 'crow': // 公鸡
+                    playCrow(audio, osc, gain, animal);
+                    break;
+                case 'quack': // 鸭子
+                    playQuack(audio, osc, gain, animal);
+                    break;
+            }
+        }
+
+        // 各种动物的叫声实现
+        function playBark(audio, osc, gain, animal) {
+            osc.type = 'square';
+            gain.gain.setValueAtTime(0.3, audio.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
+            
+            osc.frequency.setValueAtTime(animal.freq, audio.currentTime);
+            osc.frequency.setValueAtTime(animal.freq * 0.8, audio.currentTime + 0.1);
+            
+            osc.start(audio.currentTime);
+            osc.stop(audio.currentTime + animal.duration);
+        }
+
+        function playMeow(audio, osc, gain, animal) {
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.3, audio.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
+            
+            osc.frequency.setValueAtTime(animal.freq * 0.7, audio.currentTime);
+            osc.frequency.linearRampToValueAtTime(animal.freq * 1.2, audio.currentTime + animal.duration * 0.5);
+            osc.frequency.linearRampToValueAtTime(animal.freq * 0.8, audio.currentTime + animal.duration);
+            
+            osc.start(audio.currentTime);
+            osc.stop(audio.currentTime + animal.duration);
+        }
+
+        function playMoo(audio, osc, gain, animal) {
+            osc.type = 'sawtooth';
+            gain.gain.setValueAtTime(0.2, audio.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
+            
+            osc.frequency.setValueAtTime(animal.freq, audio.currentTime);
+            
+            osc.start(audio.currentTime);
+            osc.stop(audio.currentTime + animal.duration);
+        }
+
+        function playOink(audio, osc, gain, animal) {
+            osc.type = 'square';
+            for (let i = 0; i < 2; i++) {
+                gain.gain.setValueAtTime(0.3, audio.currentTime + i * 0.25);
+                gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + i * 0.25 + 0.2);
+                
+                osc.frequency.setValueAtTime(animal.freq, audio.currentTime + i * 0.25);
+                osc.frequency.setValueAtTime(animal.freq * 1.2, audio.currentTime + i * 0.25 + 0.1);
+            }
+            
+            osc.start(audio.currentTime);
+            osc.stop(audio.currentTime + 0.5);
+        }
+
+        function playCroak(audio, osc, gain, animal) {
+            osc.type = 'sine';
+            for (let i = 0; i < 3; i++) {
+                gain.gain.setValueAtTime(0.3, audio.currentTime + i * 0.15);
+                gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + i * 0.15 + 0.1);
+            }
+            
+            osc.frequency.setValueAtTime(animal.freq, audio.currentTime);
+            osc.frequency.setValueAtTime(animal.freq * 1.5, audio.currentTime + 0.15);
+            osc.frequency.setValueAtTime(animal.freq * 2, audio.currentTime + 0.3);
+            
+            osc.start(audio.currentTime);
+            osc.stop(audio.currentTime + 0.45);
+        }
+
+        function playRoar(audio, osc, gain, animal) {
+            osc.type = 'sawtooth';
+            gain.gain.setValueAtTime(0, audio.currentTime);
+            gain.gain.linearRampToValueAtTime(0.4, audio.currentTime + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
+            
+            osc.frequency.setValueAtTime(animal.freq * 0.5, audio.currentTime);
+            osc.frequency.linearRampToValueAtTime(animal.freq, audio.currentTime + animal.duration);
+            
+            osc.start(audio.currentTime);
+            osc.stop(audio.currentTime + animal.duration);
+        }
+
+        function playCrow(audio, osc, gain, animal) {
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.3, audio.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
+            
+            osc.frequency.setValueAtTime(animal.freq * 0.5, audio.currentTime);
+            osc.frequency.linearRampToValueAtTime(animal.freq * 1.5, audio.currentTime + animal.duration * 0.3);
+            osc.frequency.setValueAtTime(animal.freq * 1.2, audio.currentTime + animal.duration * 0.5);
+            
+            osc.start(audio.currentTime);
+            osc.stop(audio.currentTime + animal.duration);
+        }
+
+        function playQuack(audio, osc, gain, animal) {
+            osc.type = 'square';
+            for (let i = 0; i < 2; i++) {
+                gain.gain.setValueAtTime(0.3, audio.currentTime + i * 0.2);
+                gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + i * 0.2 + 0.15);
+            }
+            
+            osc.frequency.setValueAtTime(animal.freq, audio.currentTime);
+            osc.frequency.setValueAtTime(animal.freq * 0.9, audio.currentTime + 0.2);
+            
+            osc.start(audio.currentTime);
+            osc.stop(audio.currentTime + 0.35);
+        }
+
+        // 切换模式
+        function setMode(mode) {
+            currentMode = mode;
+
+            document.getElementById('freePlayBtn').classList.toggle('active', mode === 'free');
+            document.getElementById('guessBtn').classList.toggle('active', mode === 'guess');
+            document.getElementById('freePlayMode').classList.toggle('hidden', mode !== 'free');
+            document.getElementById('guessMode').classList.toggle('hidden', mode !== 'guess');
+
+            if (mode === 'guess') {
+                // 进入猜一猜模式，播放提示语音
+                voiceManager.speak('听声音，找出对应的动物');
+                startNewGuess();
+            }
+        }
+
+        // 开始新的猜一猜
+        function startNewGuess() {
+            const animalKeys = Object.keys(animals);
+            currentGuessAnimal = animalKeys[Math.floor(Math.random() * animalKeys.length)];
+            
+            // 选择4个选项（包含正确答案）
+            let options = [currentGuessAnimal];
+            while (options.length < 4) {
+                const randomAnimal = animalKeys[Math.floor(Math.random() * animalKeys.length)];
+                if (!options.includes(randomAnimal)) {
+                    options.push(randomAnimal);
+                }
+            }
+            
+            // 随机打乱
+            options.sort(() => Math.random() - 0.5);
+            
+            // 渲染选项
+            const optionsHtml = options.map(emoji => `
+                <button class="option-btn" onclick="checkGuess('${emoji}')" hx-trigger="click">
+                    ${emoji}
+                </button>
+            `).join('');
+            
+            document.getElementById('guessOptions').innerHTML = optionsHtml;
+        }
+
+        // 播放猜测的声音
+        function playGuessSound() {
+            if (currentGuessAnimal) {
+                playSound(currentGuessAnimal);
+            }
+        }
+
+        // 检查猜测
+        function checkGuess(selectedEmoji) {
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(btn => {
+                if (btn.textContent.trim() === selectedEmoji) {
+                    if (selectedEmoji === currentGuessAnimal) {
+                        btn.classList.add('correct');
+                        score++;
+                        document.getElementById('scoreValue').textContent = score;
+
+                        // 语音反馈：答对了
+                        const encouragement = encouragements.correct[
+                            Math.floor(Math.random() * encouragements.correct.length)
+                        ];
+                        voiceManager.speak(encouragement);
+
+                        // 1秒后开始新一轮
+                        setTimeout(() => {
+                            startNewGuess();
+                        }, 1000);
+                    } else {
+                        btn.classList.add('wrong');
+
+                        // 语音反馈：再试一次
+                        const retry = encouragements.retry[
+                            Math.floor(Math.random() * encouragements.retry.length)
+                        ];
+                        voiceManager.speak(retry);
+
+                        // 再给一次机会
+                        setTimeout(() => {
+                            btn.classList.remove('wrong');
+                        }, 500);
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

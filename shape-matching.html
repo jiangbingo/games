@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>形状配对 - 儿童游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .title {
+            font-size: 48px;
+            margin-bottom: 30px;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .instruction {
+            font-size: 28px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+        
+        .target-shape {
+            font-size: 120px;
+            margin: 30px 0;
+            animation: bounce 1s ease infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .shape-btn {
+            font-size: 80px;
+            padding: 20px;
+            border: none;
+            border-radius: 20px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .shape-btn:active {
+            transform: scale(0.95);
+            background: #e9ecef;
+        }
+        
+        .feedback {
+            font-size: 36px;
+            min-height: 50px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        
+        .feedback.success {
+            color: #28a745;
+            animation: pulse 0.5s ease;
+        }
+        
+        .feedback.retry {
+            color: #ffc107;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        
+        .score {
+            font-size: 24px;
+            color: #666;
+            margin-top: 20px;
+        }
+        
+        .restart-btn {
+            font-size: 24px;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        
+        .restart-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="title">🎨 形状配对</h1>
+        <p class="instruction">找到相同的形状吧！</p>
+        
+        <div class="target-shape" id="targetShape">🔵</div>
+        
+        <div class="options" id="optionsContainer">
+            <button class="shape-btn" onclick="checkShape(this)">🟢</button>
+            <button class="shape-btn" onclick="checkShape(this)">🔵</button>
+            <button class="shape-btn" onclick="checkShape(this)">🟠</button>
+        </div>
+        
+        <div class="feedback" id="feedback">点击匹配的形状！</div>
+        
+        <div class="score" id="score">得分: 0</div>
+        
+        <button class="restart-btn" onclick="restartGame()">🔄 重新开始</button>
+    </div>
+
+    <script>
+        // 形状库
+        const shapes = ['🔵', '🟢', '🟠', '🔴', '🟣', '🟡', '⬛', '⬜'];
+        let currentTarget = '';
+        let score = 0;
+        
+        // 初始化游戏
+        function initGame() {
+            generateNewRound();
+            updateScore();
+        }
+        
+        // 生成新回合
+        function generateNewRound() {
+            // 随机选择目标形状
+            currentTarget = shapes[Math.floor(Math.random() * shapes.length)];
+            document.getElementById('targetShape').textContent = currentTarget;
+            
+            // 生成选项（包含正确答案）
+            const options = generateOptions(currentTarget);
+            const container = document.getElementById('optionsContainer');
+            container.innerHTML = options.map(shape => 
+                `<button class="shape-btn" onclick="checkShape(this)">${shape}</button>`
+            ).join('');
+            
+            // 清空反馈
+            document.getElementById('feedback').textContent = '点击匹配的形状！';
+            document.getElementById('feedback').className = 'feedback';
+        }
+        
+        // 生成选项
+        function generateOptions(correct) {
+            const options = [correct];
+            const available = shapes.filter(s => s !== correct);
+            
+            // 随机添加2个干扰项
+            while (options.length < 3) {
+                const random = available[Math.floor(Math.random() * available.length)];
+                if (!options.includes(random)) {
+                    options.push(random);
+                }
+            }
+            
+            // 打乱顺序
+            return options.sort(() => Math.random() - 0.5);
+        }
+        
+        // 检查形状
+        function checkShape(button) {
+            const selected = button.textContent;
+            const feedback = document.getElementById('feedback');
+            
+            if (selected === currentTarget) {
+                // 正确
+                feedback.textContent = '✅ 真棒！';
+                feedback.className = 'feedback success';
+                score += 10;
+                updateScore();
+                
+                // 播放成功音效（如果有的话）
+                playSound('success');
+                
+                // 1秒后进入下一回合
+                setTimeout(() => {
+                    generateNewRound();
+                }, 1000);
+            } else {
+                // 错误
+                feedback.textContent = '🤔 再试试～';
+                feedback.className = 'feedback retry';
+                
+                // 播放重试音效
+                playSound('retry');
+            }
+        }
+        
+        // 更新分数
+        function updateScore() {
+            document.getElementById('score').textContent = `得分: ${score}`;
+        }
+        
+        // 重新开始
+        function restartGame() {
+            score = 0;
+            updateScore();
+            generateNewRound();
+        }
+        
+        // 播放音效（简单版，使用 Web Audio API）
+        function playSound(type) {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                if (type === 'success') {
+                    // 成功音效：上升的音调
+                    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+                    oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+                    oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+                } else {
+                    // 重试音效：下降的音调
+                    oscillator.frequency.setValueAtTime(392, audioContext.currentTime); // G4
+                    oscillator.frequency.setValueAtTime(349.23, audioContext.currentTime + 0.1); // F4
+                }
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (e) {
+                // 音频播放失败，忽略
+                console.log('Audio not supported');
+            }
+        }
+        
+        // 启动游戏
+        initGame();
+        
+        // 防止双击缩放
+        document.addEventListener('touchend', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+    </script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 题目缓存测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        h2 {
+            color: #666;
+            margin-top: 0;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .error {
+            color: #f44336;
+            font-weight: bold;
+        }
+        .info {
+            color: #2196F3;
+        }
+        pre {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        #result {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 AI 题目缓存功能测试</h1>
+
+    <div class="test-section">
+        <h2>1. 测试保存功能</h2>
+        <p>模拟 AI 生成记忆游戏题目并保存到 localStorage</p>
+        <button onclick="testSaveMemory()">保存记忆游戏题目</button>
+        <button onclick="testSaveShape()">保存形状游戏题目</button>
+        <button onclick="testSaveSound()">保存声音游戏题目</button>
+    </div>
+
+    <div class="test-section">
+        <h2>2. 测试读取功能</h2>
+        <p>从 localStorage 读取 AI 生成的题目</p>
+        <button onclick="testGetMemory()">读取记忆游戏题目</button>
+        <button onclick="testGetShape()">读取形状游戏题目</button>
+        <button onclick="testGetSound()">读取声音游戏题目</button>
+    </div>
+
+    <div class="test-section">
+        <h2>3. 测试缓存过期</h2>
+        <p>测试 7 天过期机制</p>
+        <button onclick="testCacheExpiration()">测试缓存过期</button>
+    </div>
+
+    <div class="test-section">
+        <h2>4. 清除缓存</h2>
+        <button onclick="clearAllCache()">清除所有缓存</button>
+        <button onclick="clearExpiredCache()">清除过期缓存</button>
+    </div>
+
+    <div class="test-section">
+        <h2>5. 缓存统计</h2>
+        <button onclick="showCacheStats()">显示缓存统计</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script src="js/storage.js"></script>
+    <script>
+        function log(message, type = 'info') {
+            const resultDiv = document.getElementById('result');
+            const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+            const timestamp = new Date().toLocaleTimeString();
+            resultDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            resultDiv.scrollTop = resultDiv.scrollHeight;
+        }
+
+        function testSaveMemory() {
+            try {
+                const aiCache = new AIGameCache();
+                const mockData = {
+                    theme: '美味水果',
+                    emojis: ['🍎', '🍌', '🍇', '🍊', '🍓', '🍑'],
+                    difficulty: '中等',
+                    age_group: '4-5岁'
+                };
+                
+                aiCache.saveGame('memory', mockData, {
+                    theme: '水果',
+                    ageGroup: '4-5岁',
+                    difficulty: '中等'
+                });
+                
+                log('✅ 记忆游戏题目保存成功', 'success');
+                log(`保存的题目: ${JSON.stringify(mockData, null, 2)}`, 'info');
+            } catch (error) {
+                log(`❌ 保存失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testSaveShape() {
+            try {
+                const aiCache = new AIGameCache();
+                const mockData = {
+                    shapes: [
+                        { name: '圆形', emoji: '🔵' },
+                        { name: '方形', emoji: '🟦' },
+                        { name: '三角形', emoji: '🔺' },
+                        { name: '心形', emoji: '❤️' }
+                    ],
+                    difficulty: '简单',
+                    age_group: '3-4岁'
+                };
+                
+                aiCache.saveGame('shape', mockData, {
+                    ageGroup: '3-4岁',
+                    difficulty: '简单'
+                });
+                
+                log('✅ 形状游戏题目保存成功', 'success');
+                log(`保存的题目: ${JSON.stringify(mockData, null, 2)}`, 'info');
+            } catch (error) {
+                log(`❌ 保存失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testSaveSound() {
+            try {
+                const aiCache = new AIGameCache();
+                const mockData = {
+                    scene: '农场',
+                    animals: [
+                        { emoji: '🐶', name: '小狗', sound_text: '汪汪汪' },
+                        { emoji: '🐱', name: '小猫', sound_text: '喵喵喵' },
+                        { emoji: '🐮', name: '奶牛', sound_text: '哞哞' },
+                        { emoji: '🐷', name: '小猪', sound_text: '哼哼' }
+                    ],
+                    difficulty: '中等',
+                    age_group: '4-5岁'
+                };
+                
+                aiCache.saveGame('sound', mockData, {
+                    scene: '农场',
+                    ageGroup: '4-5岁',
+                    difficulty: '中等'
+                });
+                
+                log('✅ 声音游戏题目保存成功', 'success');
+                log(`保存的题目: ${JSON.stringify(mockData, null, 2)}`, 'info');
+            } catch (error) {
+                log(`❌ 保存失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testGetMemory() {
+            try {
+                const aiCache = new AIGameCache();
+                const data = aiCache.getLatestGame('memory');
+                
+                if (data) {
+                    log('✅ 记忆游戏题目读取成功', 'success');
+                    log(`读取的题目: ${JSON.stringify(data, null, 2)}`, 'info');
+                } else {
+                    log('⚠️ 没有找到记忆游戏题目', 'error');
+                }
+            } catch (error) {
+                log(`❌ 读取失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testGetShape() {
+            try {
+                const aiCache = new AIGameCache();
+                const data = aiCache.getLatestGame('shape');
+                
+                if (data) {
+                    log('✅ 形状游戏题目读取成功', 'success');
+                    log(`读取的题目: ${JSON.stringify(data, null, 2)}`, 'info');
+                } else {
+                    log('⚠️ 没有找到形状游戏题目', 'error');
+                }
+            } catch (error) {
+                log(`❌ 读取失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testGetSound() {
+            try {
+                const aiCache = new AIGameCache();
+                const data = aiCache.getLatestGame('sound');
+                
+                if (data) {
+                    log('✅ 声音游戏题目读取成功', 'success');
+                    log(`读取的题目: ${JSON.stringify(data, null, 2)}`, 'info');
+                } else {
+                    log('⚠️ 没有找到声音游戏题目', 'error');
+                }
+            } catch (error) {
+                log(`❌ 读取失败: ${error.message}`, 'error');
+            }
+        }
+
+        function testCacheExpiration() {
+            try {
+                const aiCache = new AIGameCache();
+                
+                log('📅 模拟过期数据...', 'info');
+                const expiredData = {
+                    theme: '过期主题',
+                    emojis: ['🍎', '🍌', '🍇'],
+                    difficulty: '中等',
+                    age_group: '4-5岁'
+                };
+                
+                aiCache.saveGame('memory', expiredData, {
+                    theme: '测试',
+                    ageGroup: '4-5岁',
+                    difficulty: '中等'
+                });
+                
+                const cache = aiCache.cache;
+                const cacheKey = Object.keys(cache)[Object.keys(cache).length - 1];
+                
+                cache[cacheKey].expiresAt = new Date('2024-01-01').toISOString();
+                aiCache.saveCache();
+                
+                log('📅 已创建过期数据', 'info');
+                
+                const data = aiCache.getLatestGame('memory');
+                if (!data) {
+                    log('✅ 过期数据正确被过滤', 'success');
+                } else {
+                    log('❌ 过期数据未被过滤', 'error');
+                }
+            } catch (error) {
+                log(`❌ 测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        function clearAllCache() {
+            try {
+                const aiCache = new AIGameCache();
+                aiCache.clearAll();
+                log('🗑️ 所有缓存已清除', 'success');
+            } catch (error) {
+                log(`❌ 清除失败: ${error.message}`, 'error');
+            }
+        }
+
+        function clearExpiredCache() {
+            try {
+                const aiCache = new AIGameCache();
+                aiCache.clearExpired();
+                log('🗑️ 过期缓存已清除', 'success');
+            } catch (error) {
+                log(`❌ 清除失败: ${error.message}`, 'error');
+            }
+        }
+
+        function showCacheStats() {
+            try {
+                const aiCache = new AIGameCache();
+                const stats = aiCache.getCacheStats();
+                
+                log('📊 缓存统计:', 'info');
+                log(`总缓存数: ${stats.total}`, 'info');
+                log(`记忆游戏: ${stats.byType.memory}`, 'info');
+                log(`形状游戏: ${stats.byType.shape}`, 'info');
+                log(`声音游戏: ${stats.byType.sound}`, 'info');
+                log(`过期缓存: ${stats.expired}`, 'info');
+            } catch (error) {
+                log(`❌ 获取统计失败: ${error.message}`, 'error');
+            }
+        }
+
+        log('🎉 测试页面已加载,可以开始测试', 'success');
+    </script>
+</body>
+</html>

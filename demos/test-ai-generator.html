@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 题目生成器测试</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .test-stats {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .log {
+            background: #343a40;
+            color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .log-entry {
+            margin: 5px 0;
+        }
+        .log-entry.success { color: #28a745; }
+        .log-entry.error { color: #dc3545; }
+        .log-entry.info { color: #17a2b8; }
+    </style>
+</head>
+<body>
+    <h1>🧪 AI 题目生成器测试</h1>
+
+    <div class="test-stats">
+        <h2>测试统计</h2>
+        <p>总测试数: <span id="totalTests">0</span></p>
+        <p>成功: <span id="passedTests" style="color: green;">0</span></p>
+        <p>失败: <span id="failedTests" style="color: red;">0</span></p>
+        <p>通过率: <span id="passRate">0%</span></p>
+    </div>
+
+    <div class="test-section">
+        <h2>🎮 游戏生成测试</h2>
+        <button onclick="runAllTests()">运行所有测试</button>
+        <button onclick="runMemoryTests()">记忆游戏测试</button>
+        <button onclick="runShapeTests()">形状配对测试</button>
+        <button onclick="runSoundTests()">声音配对测试</button>
+        <button onclick="runCacheTests()">缓存测试</button>
+        <button onclick="clearLogs()">清空日志</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 测试日志</h2>
+        <div class="log" id="testLog"></div>
+    </div>
+
+    <script src="js/ai-game-generator.js"></script>
+    <script>
+        let totalTests = 0;
+        let passedTests = 0;
+        let failedTests = 0;
+
+        function updateStats() {
+            document.getElementById('totalTests').textContent = totalTests;
+            document.getElementById('passedTests').textContent = passedTests;
+            document.getElementById('failedTests').textContent = failedTests;
+
+            const passRate = totalTests > 0 ? ((passedTests / totalTests) * 100).toFixed(2) : 0;
+            document.getElementById('passRate').textContent = passRate + '%';
+        }
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('testLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+
+            // 保持最多 100 条日志
+            while (logDiv.children.length > 100) {
+                logDiv.removeChild(logDiv.lastChild);
+            }
+        }
+
+        function clearLogs() {
+            document.getElementById('testLog').innerHTML = '';
+            log('日志已清空', 'info');
+        }
+
+        function assert(condition, testName) {
+            totalTests++;
+            if (condition) {
+                passedTests++;
+                log(`✅ ${testName} - 通过`, 'success');
+                return true;
+            } else {
+                failedTests++;
+                log(`❌ ${testName} - 失败`, 'error');
+                return false;
+            }
+            updateStats();
+        }
+
+        async function runAllTests() {
+            log('🚀 开始运行所有测试...', 'info');
+            await runMemoryTests();
+            await runShapeTests();
+            await runSoundTests();
+            await runCacheTests();
+            log('🎉 所有测试完成!', 'info');
+        }
+
+        async function runMemoryTests() {
+            log('🧠 开始记忆游戏测试...', 'info');
+
+            try {
+                // 测试 1: 生成水果主题
+                log('测试 1: 生成水果主题', 'info');
+                const fruitData = await aiGenerator.generateMemoryGame('水果', '4-5岁', '中等');
+                assert(fruitData.theme === '美味水果', '水果主题正确');
+                assert(Array.isArray(fruitData.emojis) && fruitData.emojis.length === 6, '包含 6 个 emoji');
+                assert(fruitData.emojis.includes('🍎'), '包含苹果 emoji');
+
+                // 测试 2: 生成动物主题
+                log('测试 2: 生成动物主题', 'info');
+                const animalData = await aiGenerator.generateMemoryGame('动物', '4-5岁', '中等');
+                assert(animalData.theme === '可爱动物', '动物主题正确');
+                assert(Array.isArray(animalData.emojis) && animalData.emojis.length === 6, '包含 6 个 emoji');
+                assert(animalData.emojis.includes('🐶'), '包含小狗 emoji');
+
+                // 测试 3: 缓存测试（第二次请求应该使用缓存）
+                log('测试 3: 缓存功能测试', 'info');
+                const fruitData2 = await aiGenerator.generateMemoryGame('水果', '4-5岁', '中等');
+                assert(fruitData2.fromCache === true, '第二次请求使用缓存');
+
+                // 测试 4: 不存在的主题应该使用随机主题
+                log('测试 4: 不存在的主题处理', 'info');
+                const randomData = await aiGenerator.generateMemoryGame('不存在的主题', '4-5岁', '中等');
+                assert(randomData.theme !== undefined, '返回有效的主题');
+                assert(Array.isArray(randomData.emojis), '返回有效的 emoji 数组');
+
+                log('✅ 记忆游戏测试完成', 'success');
+
+            } catch (error) {
+                log(`❌ 记忆游戏测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function runShapeTests() {
+            log('⭐ 开始形状配对测试...', 'info');
+
+            try {
+                // 测试 1: 生成形状游戏
+                log('测试 1: 生成形状游戏', 'info');
+                const shapeData = await aiGenerator.generateShapeGame('4-5岁', '中等');
+                assert(Array.isArray(shapeData.shapes) && shapeData.shapes.length === 8, '包含 8 个形状');
+                assert(shapeData.shapes[0].name !== undefined, '每个形状有名称');
+                assert(shapeData.shapes[0].emoji !== undefined, '每个形状有 emoji');
+
+                // 测试 2: 验证特定形状
+                log('测试 2: 验证形状数据', 'info');
+                const hasCircle = shapeData.shapes.some(s => s.emoji === '🔵');
+                assert(hasCircle, '包含圆形');
+
+                // 测试 3: 缓存测试
+                log('测试 3: 缓存功能测试', 'info');
+                const shapeData2 = await aiGenerator.generateShapeGame('4-5岁', '中等');
+                assert(shapeData2.fromCache === true, '第二次请求使用缓存');
+
+                log('✅ 形状配对测试完成', 'success');
+
+            } catch (error) {
+                log(`❌ 形状配对测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function runSoundTests() {
+            log('🔊 开始声音配对测试...', 'info');
+
+            try {
+                // 测试 1: 生成农场场景
+                log('测试 1: 生成农场场景', 'info');
+                const farmData = await aiGenerator.generateSoundGame('农场', '4-5岁', '中等');
+                assert(farmData.scene === '农场', '场景正确');
+                assert(Array.isArray(farmData.animals) && farmData.animals.length === 8, '包含 8 个动物');
+                assert(farmData.animals[0].emoji !== undefined, '每个动物有 emoji');
+                assert(farmData.animals[0].name !== undefined, '每个动物有名称');
+                assert(farmData.animals[0].sound_text !== undefined, '每个动物有声音文本');
+                assert(farmData.animals[0].audio_params !== undefined, '每个动物有音频参数');
+
+                // 测试 2: 生成森林场景
+                log('测试 2: 生成森林场景', 'info');
+                const forestData = await aiGenerator.generateSoundGame('森林', '4-5岁', '中等');
+                assert(forestData.scene === '森林', '场景正确');
+                assert(Array.isArray(forestData.animals) && forestData.animals.length === 8, '包含 8 个动物');
+
+                // 测试 3: 缓存测试
+                log('测试 3: 缓存功能测试', 'info');
+                const farmData2 = await aiGenerator.generateSoundGame('农场', '4-5岁', '中等');
+                assert(farmData2.fromCache === true, '第二次请求使用缓存');
+
+                // 测试 4: 不存在的场景
+                log('测试 4: 不存在的场景处理', 'info');
+                const randomData = await aiGenerator.generateSoundGame('不存在的场景', '4-5岁', '中等');
+                assert(randomData.scene !== undefined, '返回有效的场景');
+                assert(Array.isArray(randomData.animals), '返回有效的动物数组');
+
+                log('✅ 声音配对测试完成', 'success');
+
+            } catch (error) {
+                log(`❌ 声音配对测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function runCacheTests() {
+            log('💾 开始缓存测试...', 'info');
+
+            try {
+                // 测试 1: 获取缓存大小
+                log('测试 1: 获取缓存大小', 'info');
+                const cacheSize = aiGenerator.getCacheSize();
+                assert(typeof cacheSize === 'number' && cacheSize >= 0, '缓存大小是有效的数字');
+
+                // 测试 2: 清除缓存
+                log('测试 2: 清除缓存', 'info');
+                aiGenerator.clearCache();
+                assert(aiGenerator.getCacheSize() === 0, '缓存已清空');
+
+                // 测试 3: 重新生成应该创建新的缓存
+                log('测试 3: 重新生成测试', 'info');
+                await aiGenerator.generateMemoryGame('水果', '4-5岁', '中等');
+                assert(aiGenerator.getCacheSize() === 1, '创建了一个新的缓存项');
+
+                // 测试 4: 禁用缓存
+                log('测试 4: 禁用缓存测试', 'info');
+                aiGenerator.clearCache();
+                aiGenerator.setCacheEnabled(false);
+                const data1 = await aiGenerator.generateMemoryGame('水果', '4-5岁', '中等');
+                assert(data1.fromCache === false, '禁用缓存时不使用缓存');
+                assert(aiGenerator.getCacheSize() === 0, '禁用缓存时不存储缓存');
+                aiGenerator.setCacheEnabled(true); // 恢复缓存
+
+                // 测试 5: 启用缓存
+                log('测试 5: 启用缓存测试', 'info');
+                aiGenerator.clearCache();
+                aiGenerator.setCacheEnabled(true);
+                await aiGenerator.generateMemoryGame('水果', '4-5岁', '中等');
+                assert(aiGenerator.getCacheSize() === 1, '启用缓存时正常存储缓存');
+
+                // 测试 6: 获取可用主题
+                log('测试 6: 获取可用主题', 'info');
+                const themes = aiGenerator.getAvailableThemes();
+                assert(Array.isArray(themes) && themes.length > 0, '返回主题数组');
+                assert(themes.includes('水果'), '包含水果主题');
+                assert(themes.includes('动物'), '包含动物主题');
+
+                // 测试 7: 获取可用场景
+                log('测试 7: 获取可用场景', 'info');
+                const scenes = aiGenerator.getAvailableScenes();
+                assert(Array.isArray(scenes) && scenes.length === 4, '返回 4 个场景');
+                assert(scenes.includes('农场'), '包含农场场景');
+                assert(scenes.includes('森林'), '包含森林场景');
+
+                log('✅ 缓存测试完成', 'success');
+
+            } catch (error) {
+                log(`❌ 缓存测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载完成后自动运行测试
+        window.addEventListener('load', () => {
+            log('📝 测试页面加载完成', 'info');
+            log('点击按钮开始测试，或等待自动测试', 'info');
+
+            // 延迟 1 秒后自动运行测试
+            setTimeout(() => {
+                runAllTests();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
