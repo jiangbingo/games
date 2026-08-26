@@ -95,3 +95,63 @@ button:not(:disabled), [role="button"]:not([aria-disabled="true"]) { cursor: poi
 
 @media (max-width:760px) { .story-layer { padding:14px; }.theme-story-card { padding:15px 19px 20px; border-width:7px; }.story-art-frame { height:122px; }.theme-story-card h2 { font-size:27px; }.story-line { font-size:13px; }.story-sparkles span { width:31px; height:31px; font-size:17px; }.weekly-chart { gap:4px; }.weekly-totals { gap:5px; } }
 @media (max-width:1023px) { .keyboard-help-trigger,.keyboard-help-card { display:none; } }
+
+/* 路线邮票：只显示当前关内的小目标，不引入分数压力。 */
+.route-marker-status { position:relative; z-index:1; display:flex; align-items:center; gap:6px; margin-top:7px; color:color-mix(in srgb,var(--maze-ink) 74%,white); font-size:10px; font-weight:900; letter-spacing:.02em; }
+.route-marker-dots { display:flex; align-items:center; gap:3px; }
+.route-marker-dots i { color:color-mix(in srgb,var(--maze-ink) 25%,white); font-style:normal; font-size:12px; line-height:1; transition:color .18s ease,transform .18s cubic-bezier(.23,1,.32,1); }
+.route-marker-dots i.is-collected { color:var(--maze-goal); transform:scale(1.16) rotate(14deg); text-shadow:0 1px 5px color-mix(in srgb,var(--maze-goal) 45%,transparent); }
+.route-marker-status strong { margin-left:auto; color:var(--maze-accent); font-size:10px; }
+@media (max-width:760px) { .route-marker-status { margin-top:5px; gap:4px; font-size:9px; } .route-marker-dots i { font-size:10px; } }
+
+
+/* iPad Home Screen Web App：让固定控件避开圆角与系统手势区域。 */
+:root {
+  --maze-safe-top: max(22px, calc(env(safe-area-inset-top) + 12px));
+  --maze-safe-right: max(24px, calc(env(safe-area-inset-right) + 16px));
+  --maze-safe-bottom: max(25px, calc(env(safe-area-inset-bottom) + 16px));
+  --maze-safe-left: max(24px, calc(env(safe-area-inset-left) + 16px));
+}
+
+html { background: var(--background); overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
+body { overscroll-behavior: none; }
+
+.install-guide,.pwa-update { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-top:14px; padding:13px; border:1px solid rgba(67,109,81,.14); border-radius:16px; background:rgba(255,255,255,.64); }
+.install-guide div,.pwa-update div { display:grid; gap:3px; }
+.install-guide strong,.pwa-update strong { font-size:13px; }
+.install-guide small,.pwa-update small { max-width:440px; color:color-mix(in srgb,var(--maze-ink) 62%,white); font-size:10px; font-weight:700; line-height:1.5; }
+.install-guide > span { display:grid; place-items:center; width:38px; height:38px; flex:0 0 auto; border-radius:13px; color:var(--maze-wall); background:rgba(217,239,225,.78); font-size:23px; font-weight:900; }
+.pwa-update { background:rgba(255,247,199,.66); }
+.pwa-update button { min-height:42px; flex:0 0 auto; border:0; border-radius:12px; padding:0 12px; color:white; background:var(--maze-wall); font:800 11px "Noto Sans SC",sans-serif; }
+
+@media (min-width:768px) {
+  .maze-header { top:var(--maze-safe-top); left:var(--maze-safe-left); right:var(--maze-safe-right); }
+  .progress-card { top:calc(var(--maze-safe-top) + 92px); left:var(--maze-safe-left); }
+  .mission-card { top:calc(var(--maze-safe-top) + 92px); right:var(--maze-safe-right); }
+  .game-tools { left:var(--maze-safe-left); bottom:var(--maze-safe-bottom); }
+  .direction-pad { right:var(--maze-safe-right); bottom:var(--maze-safe-bottom); }
+  .success-banner { bottom:var(--maze-safe-bottom); }
+}
+
+@media (max-width:760px) {
+  :root {
+    --maze-safe-top: max(12px, calc(env(safe-area-inset-top) + 8px));
+    --maze-safe-right: max(13px, calc(env(safe-area-inset-right) + 10px));
+    --maze-safe-bottom: max(13px, calc(env(safe-area-inset-bottom) + 10px));
+    --maze-safe-left: max(13px, calc(env(safe-area-inset-left) + 10px));
+  }
+  .maze-header { top:var(--maze-safe-top); left:var(--maze-safe-left); right:var(--maze-safe-right); }
+  .progress-card { top:calc(var(--maze-safe-top) + 60px); left:var(--maze-safe-left); }
+  .mission-card { top:calc(var(--maze-safe-top) + 60px); right:var(--maze-safe-right); }
+  .game-tools { left:var(--maze-safe-left); bottom:var(--maze-safe-bottom); }
+  .direction-pad { right:var(--maze-safe-right); bottom:var(--maze-safe-bottom); }
+  .success-banner { bottom:calc(var(--maze-safe-bottom) + 164px); }
+  .install-guide,.pwa-update { align-items:flex-start; }
+  .install-guide small,.pwa-update small { max-width:260px; }
+  .pwa-update button { min-width:72px; }
+}
+
+@media (min-width:768px) and (max-width:1199px) and (orientation:portrait) {
+  .progress-card,.mission-card { top:calc(var(--maze-safe-top) + 101px); }
+  .success-banner { bottom:calc(var(--maze-safe-bottom) + 248px); }
+}

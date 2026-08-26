@@ -1,6 +1,8 @@
 /* 森林邮差日记设计：家长面板是干净的观察便签，不打断儿童主游戏的温暖绘本语气。 */
+import { useEffect, useState } from "react";
 import { Clock3, RotateCcw, ShieldCheck, Volume2, VolumeX, X } from "lucide-react";
 import type { WeeklyDay } from "@/game/activity";
+import { applyPwaUpdate, subscribeToPwaUpdate } from "@/pwa";
 
 type ParentPanelProps = {
   completedCount: number;
@@ -20,8 +22,17 @@ type ParentPanelProps = {
 
 const minutes = (seconds: number) => Math.max(0, Math.floor(seconds / 60));
 
+function isStandaloneWebApp() {
+  const navigatorWithStandalone = window.navigator as Navigator & { standalone?: boolean };
+  return window.matchMedia("(display-mode: standalone)").matches || navigatorWithStandalone.standalone === true;
+}
+
 export default function ParentPanel({ completedCount, stickerCount, dailySeconds, dailyLimit, soundEnabled, ambientEnabled, onClose, onDailyLimitChange, onToggleSound, onToggleAmbient, onResetProgress, resetArmed, weeklyDays }: ParentPanelProps) {
+  const [isStandalone] = useState(isStandaloneWebApp);
+  const [updateReady, setUpdateReady] = useState(false);
   const timeReached = dailySeconds >= dailyLimit * 60;
+
+  useEffect(() => subscribeToPwaUpdate(setUpdateReady), []);
   const totalSeconds = weeklyDays.reduce((sum, day) => sum + day.seconds, 0);
   const totalCompleted = weeklyDays.reduce((sum, day) => sum + day.completed, 0);
   const totalStickers = weeklyDays.reduce((sum, day) => sum + day.stickers, 0);
@@ -44,6 +55,8 @@ export default function ParentPanel({ completedCount, stickerCount, dailySeconds
           <button onClick={onToggleSound} aria-pressed={soundEnabled}><span>{soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</span><div><strong>互动音效</strong><small>{soundEnabled ? "已开启" : "已静音"}</small></div></button>
           <button onClick={onToggleAmbient} aria-pressed={ambientEnabled}><span>♬</span><div><strong>森林环境音</strong><small>{ambientEnabled ? "触摸后轻声播放" : "已关闭"}</small></div></button>
         </div>
+        {!isStandalone && <section className="install-guide" aria-label="添加到 iPad 主屏幕"><div><strong>添加到 iPad 主屏幕</strong><small>在 Safari 点“分享”，再选“添加到主屏幕”。以后孩子可从桌面直接、离线地打开游戏。</small></div><span aria-hidden="true">⇧</span></section>}
+        {updateReady && <section className="pwa-update" aria-live="polite"><div><strong>森林里有新内容</strong><small>更新会在重新打开游戏后生效，当前本地进度会保留。</small></div><button onClick={applyPwaUpdate}>立即更新</button></section>}
         <section className="weekly-report" aria-label="最近7天探索报告">
           <div className="weekly-report-heading"><strong>最近7天的探索报告</strong><small>只保存在这台设备</small></div>
           <div className="weekly-chart">
