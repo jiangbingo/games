@@ -5,7 +5,7 @@ import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, BookOpen, Check, Flower2, Ke
 import ParentPanel from "@/components/ParentPanel";
 import ThemeStory from "@/components/ThemeStory";
 import { createGameScene, type GameHandle } from "@/game/scene";
-import { readWeeklyActivity, recordDailyActivity } from "@/game/activity";
+import { playtimeKeyFor, readWeeklyActivity, recordDailyActivity } from "@/game/activity";
 import { LEVELS, getNextLevel } from "@/game/levels";
 import { SoundManager, type SoundEffect } from "@/game/SoundManager";
 import { getThemePresentation } from "@/game/themePresentation";
@@ -40,7 +40,7 @@ const readStickers = () => {
 const readSoundEnabled = () => localStorage.getItem("maze-sound-enabled") !== "false";
 const readAmbientEnabled = () => localStorage.getItem("maze-ambient-enabled") !== "false";
 const readDailyLimit = () => Number(localStorage.getItem("maze-daily-limit")) || 15;
-const todayPlaytimeKey = () => `maze-playtime-${new Date().toISOString().slice(0, 10)}`;
+const todayPlaytimeKey = () => playtimeKeyFor();
 const readDailySeconds = () => Number(localStorage.getItem(todayPlaytimeKey())) || 0;
 
 const stickerForLevel = (level: Level): StickerId => STICKERS[level.theme.id % STICKERS.length].id;
@@ -83,6 +83,8 @@ export default function GameCanvas() {
   const level = snapshot?.level ?? LEVELS[0];
   const palette = level.theme.palette;
   const completionCount = completed.length;
+  const routeMarkerTotal = snapshot?.routeMarkerTotal ?? 0;
+  const collectedRouteMarkerCount = snapshot?.collectedRouteMarkerCount ?? 0;
   const isDemo = useMemo(() => new URLSearchParams(window.location.search).has("demo"), []);
   const presentation = getThemePresentation(level.theme.id);
   const weeklyDays = useMemo(() => readWeeklyActivity(), [dailySeconds, completed, stickers]);
@@ -170,7 +172,8 @@ export default function GameCanvas() {
     if (!snapshot) return;
     if (snapshot.isComplete) setNotice("邮包送到啦！树叶邮票已经盖好。 ");
     else if (snapshot.collisionTick > 0) setNotice("这是一道树篱，我们换条小路看看。 ");
-  }, [snapshot?.collisionTick, snapshot?.isComplete]);
+    else if (snapshot.routeMarkerTick > 0) setNotice("叮！你找到一枚亮亮的邮路印记。 ");
+  }, [snapshot?.collisionTick, snapshot?.isComplete, snapshot?.routeMarkerTick]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -335,7 +338,17 @@ export default function GameCanvas() {
         <img className="theme-mission-art" src={presentation.assetUrl} alt="" aria-hidden="true" />
         <span className="mission-stamp">{level.theme.stamp}</span>
         <p>{level.theme.mission}</p>
-        <div className="mission-status"><Sparkles size={15} /> {notice}</div><small className="goal-label">终点：{presentation.goal}</small>
+        <div className="mission-status"><Sparkles size={15} /> {notice}</div>
+        {routeMarkerTotal > 0 && (
+          <div className="route-marker-status" aria-label={`本关已收集 ${collectedRouteMarkerCount} 枚，共 ${routeMarkerTotal} 枚邮路印记`}>
+            <span>邮路印记</span>
+            <div className="route-marker-dots" aria-hidden="true">
+              {Array.from({ length: routeMarkerTotal }).map((_, index) => <i className={index < collectedRouteMarkerCount ? "is-collected" : ""} key={index}>◆</i>)}
+            </div>
+            <strong>{collectedRouteMarkerCount}/{routeMarkerTotal}</strong>
+          </div>
+        )}
+        <small className="goal-label">终点：{presentation.goal}</small>
       </section>
 
       <section className="game-tools glass-card">

@@ -1,5 +1,5 @@
 import { createMaze, hasWall, samePoint, solveMaze, step } from "./maze";
-import type { Direction, GameSnapshot, Level, Maze, Point } from "./types";
+import type { Direction, GameSnapshot, Level, Maze, Point, RouteMarker } from "./types";
 
 type Listener = (snapshot: GameSnapshot) => void;
 
@@ -13,10 +13,14 @@ export class GameWorld {
   private isComplete = false;
   private collisionTick = 0;
   private hintPath: Point[] = [];
+  private routeMarkers: RouteMarker[] = [];
+  private collectedRouteMarkerIds = new Set<number>();
+  private routeMarkerTick = 0;
 
   constructor(private level: Level) {
     this._maze = createMaze(level.size, level.seed);
     this.position = { ...this._maze.start };
+    this.routeMarkers = this.createRouteMarkers();
   }
 
   get maze() {
@@ -32,6 +36,12 @@ export class GameWorld {
       isComplete: this.isComplete,
       collisionTick: this.collisionTick,
       hintPath: this.hintPath.map((point) => ({ ...point })),
+      routeMarkers: this.routeMarkers
+        .filter((marker) => !this.collectedRouteMarkerIds.has(marker.id))
+        .map((marker) => ({ ...marker })),
+      routeMarkerTotal: this.routeMarkers.length,
+      collectedRouteMarkerCount: this.collectedRouteMarkerIds.size,
+      routeMarkerTick: this.routeMarkerTick,
     };
   }
 
@@ -51,6 +61,9 @@ export class GameWorld {
     this.isComplete = false;
     this.collisionTick = 0;
     this.hintPath = [];
+    this.routeMarkers = this.createRouteMarkers();
+    this.collectedRouteMarkerIds.clear();
+    this.routeMarkerTick = 0;
     this.emit();
   }
 
@@ -65,6 +78,7 @@ export class GameWorld {
     this.position = step(this.position, direction);
     this.moves += 1;
     this.hintPath = [];
+    this.collectRouteMarker();
     this.isComplete = samePoint(this.position, this._maze.goal);
     this.emit();
     return true;
@@ -84,6 +98,7 @@ export class GameWorld {
     this.moves = 0;
     this.isComplete = false;
     this.hintPath = [];
+    this.collectedRouteMarkerIds.clear();
     this.emit();
   }
 
@@ -118,6 +133,29 @@ export class GameWorld {
   dispose() {
     this.stopDemo();
     this.listeners.clear();
+  }
+
+  private createRouteMarkers(): RouteMarker[] {
+    const path = solveMaze(this._maze);
+    const total = path.length >= 42 ? 3 : path.length >= 14 ? 2 : 1;
+    const markerIndexes = new Set<number>();
+
+    for (let index = 1; index <= total; index += 1) {
+      const suggested = Math.round(((path.length - 1) * index) / (total + 1));
+      markerIndexes.add(Math.max(1, Math.min(path.length - 2, suggested)));
+    }
+
+    return Array.from(markerIndexes).map((pathIndex, index) => ({
+      id: index,
+      ...path[pathIndex],
+    }));
+  }
+
+  private collectRouteMarker() {
+    const marker = this.routeMarkers.find((item) => samePoint(item, this.position));
+    if (!marker || this.collectedRouteMarkerIds.has(marker.id)) return;
+    this.collectedRouteMarkerIds.add(marker.id);
+    this.routeMarkerTick += 1;
   }
 
   private emit() {

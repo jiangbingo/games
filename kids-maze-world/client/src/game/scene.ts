@@ -50,6 +50,10 @@ export async function createGameScene(engine: Engine, canvas: HTMLCanvasElement,
   let playerMaterial: StandardMaterial;
   let currentSnapshot = world.snapshot;
   let currentSize = currentSnapshot.level.size;
+  let trailMaterial: StandardMaterial | null = null;
+  let hintMaterial: StandardMaterial | null = null;
+  let celebrationMaterial: StandardMaterial | null = null;
+  let routeMarkerMaterial: StandardMaterial | null = null;
   let unsubscribe: () => void = () => {};
 
   const makeMaterial = (name: string, color: string, alpha = 1) => {
@@ -68,6 +72,10 @@ export async function createGameScene(engine: Engine, canvas: HTMLCanvasElement,
     staticMeshes.splice(0).forEach((mesh) => mesh.dispose());
     dynamicMeshes.splice(0).forEach((mesh) => mesh.dispose());
     materials.splice(0).forEach((material) => material.dispose());
+    trailMaterial = null;
+    hintMaterial = null;
+    celebrationMaterial = null;
+    routeMarkerMaterial = null;
     player.dispose();
   };
 
@@ -91,10 +99,8 @@ export async function createGameScene(engine: Engine, canvas: HTMLCanvasElement,
 
   const redrawDynamic = (snapshot: GameSnapshot) => {
     dynamicMeshes.splice(0).forEach((mesh) => mesh.dispose());
-    const { trail, goal } = snapshot.level.theme.palette;
-    const trailMaterial = makeMaterial("fox-footprints", trail, 0.88);
-    const hintMaterial = makeMaterial("firefly-hints", goal, 0.74);
-    const celebrationMaterial = makeMaterial("delivery-sparkles", snapshot.level.theme.palette.accent, 0.95);
+    if (!trailMaterial || !hintMaterial || !celebrationMaterial || !routeMarkerMaterial) return;
+
     snapshot.history.slice(-16).forEach((point, index) => {
       const disc = MeshBuilder.CreateDisc(`trail-${index}`, { radius: 0.09, tessellation: 16 }, scene);
       const position = pointToVector(point, currentSize);
@@ -108,6 +114,14 @@ export async function createGameScene(engine: Engine, canvas: HTMLCanvasElement,
       disc.position = new Vector3(position.x, position.y, -0.15);
       disc.material = hintMaterial;
       dynamicMeshes.push(disc);
+    });
+    snapshot.routeMarkers.forEach((marker) => {
+      const stamp = MeshBuilder.CreateDisc(`route-stamp-${marker.id}`, { radius: 0.17, tessellation: 6 }, scene);
+      const position = pointToVector(marker, currentSize);
+      stamp.position = new Vector3(position.x, position.y, -0.16);
+      stamp.rotation.z = Math.PI / 6;
+      stamp.material = routeMarkerMaterial;
+      dynamicMeshes.push(stamp);
     });
     if (snapshot.isComplete) {
       const center = pointToVector(world.maze.goal, currentSize);
@@ -124,13 +138,17 @@ export async function createGameScene(engine: Engine, canvas: HTMLCanvasElement,
   const buildBoard = (snapshot: GameSnapshot) => {
     cleanupBoard();
     currentSize = snapshot.level.size;
-    const { paper, sky, wall, fox, goal, accent } = snapshot.level.theme.palette;
+    const { paper, sky, wall, trail, fox, goal, accent } = snapshot.level.theme.palette;
     const backdropMaterial = makeMaterial("forest-sky", sky);
     const paperMaterial = makeMaterial("maze-paper", paper);
     const wallMaterial = makeMaterial("maze-hedges", wall);
     const goalMaterial = makeMaterial("acorn-parcel", goal);
     playerMaterial = makeMaterial("fox-postman", fox);
     const accentMaterial = makeMaterial("forest-dots", accent, 0.5);
+    trailMaterial = makeMaterial("fox-footprints", trail, 0.88);
+    hintMaterial = makeMaterial("firefly-hints", goal, 0.74);
+    celebrationMaterial = makeMaterial("delivery-sparkles", accent, 0.95);
+    routeMarkerMaterial = makeMaterial("route-stamps", accent, 0.9);
     const boardExtent = currentSize + 0.72;
 
     addPlane("sky", 0, 0, boardExtent + 3.2, boardExtent + 3.2, 0.45, backdropMaterial);
