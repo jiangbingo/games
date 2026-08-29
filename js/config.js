@@ -10,7 +10,8 @@ const CONFIG = {
   bigmodel: {
     endpoint: 'https://api.z.ai/api/coding/paas/v4/chat/completions',
     model: 'glm-5',
-    apiKey: '2b4a8eb0a43548169757f6f7fb895b9d.9LMtXZ9gr56x4CGl',
+    // 出于安全考虑不在代码中存 key：运行时通过 setApiKey() 注入，或改走后端代理
+    apiKey: '',
 
     // 请求配置
     timeout: 30000,        // 请求超时时间（毫秒）
