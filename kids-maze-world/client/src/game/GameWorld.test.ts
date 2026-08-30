@@ -20,7 +20,7 @@ describe("GameWorld", () => {
 
       expect(path.length).toBeGreaterThan(1);
       expect(initial.routeMarkerTotal).toBeGreaterThanOrEqual(1);
-      expect(initial.routeMarkerTotal).toBeLessThanOrEqual(3);
+      expect(initial.routeMarkerTotal).toBeLessThanOrEqual(4);
 
       for (let index = 1; index < path.length; index += 1) {
         expect(world.move(directionBetween(path[index - 1], path[index]))).toBe(true);

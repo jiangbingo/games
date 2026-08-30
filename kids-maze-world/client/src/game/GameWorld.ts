@@ -137,7 +137,7 @@ export class GameWorld {
 
   private createRouteMarkers(): RouteMarker[] {
     const path = solveMaze(this._maze);
-    const total = path.length >= 42 ? 3 : path.length >= 14 ? 2 : 1;
+    const total = path.length >= 64 ? 4 : path.length >= 38 ? 3 : path.length >= 16 ? 2 : 1;
     const markerIndexes = new Set<number>();
 
     for (let index = 1; index <= total; index += 1) {
