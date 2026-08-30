@@ -24,8 +24,8 @@
 
 | # | 任务 | 来源/证据 | 验收标准 |
 |---|---|---|---|
-| T1-1 | 修更新语义：`pwa.ts:44-46`、`:58-60` 的 `SKIP_WAITING`→立即 reload 丢关卡进度 | 评估 P0 | 要么明确"立即刷新"，要么关卡退出后应用；更新前保存最小会话状态（步数/邮票） |
-| T1-2 | 缓存版本治理：`sw.js:1` 固定名 `maze-explorer-shell-v1` → 构建 hash/版本化缓存名 + 新旧缓存切换回归用例 | 评估 P0 | 新版本资源生效、旧缓存可清理、离线不白屏 |
+| T1-1 | ✅ 2026-08-30 完成：`pwa.ts` 删除 `controllerchange`→立即 `reload()`——新 SW 接管后仅收起横幅，不打断进行中关卡，下次打开自动用新版（与家长面板"重开后生效、进度保留"文案一致；关卡/邮票/进度本就持久化在 localStorage） | 语义=关卡退出后应用，进度零丢失；待 T1-3 真机更新流程验证 |
+| T1-2 | ✅ 2026-08-30 完成：`sw.js` 缓存名 `__BUILD_VERSION__` 由 vite 构建时注入（每次部署自动换代+activate 清旧缓存）；请求两档策略——导航与非 /assets/ 走 networkFirst（离线回退 index.html）；/assets/ 一律 cacheFirst（vite 产物全带内容 hash、不可变，原设想的 stale-while-revalidate 档无陈旧风险，并入此档，见 sw.js 内注释） | `pnpm build` 产物注入验证 ✓（`maze-explorer-shell-mtf9y9b5`）、node --check 语法 ✓；新旧缓存切换待 T1-3 真机回归 |
 | T1-3 | 两台不同尺寸/系统 iPad 跑完 `IPAD_PWA_TEST_CHECKLIST.md`（6 组 27 项：安装/离线冷启动/横竖屏/Safe Area/后台恢复/音频/更新） | 评估 P0 | 全部通过并记录设备型号、iPadOS、Safari 版本、截图，绑定 commit |
 
 只有 T1 全部通过，才允许合并 main 发布生产。

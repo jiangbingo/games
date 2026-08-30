@@ -42,7 +42,8 @@ export function registerPwaServiceWorker() {
       });
 
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      window.location.reload();
+      /* 新 SW 接管后不 reload：进行中的关卡绝不被打断，横幅收起，下次打开自动用新版（与家长面板文案一致）。 */
+      setUpdateReady(false);
     });
   }, { once: true });
 }

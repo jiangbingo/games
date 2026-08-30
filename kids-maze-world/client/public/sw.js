@@ -1,4 +1,4 @@
-const CACHE_NAME = "maze-explorer-shell-v1";
+const CACHE_NAME = "maze-explorer-shell-__BUILD_VERSION__";
 const APP_SHELL = [
   "/",
   "/index.html",
@@ -31,9 +31,8 @@ self.addEventListener("message", (event) => {
 async function cacheFirst(request) {
   const cached = await caches.match(request);
   if (cached) return cached;
-
   const response = await fetch(request);
-  if (response.ok && new URL(request.url).origin === self.location.origin) {
+  if (response.ok) {
     const cache = await caches.open(CACHE_NAME);
     cache.put(request, response.clone());
   }
@@ -58,7 +57,8 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  if (event.request.mode === "navigate") {
+  /* 每次部署缓存换代（缓存名含构建版本），/assets/ 一律 cacheFirst 不会跨版本陈旧。 */
+  if (event.request.mode === "navigate" || !url.pathname.startsWith("/assets/")) {
     event.respondWith(networkFirst(event.request));
     return;
   }
