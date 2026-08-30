@@ -76,9 +76,9 @@ Cloudflare Pages 对仓库内非生产分支和 Pull Request 可以创建独立�
 
 | 症状 | 优先检查 | 处置原则 |
 |---|---|---|
-| `ERR_PNPM_NO_IMPORTER_MANIFEST_FOUND` | Cloudflare Root directory 是否错误为 `/`。 | 改回 `kids-maze-world`；不要通过复制 `package.json` 到仓库根目录规避。 |
+| `ERR_PNPM_NO_IMPORTER_MANIFEST_FOUND` | Cloudflare Root directory 是否错误为 `/`。 | 改回 `kids-maze-world`；仓库根的 `package.json` / `pnpm-workspace.yaml` 是 workspace 配置（2026-08-30 起），属预期存在，不要删除或绕过。 |
 | 找不到 `dist/public` | 构建命令 / 输出目录、`vite.config.ts`、构建日志。 | 保持 `pnpm build` 与 `dist/public`，先本机复现。 |
-| pnpm / Node 安装失败 | `NODE_VERSION=22`、`packageManager`、`pnpm-lock.yaml`。 | 先本机冻结安装；不要删除 lockfile。 |
+| pnpm / Node 安装失败 | `NODE_VERSION=22`、`packageManager`、仓库根 `pnpm-lock.yaml`（workspace 唯一锁文件）。 | 先本机冻结安装；不要删除根锁文件；改动依赖后必须重新生成并提交根锁文件再触发部署。 |
 | 资源 404 | `client/public/assets`、源码 `/assets/` 引用、Pages 构建产物。 | 不要改回 `/manus-storage/`；逐条验证路径与大小写。 |
 | 页面可开但迷宫空白 | 浏览器控制台、Babylon chunk、canvas 尺寸和 `scene.ts` 生命周期。 | 先检查静态资源和 console，再处理 GPU / WebGL 兼容性。 |
 | 新旧图片混用 | `_headers` 中一年 immutable 缓存及稳定文件名。 | 改用版本化文件名，必要时按用户确认清理缓存。 |
