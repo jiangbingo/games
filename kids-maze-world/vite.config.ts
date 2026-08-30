@@ -203,7 +203,21 @@ function vitePluginStorageProxy(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy()];
+/* 每次构建给 sw.js 注入版本号：部署后 SW 自动更新换代并清理旧缓存，避免"改了应用、用户永远拿旧版"。 */
+function vitePluginSwBuildVersion(): Plugin {
+  return {
+    name: "sw-build-version",
+    apply: "build",
+    closeBundle() {
+      const swPath = path.resolve(PROJECT_ROOT, "dist/public/sw.js");
+      const version = Date.now().toString(36);
+      const code = fs.readFileSync(swPath, "utf-8").replace("__BUILD_VERSION__", version);
+      fs.writeFileSync(swPath, code);
+    },
+  };
+}
+
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginStorageProxy(), vitePluginSwBuildVersion()];
 
 export default defineConfig({
   plugins,

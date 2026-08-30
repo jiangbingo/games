@@ -1,0 +1,4 @@
+packages:
+  - kids-maze-world
+  - backend
+  - packages/*

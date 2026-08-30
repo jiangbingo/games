@@ -41,6 +41,10 @@ export type Maze = {
   goal: Point;
 };
 
+export type RouteMarker = Point & {
+  id: number;
+};
+
 export type GameSnapshot = {
   level: Level;
   position: Point;
@@ -49,4 +53,8 @@ export type GameSnapshot = {
   isComplete: boolean;
   collisionTick: number;
   hintPath: Point[];
+  routeMarkers: RouteMarker[];
+  routeMarkerTotal: number;
+  collectedRouteMarkerCount: number;
+  routeMarkerTick: number;
 };

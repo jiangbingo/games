@@ -1,11 +1,12 @@
 /* 森林邮差日记设计：自然观察绘本、纸张质感和大尺寸儿童操作区。 */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Engine } from "@babylonjs/core/Engines/engine";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, BookOpen, Check, Flower2, Keyboard, Lightbulb, Map, MoonStar, PackageOpen, RotateCcw, Settings2, Sparkles, Undo2, Volume2, VolumeX, Wind, X } from "lucide-react";
+import { BookOpen, Check, Flower2, Keyboard, Lightbulb, Map, MoonStar, PackageOpen, RotateCcw, Settings2, Sparkles, Undo2, Volume2, VolumeX, Wind, X } from "lucide-react";
 import ParentPanel from "@/components/ParentPanel";
 import ThemeStory from "@/components/ThemeStory";
 import { createGameScene, type GameHandle } from "@/game/scene";
-import { readWeeklyActivity, recordDailyActivity } from "@/game/activity";
+import { consumeStep, pickFollowStep, type WorldPoint } from "@/game/follow";
+import { playtimeKeyFor, readWeeklyActivity, recordDailyActivity } from "@/game/activity";
 import { LEVELS, getNextLevel } from "@/game/levels";
 import { SoundManager, type SoundEffect } from "@/game/SoundManager";
 import { getThemePresentation } from "@/game/themePresentation";
@@ -40,25 +41,34 @@ const readStickers = () => {
 const readSoundEnabled = () => localStorage.getItem("maze-sound-enabled") !== "false";
 const readAmbientEnabled = () => localStorage.getItem("maze-ambient-enabled") !== "false";
 const readDailyLimit = () => Number(localStorage.getItem("maze-daily-limit")) || 15;
-const todayPlaytimeKey = () => `maze-playtime-${new Date().toISOString().slice(0, 10)}`;
+const todayPlaytimeKey = () => playtimeKeyFor();
 const readDailySeconds = () => Number(localStorage.getItem(todayPlaytimeKey())) || 0;
 
 const stickerForLevel = (level: Level): StickerId => STICKERS[level.theme.id % STICKERS.length].id;
 
-function getDirectionFromSwipe(start: { x: number; y: number }, end: { x: number; y: number }): Direction | null {
-  const dx = end.x - start.x;
-  const dy = end.y - start.y;
-  const minimumTravel = window.innerWidth >= 768 ? 44 : 34;
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < minimumTravel) return null;
-  if (Math.abs(dx) > Math.abs(dy)) return dx > 0 ? "right" : "left";
-  return dy > 0 ? "down" : "up";
-}
+const FOLLOW_TICK_MS = 40;
+const FOLLOW_STEPS_PER_TICK = 3;
+const FOLLOW_SOUND_GAP_MS = 140;
+const FOLLOW_RELEASE_DRAIN_STEPS = 16;
+const TAP_MAX_MOVE_PX = 12;
+const TAP_MAX_DURATION_MS = 400;
+
+type FollowState = {
+  pointerId: number;
+  finger: WorldPoint;
+  consumed: WorldPoint;
+  timer: number;
+  lastSoundAt: number;
+};
+
+type TapProbe = { pointerId: number; x: number; y: number; at: number };
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const startedRef = useRef(false);
   const handleRef = useRef<GameHandle | null>(null);
-  const swipeRef = useRef<{ x: number; y: number } | null>(null);
+  const followRef = useRef<FollowState | null>(null);
+  const tapProbeRef = useRef<TapProbe | null>(null);
   const completionRef = useRef(new Set<number>(readCompleted()));
   const stickerRef = useRef(new Set<StickerId>(readStickers()));
   const completionEpisodeRef = useRef<number | null>(null);
@@ -78,11 +88,15 @@ export default function GameCanvas() {
   const [dailySeconds, setDailySeconds] = useState(readDailySeconds);
   const [dailyLimit, setDailyLimit] = useState(readDailyLimit);
   const [isKeyboardHelpOpen, setIsKeyboardHelpOpen] = useState(false);
-  const [notice, setNotice] = useState("轻点方向石，带小狐狸去送邮包。 ");
+  const [hudVisible, setHudVisible] = useState(true);
+  const [hudKick, setHudKick] = useState(0);
+  const [notice, setNotice] = useState("手指按住画布轻轻滑动，小狐狸会一路跟着你跑。 ");
 
   const level = snapshot?.level ?? LEVELS[0];
   const palette = level.theme.palette;
   const completionCount = completed.length;
+  const routeMarkerTotal = snapshot?.routeMarkerTotal ?? 0;
+  const collectedRouteMarkerCount = snapshot?.collectedRouteMarkerCount ?? 0;
   const isDemo = useMemo(() => new URLSearchParams(window.location.search).has("demo"), []);
   const presentation = getThemePresentation(level.theme.id);
   const weeklyDays = useMemo(() => readWeeklyActivity(), [dailySeconds, completed, stickers]);
@@ -107,6 +121,7 @@ export default function GameCanvas() {
       }
       handle = gameHandle;
       handleRef.current = gameHandle;
+      if (import.meta.env.DEV) (window as unknown as Record<string, unknown>).__mazeHandle = gameHandle;
       engine.runRenderLoop(() => gameHandle.scene.render());
     });
 
@@ -114,6 +129,7 @@ export default function GameCanvas() {
     window.addEventListener("resize", onResize);
     return () => {
       disposed = true;
+      stopFollow();
       window.removeEventListener("resize", onResize);
       handle?.dispose();
       engine.dispose();
@@ -122,6 +138,16 @@ export default function GameCanvas() {
       startedRef.current = false;
     };
   }, [isDemo]);
+
+  useEffect(() => {
+    if (!hudVisible) return;
+    const timer = window.setTimeout(() => setHudVisible(false), 4000);
+    return () => window.clearTimeout(timer);
+  }, [hudVisible, hudKick, level.id, snapshot?.isComplete]);
+
+  useEffect(() => {
+    soundRef.current.setAmbientTheme(presentation.sound);
+  }, [presentation.sound]);
 
   useEffect(() => {
     const openedAt = Date.now();
@@ -170,7 +196,8 @@ export default function GameCanvas() {
     if (!snapshot) return;
     if (snapshot.isComplete) setNotice("邮包送到啦！树叶邮票已经盖好。 ");
     else if (snapshot.collisionTick > 0) setNotice("这是一道树篱，我们换条小路看看。 ");
-  }, [snapshot?.collisionTick, snapshot?.isComplete]);
+    else if (snapshot.routeMarkerTick > 0) setNotice("叮！你找到一枚亮亮的邮路印记。 ");
+  }, [snapshot?.collisionTick, snapshot?.isComplete, snapshot?.routeMarkerTick]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -212,9 +239,53 @@ export default function GameCanvas() {
     soundRef.current.unlock();
     soundRef.current.play(effect, presentation.sound);
   };
-  const move = (direction: Direction) => {
-    const didMove = handleRef.current?.move(direction);
-    playSound(didMove ? "move" : "bump");
+  const stopFollow = () => {
+    const follow = followRef.current;
+    if (follow) window.clearInterval(follow.timer);
+    followRef.current = null;
+  };
+  const releaseFollow = (event: React.PointerEvent) => {
+    const follow = followRef.current;
+    if (!follow || follow.pointerId !== event.pointerId) return;
+    const handle = handleRef.current;
+    if (handle) {
+      let released = 0;
+      for (let count = 0; count < FOLLOW_RELEASE_DRAIN_STEPS; count += 1) {
+        const followStep = pickFollowStep(follow.consumed, follow.finger);
+        if (!followStep) break;
+        if (handle.move(followStep.direction)) {
+          follow.consumed = consumeStep(follow.consumed, followStep);
+          released += 1;
+        } else {
+          follow.consumed[followStep.axis] = follow.finger[followStep.axis];
+        }
+      }
+      if (released > 0 && performance.now() - follow.lastSoundAt >= FOLLOW_SOUND_GAP_MS) playSound("move");
+    }
+    stopFollow();
+  };
+  const runFollowTick = () => {
+    const follow = followRef.current;
+    const handle = handleRef.current;
+    if (!follow || !handle) return;
+    let moved = false;
+    let blocked = false;
+    for (let count = 0; count < FOLLOW_STEPS_PER_TICK; count += 1) {
+      const followStep = pickFollowStep(follow.consumed, follow.finger);
+      if (!followStep) break;
+      if (handle.move(followStep.direction)) {
+        follow.consumed = consumeStep(follow.consumed, followStep);
+        moved = true;
+      } else {
+        follow.consumed[followStep.axis] = follow.finger[followStep.axis];
+        blocked = true;
+      }
+    }
+    if (!moved && !blocked) return;
+    const now = performance.now();
+    if (now - follow.lastSoundAt < FOLLOW_SOUND_GAP_MS) return;
+    follow.lastSoundAt = now;
+    playSound(moved ? "move" : "bump");
   };
   const undo = () => { handleRef.current?.undo(); playSound("undo"); };
   const restart = () => {
@@ -279,8 +350,30 @@ export default function GameCanvas() {
     "--maze-goal": palette.goal,
   } as React.CSSProperties;
 
+  const wakeHud = () => {
+    setHudVisible(true);
+    setHudKick((kick) => kick + 1);
+  };
+
+  const trackTapDown = (event: React.PointerEvent) => {
+    tapProbeRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, at: performance.now() };
+  };
+
+  const wakeHudIfTapped = (event: React.PointerEvent) => {
+    const probe = tapProbeRef.current;
+    tapProbeRef.current = null;
+    if (!probe || probe.pointerId !== event.pointerId) return;
+    const moved = Math.hypot(event.clientX - probe.x, event.clientY - probe.y);
+    if (moved <= TAP_MAX_MOVE_PX && performance.now() - probe.at <= TAP_MAX_DURATION_MS) wakeHud();
+  };
+
   return (
-    <main className="maze-shell" style={themeStyle}>
+    <main
+      className={`maze-shell ${hudVisible ? "" : "hud-faded"}`}
+      style={themeStyle}
+      onPointerDownCapture={trackTapDown}
+      onPointerUpCapture={wakeHudIfTapped}
+    >
       <div className="observation-table" aria-hidden="true">
         <div className="paper-tape tape-one" />
         <div className="paper-tape tape-two" />
@@ -288,18 +381,6 @@ export default function GameCanvas() {
         <span className="board-seal seal-two">●</span>
         <span className="acorn-parcel">◆</span>
       </div>
-      <canvas
-        ref={canvasRef}
-        className="maze-canvas"
-        aria-label="可操作的森林迷宫"
-        onPointerDown={(event) => { soundRef.current.unlock(); swipeRef.current = { x: event.clientX, y: event.clientY }; }}
-        onPointerUp={(event) => {
-          if (!swipeRef.current) return;
-          const direction = getDirectionFromSwipe(swipeRef.current, { x: event.clientX, y: event.clientY });
-          swipeRef.current = null;
-          if (direction) move(direction);
-        }}
-      />
 
       <header className="maze-header">
         <div className="brand-lockup">
@@ -318,8 +399,10 @@ export default function GameCanvas() {
         </div>
       </header>
 
-      <aside className="progress-card glass-card">
+      <div className="hud-row">
+        <aside className="progress-card glass-card">
         <div className="progress-card-top">
+          <span className="theme-avatar" aria-hidden="true">{presentation.icon}</span>
           <span className="tiny-label">正在送</span>
           <span className="level-number">{level.id} / 120</span>
         </div>
@@ -331,12 +414,53 @@ export default function GameCanvas() {
         </div>
       </aside>
 
-      <section className="mission-card glass-card" aria-live="polite">
+        <section className="mission-card glass-card" aria-live="polite">
         <img className="theme-mission-art" src={presentation.assetUrl} alt="" aria-hidden="true" />
-        <span className="mission-stamp">{level.theme.stamp}</span>
+        <span className="mission-stamp">{presentation.icon} {level.theme.stamp}</span>
         <p>{level.theme.mission}</p>
-        <div className="mission-status"><Sparkles size={15} /> {notice}</div><small className="goal-label">终点：{presentation.goal}</small>
+        <div className="mission-status"><Sparkles size={15} /> {notice}</div>
+        {routeMarkerTotal > 0 && (
+          <div className="route-marker-status" aria-label={`本关已收集 ${collectedRouteMarkerCount} 枚，共 ${routeMarkerTotal} 枚邮路印记`}>
+            <span>邮路印记</span>
+            <div className="route-marker-dots" aria-hidden="true">
+              {Array.from({ length: routeMarkerTotal }).map((_, index) => <i className={index < collectedRouteMarkerCount ? "is-collected" : ""} key={index}>◆</i>)}
+            </div>
+            <strong>{collectedRouteMarkerCount}/{routeMarkerTotal}</strong>
+          </div>
+        )}
+        <small className="goal-label">终点：{presentation.goal}</small>
       </section>
+      </div>
+
+      <div className="maze-stage">
+        <canvas
+          ref={canvasRef}
+          className="maze-canvas"
+          aria-label="可操作的森林迷宫"
+          onPointerDown={(event) => {
+            soundRef.current.unlock();
+            try {
+              event.currentTarget.setPointerCapture(event.pointerId);
+            } catch {
+              /* Safari 偶发对已释放指针抛错，不影响滑动跟随 */
+            }
+            stopFollow();
+            const finger = handleRef.current?.pickWorld(event.clientX, event.clientY);
+            if (!finger) return;
+            followRef.current = { pointerId: event.pointerId, finger, consumed: finger, timer: window.setInterval(runFollowTick, FOLLOW_TICK_MS), lastSoundAt: 0 };
+          }}
+          onPointerMove={(event) => {
+            const follow = followRef.current;
+            if (!follow || follow.pointerId !== event.pointerId) return;
+            const finger = handleRef.current?.pickWorld(event.clientX, event.clientY);
+            if (finger) follow.finger = finger;
+          }}
+          onPointerUp={releaseFollow}
+          onPointerCancel={(event) => {
+            if (followRef.current?.pointerId === event.pointerId) stopFollow();
+          }}
+        />
+      </div>
 
       <section className="game-tools glass-card">
         <div className="tool-stat"><span>走了</span><strong>{snapshot?.moves ?? 0} 步</strong></div>
@@ -344,14 +468,6 @@ export default function GameCanvas() {
         <button onClick={undo} className="tool-button" aria-label="撤销上一步"><Undo2 size={18} />撤销</button>
         <button onClick={restart} className="tool-button" aria-label="重新开始本关"><RotateCcw size={18} />重来</button>
         <button onClick={hint} className="tool-button is-accent" aria-label="使用萤火虫提示"><Lightbulb size={18} />提示</button>
-      </section>
-
-      <section className="direction-pad" aria-label="迷宫方向控制">
-        <button className="direction-button up" onClick={() => move("up")} aria-label="向上走"><ArrowUp size={26} /></button>
-        <button className="direction-button left" onClick={() => move("left")} aria-label="向左走"><ArrowLeft size={26} /></button>
-        <div className="fox-center" aria-hidden="true"><span>●</span></div>
-        <button className="direction-button right" onClick={() => move("right")} aria-label="向右走"><ArrowRight size={26} /></button>
-        <button className="direction-button down" onClick={() => move("down")} aria-label="向下走"><ArrowDown size={26} /></button>
       </section>
 
       {isKeyboardHelpOpen && (
@@ -367,7 +483,7 @@ export default function GameCanvas() {
 
       {snapshot?.isComplete && (
         <section className="success-banner glass-card" aria-live="assertive">
-          <div className="success-icon"><Check size={26} /></div>
+          <div className="success-icon">{presentation.icon}</div>
           <div><strong>邮包准时送到！</strong><span>这枚 {level.theme.stamp} 归你啦。</span></div>
           <button onClick={() => { setCelebrationSticker(null); nextLevel(); }}>下一封信 <kbd>Enter</kbd><kbd>Space</kbd></button>
         </section>
@@ -431,7 +547,7 @@ export default function GameCanvas() {
                 const chapterLevels = LEVELS.slice(chapterIndex * 10, chapterIndex * 10 + 10);
                 return (
                   <div className="level-chapter" id={`chapter-${chapterIndex + 1}`} key={chapterIndex}>
-                    <div className="chapter-heading"><span>{String(chapterIndex + 1).padStart(2, "0")}</span><strong>{chapterLevels[0].theme.name}</strong><small>{chapterLevels[0].theme.mission}</small></div>
+                    <div className="chapter-heading"><span>{String(chapterIndex + 1).padStart(2, "0")}</span><strong>{getThemePresentation(chapterLevels[0].theme.id).icon} {chapterLevels[0].theme.name}</strong><small>{chapterLevels[0].theme.mission}</small></div>
                     <div className="level-grid">
                       {chapterLevels.map((item) => {
                         const isDone = completed.includes(item.id);

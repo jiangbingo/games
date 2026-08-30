@@ -20,7 +20,7 @@ const styleNames = ["晨光版", "露珠版", "微风版", "云朵版", "叶影�
 export const LEVELS: Level[] = Array.from({ length: 120 }, (_, index) => {
   const id = index + 1;
   const theme = themes[Math.floor(index / 10)];
-  const size = 5 + Math.min(5, Math.floor(index / 20));
+  const size = 8 + Math.min(7, Math.floor(index / 12));
 
   return {
     id,
