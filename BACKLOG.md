@@ -90,7 +90,9 @@
 | T3-0e | ✅ vercel.json routes 头（builds 模式下顶层 headers 不生效，直接走 routes）：`/sw.js`、`/manifest.webmanifest` 均 `max-age=0, must-revalidate`；线上响应头待部署后验证 | 完成（响应头待部署验证） |
 | T3-0f | ✅ `tools/add-pwa-meta.mjs` 幂等批量给 13 页加 manifest/theme-color/apple 三件套/apple-touch-icon；图标已生成 | 完成 |
 
-**本机验证（2026-09-03，Playwright+Chrome headless）**：SW active scope=/，19 项预缓存全中；离线导航 snake-game 200；零 pageerror/零 console error；`make test` 绿；注入/还原往返工作区干净。安装提示/Lighthouse installable 待部署后验证。
+**本机验证（2026-09-03，Playwright+Chrome headless）**：SW active scope=/，19 项预缓存全中；离线导航 snake-game 200；零 pageerror/零 console error；`make test` 绿；注入/还原往返工作区干净。**更新流程 E2E（review 后补测）**：模拟新部署→横幅弹出→点更新→skipWaiting 无缝接管→离线重载 200，全链路通过。已知良态瞬态：版本交接窗口内旧代 SW 的残余 cache.put 会留下旧名缓存（永不读取，下次 activate 清，迷宫生产版同语义）。安装提示/Lighthouse installable 待部署后验证。
+
+**Review 修复（2026-09-03）**：① BLOCKER——pwa.js 更新按钮误把 `SKIP_WAITING` 发给 controller（旧 SW，skipWaiting 空操作），已改为发 `registration.waiting`（与迷宫 pwa.ts 同语义）；② IMPORTANT——补上「打开页面时已有等待中更新」的横幅分支；③ MINOR——`make deploy-root` 的 `-@vercel` 失败静默，加显式告警。
 
 **意外发现并修复的存量 P0（2026-09-03）**：`classic-games/snake-game.html` 唯一 inline script 第 785 行多一个右括号 → 整段脚本解析失败，**线上贪吃蛇完全无法运行**；已修复（`mode.slice(1))` → `mode.slice(1)`）。同页 START/RESET 按钮缺 `id` 导致调试监听报错，已补 `id="startBtn"/"resetBtn"`（onclick 内联绑定一直有效，功能未断）；[DEBUG] 日志清理归入 T3-1。另发现水墨方块 `@import` Google Fonts 远程字体（离线降级系统字体，不阻塞），本地化归入 T3-2。
 

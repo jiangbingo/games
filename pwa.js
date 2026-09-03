@@ -11,6 +11,14 @@
   if (location.protocol !== "https:" && !isLocal) return;
 
   var banner = null;
+  var swReg = null;
+
+  function showUpdateBannerIfWaiting() {
+    /* 新 SW 已安装且页面已被旧 SW 控制 → 本次会话结束后可无缝换版 */
+    if (swReg && swReg.waiting && navigator.serviceWorker.controller) {
+      ensureBanner().style.display = "flex";
+    }
+  }
 
   function ensureBanner() {
     if (banner) return banner;
@@ -37,9 +45,9 @@
     updateBtn.addEventListener("click", function () {
       updateBtn.disabled = true;
       updateBtn.textContent = "更新中…";
-      if (navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({ type: "SKIP_WAITING" });
-      }
+      /* 必须发给等待中的新 SW；发给 controller（旧 SW）的 skipWaiting 是空操作 */
+      var target = (swReg && swReg.waiting) || navigator.serviceWorker.controller;
+      if (target) target.postMessage({ type: "SKIP_WAITING" });
     });
 
     var closeBtn = document.createElement("button");
@@ -63,14 +71,14 @@
   navigator.serviceWorker
     .register("/sw.js", { scope: "/" })
     .then(function (reg) {
-      /* 首次安装（controller 为空）静默完成，不弹横幅 */
+      swReg = reg;
+      /* 上次访问留下的等待中更新：打开页面就弹横幅（与迷宫 pwa.ts 同语义） */
+      showUpdateBannerIfWaiting();
       reg.addEventListener("updatefound", function () {
         var installing = reg.installing;
         if (!installing) return;
         installing.addEventListener("statechange", function () {
-          if (installing.state === "installed" && navigator.serviceWorker.controller) {
-            ensureBanner().style.display = "flex";
-          }
+          if (installing.state === "installed") showUpdateBannerIfWaiting();
         });
       });
       /* 页面停留期间每 60 分钟主动查一次新版本 */

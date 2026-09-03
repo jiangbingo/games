@@ -71,7 +71,7 @@ deploy:
 deploy-root:
 	@echo "📦 部署根站（游戏中心 PWA）到 Vercel..."
 	@node tools/inject-sw-version.mjs
-	-@vercel --prod
+	-@vercel --prod || echo "⚠️  vercel 部署失败，sw.js 已还原，可重试"
 	@node tools/inject-sw-version.mjs --restore
 	@git diff --exit-code -- sw.js
 
