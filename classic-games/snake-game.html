@@ -3,6 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Snake Game - Enhanced Version with iPad Touch Controls">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <title>Snake Game - Enhanced Version with iPad Touch Controls</title>
     <style>
         body {
@@ -292,8 +299,8 @@
         
         <div id="controls">
             <div class="control-row">
-                <button onclick="startGame()">START</button>
-                <button onclick="resetGame()">RESET</button>
+                <button onclick="startGame()" id="startBtn">START</button>
+                <button onclick="resetGame()" id="resetBtn">RESET</button>
             </div>
             
             <div class="control-row">
@@ -775,7 +782,7 @@
             document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
             
             // Update info
-            document.getElementById('modeInfo').textContent = 'Mode: ' + mode.charAt(0).toUpperCase() + mode.slice(1));
+            document.getElementById('modeInfo').textContent = 'Mode: ' + mode.charAt(0).toUpperCase() + mode.slice(1);
             
             // If in obstacle mode, generate obstacles
             if (mode === 'obstacles') {

@@ -1,4 +1,4 @@
-.PHONY: help start stop build deploy clean test
+.PHONY: help start stop build deploy deploy-root clean test
 
 help:
 	@echo "儿童逻辑思维游戏 - 可用命令:"
@@ -8,6 +8,7 @@ help:
 	@echo "  make test     - 运行代码测试"
 	@echo "  make build    - 构建生产版本"
 	@echo "  make deploy   - 部署到EdgeOne"
+	@echo "  make deploy-root - 注入SW版本号并部署根站到Vercel（游戏中心PWA）"
 	@echo "  make clean    - 清理构建文件"
 	@echo "  make status   - 查看服务状态"
 	@echo ""
@@ -66,6 +67,20 @@ deploy:
 	@echo ""
 	@make build
 	@echo "📁 构建文件已准备在 dist/ 目录"
+
+deploy-root:
+	@echo "📦 部署根站（游戏中心 PWA）到 Vercel..."
+	@node tools/inject-sw-version.mjs
+	-@vercel --prod
+	@node tools/inject-sw-version.mjs --restore
+	@git diff --exit-code -- sw.js
+
+set-sw-version:
+	@node tools/inject-sw-version.mjs
+	@echo "已注入本地 sw.js 版本号（联调用，勿提交）；还原：node tools/inject-sw-version.mjs --restore"
+
+restore-sw-version:
+	@node tools/inject-sw-version.mjs --restore
 
 clean:
 	@echo "🧹 清理构建文件..."

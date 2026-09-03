@@ -44,23 +44,27 @@
 
 ## 阶段 3：经典游戏 PWA 化 + 增强（对应指令 1，2026-08-30 详细化）
 
-### 架构决策 D1（待用户拍板，推荐方案 A）
+### 架构决策 D1（✅ 2026-09-03 用户拍板：方案 A）
 
 调研事实（2026-08-30 实测）：根级 `assets/` 为空，13 个游戏全部自包含单文件（11-52KB，合计约 133KB）；主页 index.html 零外部引用（无 script/link）；仅 memory-cards.html 引 `js/storage.js`，ai-api-test.html（非入口页）引 3 个 js。全站离线预缓存总量 <1MB。
 
 - **方案 A（推荐）：单站点 PWA——「游戏中心」整体可安装**。根级一套 manifest + sw.js + 图标 + 更新横幅，一次安装覆盖全部 13 个游戏并全量预缓存。理由：3-6 岁用户是家长装一次、孩子点一个图标进枢纽自选；PWA 基建 ×1 而非 ×12；与迷宫（独立域名独立 PWA）互不影响。T4-1 在此方案下收敛为「预缓存清单 + 每页 meta」，接近零成本。
 - 方案 B（备选）：每游戏目录化独立 PWA（12 套 manifest/sw/图标，manifest scope 限制在各自目录）。仅当"每个游戏必须能单独安装到主屏幕"是硬需求时选，否则是纯基建负担。
 
-### T3-0 根站点 PWA 基建（按方案 A，0.5-1 天）
+### T3-0 根站点 PWA 基建（✅ 2026-09-03 完成，按方案 A）
 
-| # | 子任务 | 落点 | 验收 |
-|---|---|---|---|
-| T3-0a | 根级 `manifest.webmanifest`（name=游戏中心（名字拍板时可改）、zh-CN、standalone、theme 色对齐主页、192/512 图标含 maskable） | 仓库根 | 安装提示正常、Lighthouse installable |
-| T3-0b | 根级 `sw.js`：迷宫版改编（同源守卫、两档策略保留），预缓存=主页+13 游戏页+`js/storage.js`；导航 networkFirst 离线回退主页，同源静态 cacheFirst | 仓库根 | 断网后全部游戏可玩 |
-| T3-0c | 版本注入（无构建场景）：sw.js 源码保留 `__BUILD_VERSION__` 占位；新增 `tools/inject-sw-version.mjs` + `make deploy-root`（注入 → `vercel --prod` → 还原工作区），与迷宫 vite 注入同语义 | tools/ + Makefile | 部署产物含真实版本号、git 工作区不脏 |
-| T3-0d | `pwa.js`（vanilla 更新横幅）：SW 注册 + installing→installed 提示 + `SKIP_WAITING` postMessage + controllerchange 只收横幅不刷新（与迷宫 T1-1 同语义）；index.html 引入并挂横幅 UI | 仓库根 pwa.js | 更新不打断进行中的游戏 |
-| T3-0e | vercel.json 增加 headers：`/sw.js` no-cache、`/manifest.webmanifest` no-cache（builds 模式若不生效则改走 routes 头） | vercel.json | 线上响应头可验证 |
-| T3-0f | 13 个游戏页 + 主页批量加 `<link rel="manifest">`、`theme-color`、`apple-mobile-web-app-*` meta（脚本化一次性修改）；生成主屏图标 192/512 | *.html + icons/ | iPad Safari 可添加到主屏幕 |
+| # | 子任务 | 状态 |
+|---|---|---|
+| T3-0a | ✅ 根级 `manifest.webmanifest`（name=Jiangbin 游戏中心、zh-CN、standalone、theme `#667eea` 对齐主页渐变、192/512 any+maskable 四图标由 `tools/generate-icons.py` 生成） | 完成 |
+| T3-0b | ✅ 根级 `sw.js`：迷宫版改编（同源守卫、导航 networkFirst 离线回退主页/缓存、同源静态 cacheFirst——整代换缓存保证无 hash 文件名也不陈旧；子资源失败不回退 HTML）；预缓存=主页+12 本地游戏页+`js/storage.js`+favicon+图标共 19 项。**偏差说明：迷宫在 pages.dev 外部域名，跨域不可由本源 SW 预缓存，其离线由自身 PWA 负责** | 完成 |
+| T3-0c | ✅ `tools/inject-sw-version.mjs`（注入/还原，git 短hash+时间戳36进制）+ `make deploy-root` / `set-sw-version` / `restore-sw-version`；注入→还原往返已验证不脏工作区 | 完成 |
+| T3-0d | ✅ `pwa.js`（vanilla 更新横幅）：SW 注册 + 60min 主动 update + installing→installed 提示 + `SKIP_WAITING` postMessage + controllerchange 只收横幅不刷新（与迷宫 T1-1 同语义）；index.html 引入 | 完成 |
+| T3-0e | ✅ vercel.json routes 头（builds 模式下顶层 headers 不生效，直接走 routes）：`/sw.js`、`/manifest.webmanifest` 均 `max-age=0, must-revalidate`；线上响应头待部署后验证 | 完成（响应头待部署验证） |
+| T3-0f | ✅ `tools/add-pwa-meta.mjs` 幂等批量给 13 页加 manifest/theme-color/apple 三件套/apple-touch-icon；图标已生成 | 完成 |
+
+**本机验证（2026-09-03，Playwright+Chrome headless）**：SW active scope=/，19 项预缓存全中；离线导航 snake-game 200；零 pageerror/零 console error；`make test` 绿；注入/还原往返工作区干净。安装提示/Lighthouse installable 待部署后验证。
+
+**意外发现并修复的存量 P0（2026-09-03）**：`classic-games/snake-game.html` 唯一 inline script 第 785 行多一个右括号 → 整段脚本解析失败，**线上贪吃蛇完全无法运行**；已修复（`mode.slice(1))` → `mode.slice(1)`）。同页 START/RESET 按钮缺 `id` 导致调试监听报错，已补 `id="startBtn"/"resetBtn"`（onclick 内联绑定一直有效，功能未断）；[DEBUG] 日志清理归入 T3-1。另发现水墨方块 `@import` Google Fonts 远程字体（离线降级系统字体，不阻塞），本地化归入 T3-2。
 
 ### T3-1 贪吃蛇增强（0.5-1 天）
 

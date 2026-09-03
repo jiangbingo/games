@@ -9,6 +9,16 @@
   ],
   "routes": [
     {
+      "src": "/sw.js",
+      "dest": "/sw.js",
+      "headers": { "Cache-Control": "public, max-age=0, must-revalidate" }
+    },
+    {
+      "src": "/manifest.webmanifest",
+      "dest": "/manifest.webmanifest",
+      "headers": { "Cache-Control": "public, max-age=0, must-revalidate" }
+    },
+    {
       "src": "/(.*)",
       "dest": "/$1"
     }
