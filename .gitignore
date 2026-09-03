@@ -5,6 +5,9 @@ build/
 # Node modules (if added later)
 node_modules/
 
+# Local tool state
+.omo/
+
 # IDE
 .vscode/
 .idea/
