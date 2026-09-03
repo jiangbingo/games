@@ -94,6 +94,8 @@
 
 **生产发布（2026-09-03，用户指令 push+部署）**：`main` 已推 origin（782598f..110ad04），根站经 `make deploy-root` 上 Vercel，生产别名 `https://games-six-omega.vercel.app`。线上实测：sw.js 版本 `games-hub-shell-110ad04-mtla08so`、响应头 `max-age=0, must-revalidate`、manifest content-type 正确、19 项预缓存全中、离线可玩、零报错、snake-game P0 修复已上线；Lighthouse installable/安装提示待 iPad 真机确认。同 push 触发 Cloudflare 迷宫重建（源码无变化，产物健康）。
 
+**泄露 key 验证（2026-09-03，已闭环）**：从 git 历史提取的旧 BigModel key 实测 API 返回 401 身份验证失败——已失效（吊销或过期），风险闭环，无需控制台操作。注意仓库为公开仓库，历史不可随意重写。
+
 **Review 修复（2026-09-03）**：① BLOCKER——pwa.js 更新按钮误把 `SKIP_WAITING` 发给 controller（旧 SW，skipWaiting 空操作），已改为发 `registration.waiting`（与迷宫 pwa.ts 同语义）；② IMPORTANT——补上「打开页面时已有等待中更新」的横幅分支；③ MINOR——`make deploy-root` 的 `-@vercel` 失败静默，加显式告警。
 
 **意外发现并修复的存量 P0（2026-09-03）**：`classic-games/snake-game.html` 唯一 inline script 第 785 行多一个右括号 → 整段脚本解析失败，**线上贪吃蛇完全无法运行**；已修复（`mode.slice(1))` → `mode.slice(1)`）。同页 START/RESET 按钮缺 `id` 导致调试监听报错，已补 `id="startBtn"/"resetBtn"`（onclick 内联绑定一直有效，功能未断）；[DEBUG] 日志清理归入 T3-1。另发现水墨方块 `@import` Google Fonts 远程字体（离线降级系统字体，不阻塞），本地化归入 T3-2。
