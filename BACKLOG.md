@@ -30,7 +30,35 @@
 
 只有 T1 全部通过，才允许合并 main 发布生产。
 
-> **发布记录（2026-08-30）**：用户指令"合并到main发布"，feat/ipad-pwa-baseline 提前放行合并 main。T1-3 双 iPad 真机清单与 T2-4 真机回归**尚未执行**，结果待补录；补录前如真机发现 P0 问题，按 OPS_RUNBOOK 以最近一次成功生产部署回滚。
+> **发布记录（2026-08-30）**：用户指令“合并到main发布”，feat/ipad-pwa-baseline 提前放行合并 main。T1-3 双 iPad 真机清单与 T2-4 真机回归**尚未执行**，结果待补录；补录前如真机发现 P0 问题，按 OPS_RUNBOOK 以最近一次成功生产部署回滚。
+
+### 生产站远程预检（✅ 2026-09-03 完成，桌面可验证部分）
+
+对 `https://kids-maze-world.pages.dev` 实测，全部通过：
+
+| 检查项 | 结果 |
+|---|---|
+| 首页 / manifest.webmanifest | 均 200，manifest 合法（standalone、theme `#5c8b83`、icons 192/512） |
+| sw.js 版本注入（T1-2） | ✓ 已注入真实版本 `maze-explorer-shell-mtfnec51`（非占位符），线上确为新 PWA 构建 |
+| sw.js 响应头 | `cache-control: no-cache, no-store, must-revalidate` ✓ |
+| APP_SHELL 4 资源抽查（logo/环境音/index hash 产物/图标） | 均 200 |
+| SW 注册 + T1-1 语义在产物内 | `serviceWorker.register` / `SKIP_WAITING` / `controllerchange` 均在 index 产物 JS 中 ✓ |
+
+### T1-3 / T2-4 真机结果补录模板（待填）
+
+> 执行方式：两台 iPad Safari 打开 `https://kids-maze-world.pages.dev`，按 `IPAD_PWA_TEST_CHECKLIST.md` 6 组 27 项逐项打勾；完成后把下表填好并删除本行。
+
+| 项 | 设备 A（____ iPad __ iPadOS __ Safari __） | 设备 B（____ iPad __ iPadOS __ Safari __） |
+|---|---|---|
+| 1 安装（添加到主屏幕、图标、独立窗口打开） | ☐ 通过 / 问题： | ☐ |
+| 2 离线冷启动（飞行模式冷启、120 关可玩） | ☐ | ☐ |
+| 3 横竖屏 + Safe Area | ☐ | ☐ |
+| 4 后台恢复（进度/音频不丢） | ☐ | ☐ |
+| 5 音频（环境音随主题、无爆音） | ☐ | ☐ |
+| 6 更新流程（新版本横幅、重开后生效、进度保留） | ☐ | ☐ |
+| T2-4 全流程（剧情卡→贴纸→下一关、手指跟随、家长面板） | ☐ | ☐ |
+
+结果：____（通过 / 发现问题清单：____；若 P0 → 按 OPS_RUNBOOK 回滚）
 
 ## 阶段 2：迷宫体验整改（对应 08-28 指令 2+4 的迷宫部分，2-3 天）
 
