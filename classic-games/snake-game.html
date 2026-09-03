@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -8,22 +8,38 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Snake Game - Enhanced Version with iPad Touch Controls">
+    <meta name="apple-mobile-web-app-title" content="贪吃蛇">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
-    <title>Snake Game - Enhanced Version with iPad Touch Controls</title>
+    <title>🐍 贪吃蛇 - 经典游戏</title>
     <style>
+        /* 主题变量：由 setSkin() 切换（森林/锦鲤），全站颜色从这里取 */
+        :root {
+            --bg: #10160f;
+            --fg: #7ddc82;
+            --fg-soft: #a8e6a1;
+            --gold: #ffcc00;
+            --accent: #5fd068;
+            --accent-hover: #8be492;
+            --panel: #16241a;
+            --panel-hover: #1d3122;
+            --panel-2: #131f16;
+            --border-dim: #24402c;
+            --glow: rgba(95, 208, 104, 0.25);
+        }
+
         body {
             margin: 0;
             padding: 20px;
             font-family: 'Courier New', monospace;
-            background-color: #1a1a1a;
-            color: #00ff00;
+            background-color: var(--bg);
+            color: var(--fg);
             display: flex;
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
             touch-action: manipulation; /* Prevent zoom on double-tap */
             -webkit-tap-highlight-color: transparent;
+            transition: background-color 0.4s ease, color 0.4s ease;
         }
         
         h1 {
@@ -40,10 +56,11 @@
         }
         
         #gameCanvas {
-            border: 3px solid #00ff00;
-            background-color: #000000;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
-            touch-action: none; /* Prevent scrolling on canvas */
+            border: 3px solid var(--accent);
+            background-color: var(--panel-2);
+            box-shadow: 0 0 20px var(--glow);
+            border-radius: 6px;
+            touch-action: none; /* 手指跟随：画布接管全部手势 */
             max-width: 100%;
             height: auto;
         }
@@ -82,9 +99,9 @@
         .dpad-btn {
             width: 80px;
             height: 80px;
-            background-color: #003300;
-            color: #00ff00;
-            border: 2px solid #00ff00;
+            background-color: var(--panel);
+            color: var(--fg);
+            border: 2px solid var(--accent);
             border-radius: 10px;
             font-size: 24px;
             font-weight: bold;
@@ -93,52 +110,54 @@
             justify-content: center;
             cursor: pointer;
             user-select: none;
+            -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
             transition: all 0.15s ease;
         }
         
         .dpad-btn:active, .dpad-btn.active {
-            background-color: #00ff00;
-            color: #000000;
+            background-color: var(--accent);
+            color: var(--bg);
             transform: scale(0.95);
         }
         
         .dpad-btn:hover {
-            background-color: #004400;
-            border-color: #33ff33;
+            background-color: var(--panel-hover);
+            border-color: var(--accent-hover);
         }
         
         /* Control buttons */
         button {
-            background-color: #00ff00;
-            color: #000000;
-            border: 2px solid #00ff00;
+            background-color: var(--accent);
+            color: var(--bg);
+            border: 2px solid var(--accent);
             padding: 12px 24px;
             font-size: 16px;
             font-family: 'Courier New', monospace;
             cursor: pointer;
             margin: 3px;
             font-weight: bold;
+            border-radius: 6px;
             transition: all 0.2s ease;
             -webkit-tap-highlight-color: transparent;
         }
         
         button:active, button.active {
-            background-color: #33ff33;
-            border-color: #33ff33;
+            background-color: var(--accent-hover);
+            border-color: var(--accent-hover);
             transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 255, 0, 0.3);
+            box-shadow: 0 4px 8px var(--glow);
         }
         
         button:hover {
-            background-color: #33ff33;
-            border-color: #33ff33;
+            background-color: var(--accent-hover);
+            border-color: var(--accent-hover);
         }
         
         select {
-            background-color: #000000;
-            color: #00ff00;
-            border: 2px solid #00ff00;
+            background-color: var(--bg);
+            color: var(--fg);
+            border: 2px solid var(--accent);
             padding: 8px 16px;
             font-size: 16px;
             font-family: 'Courier New', monospace;
@@ -156,26 +175,26 @@
             font-size: 28px;
             font-weight: bold;
             margin-bottom: 10px;
-            color: #33ff33;
+            color: var(--fg-soft);
         }
         
         #highScore {
             font-size: 18px;
             margin-bottom: 10px;
-            color: #ffcc00;
+            color: var(--gold);
         }
         
         .instructions {
             text-align: center;
-            color: #00ff00;
+            color: var(--fg);
             font-size: 14px;
             line-height: 1.6;
             margin-top: 30px;
         }
         
         .instructions kbd {
-            background-color: #000000;
-            border: 2px solid #00ff00;
+            background-color: var(--panel);
+            border: 2px solid var(--accent);
             padding: 4px 10px;
             border-radius: 4px;
             font-size: 14px;
@@ -185,8 +204,8 @@
         }
         
         .mode-info {
-            background-color: #002200;
-            border: 1px solid #00ff00;
+            background-color: var(--panel);
+            border: 1px solid var(--accent);
             padding: 10px 20px;
             border-radius: 8px;
             margin-bottom: 20px;
@@ -194,18 +213,18 @@
         }
         
         .mode-info strong {
-            color: #33ff33;
+            color: var(--fg-soft);
         }
         
         /* Touch instructions */
         .touch-instructions {
             text-align: center;
-            color: #00cc00;
+            color: var(--fg);
             font-size: 16px;
             margin-top: 20px;
             padding: 15px;
-            background-color: #001100;
-            border: 1px solid #003300;
+            background-color: var(--panel-2);
+            border: 1px solid var(--border-dim);
             border-radius: 8px;
         }
         
@@ -272,7 +291,7 @@
     </style>
 </head>
 <body>
-    <h1>🐍 SNAKE GAME ENHANCED</h1>
+    <h1>🐍 贪吃蛇</h1>
     
     <div id="gameContainer">
         <div id="highScore">High Score: 0</div>
@@ -299,38 +318,45 @@
         
         <div id="controls">
             <div class="control-row">
-                <button onclick="startGame()" id="startBtn">START</button>
-                <button onclick="resetGame()" id="resetBtn">RESET</button>
+                <button id="startBtn">开始</button>
+                <button id="resetBtn">重置</button>
+            </div>
+
+            <div class="control-row">
+                <label>皮肤:</label>
+                <button id="skinForest">🌲 森林</button>
+                <button id="skinKoi">🐟 锦鲤</button>
+            </div>
+
+            <div class="control-row">
+                <label>速度:</label>
+                <button id="speedSlow">慢</button>
+                <button id="speedMedium">中</button>
+                <button id="speedFast">快</button>
             </div>
             
             <div class="control-row">
-                <label>Speed:</label>
-                <button onclick="setSpeed('slow')" id="speedSlow">Slow</button>
-                <button onclick="setSpeed('medium')" id="speedMedium" class="active">Medium</button>
-                <button onclick="setSpeed('fast')" id="speedFast">Fast</button>
+                <label>棋盘:</label>
+                <button id="sizeSmall">小</button>
+                <button id="sizeMedium" class="active">中</button>
+                <button id="sizeLarge">大</button>
             </div>
             
             <div class="control-row">
-                <label>Size:</label>
-                <button onclick="setSize('small')" id="sizeSmall">Small</button>
-                <button onclick="setSize('medium')" id="sizeMedium" class="active">Medium</button>
-                <button onclick="setSize('large')" id="sizeLarge">Large</button>
-            </div>
-            
-            <div class="control-row">
-                <label>Mode:</label>
-                <button onclick="setMode('classic')" id="modeClassic" class="active">Classic</button>
-                <button onclick="setMode('wall')" id="modeWall">No Walls</button>
-                <button onclick="setMode('obstacles')" id="modeObstacles">Obstacles</button>
-                <button onclick="setMode('endless')" id="modeEndless">Endless</button>
+                <label>模式:</label>
+                <button id="modeClassic" class="active">经典</button>
+                <button id="modeWall">穿墙</button>
+                <button id="modeObstacles">障碍</button>
+                <button id="modeEndless">无尽</button>
             </div>
         </div>
         
         <div class="touch-instructions">
             <div class="icon">📱 🎮</div>
             <strong>触摸控制</strong>
-            <p><strong>虚拟方向键</strong>：点击 ↑ ↓ ← → 按钮</p>
-            <p><strong>滑动控制</strong>：在 Canvas 上滑动控制方向</p>
+            <p><strong>手指跟随</strong>：在画布上拖动手指，蛇跟着手指方向转弯（不会突然掉头）</p>
+            <p><strong>方向键</strong>：点击 ↑ ↓ ← → 按钮</p>
+            <p><strong>开始/重开</strong>：点按画布或「开始」按钮</p>
         </div>
     </div>
     
@@ -344,6 +370,10 @@
         <p><strong>No Walls</strong> - 穿墙模式，撞墙不死亡</p>
         <p><strong>Obstacles</strong> - 随机生成障碍，难度增加</p>
         <p><strong>Endless</strong> - 无尽模式，不会死亡</p>
+        
+        <h3>Skins:</h3>
+        <p><strong>森林</strong> - 深色丛林绿，经典夜景</p>
+        <p><strong>锦鲤</strong> - 暖白庭院，锦鲤橙鳞（T3-3 锦鲤禅庭参考）</p>
         
         <h3>Speed Levels:</h3>
         <p><strong>Slow</strong> - 适合新手，移动速度慢</p>
@@ -376,6 +406,32 @@
                 endless: { deathOnWall: false, deathOnSelf: false, endless: true }
             }
         };
+
+        /* 主题皮肤 ×2（T3-1）：画布内颜色取这里，页面铬色由 CSS 变量同步 */
+        const skins = {
+            forest: {
+                label: '森林',
+                bg: '#0b140d', grid: '#16241a',
+                snake: '#5fd068', snakeHead: '#a8e6a1', snakeEdge: '#2e7a3a',
+                food: '#ff6b6b', obstacle: '#c07b3a', overlay: 'rgba(11, 20, 13, 0.82)'
+            },
+            koi: {
+                label: '锦鲤',
+                bg: '#faf3e8', grid: '#efe2cd',
+                snake: '#ff8c42', snakeHead: '#e05a2b', snakeEdge: '#c9e800',
+                food: '#e63946', obstacle: '#8d6e63', overlay: 'rgba(60, 42, 30, 0.55)'
+            }
+        };
+        const skinCssVars = {
+            forest: { '--bg': '#10160f', '--fg': '#7ddc82', '--fg-soft': '#a8e6a1', '--gold': '#ffcc00',
+                      '--accent': '#5fd068', '--accent-hover': '#8be492', '--panel': '#16241a',
+                      '--panel-hover': '#1d3122', '--panel-2': '#131f16', '--border-dim': '#24402c',
+                      '--glow': 'rgba(95, 208, 104, 0.25)' },
+            koi:    { '--bg': '#f6ede0', '--fg': '#8c5a2b', '--fg-soft': '#e05a2b', '--gold': '#b8860b',
+                      '--accent': '#ff8c42', '--accent-hover': '#ffab6b', '--panel': '#f2e4cd',
+                      '--panel-hover': '#ecd9bc', '--panel-2': '#faf3e8', '--border-dim': '#dcc9a8',
+                      '--glow': 'rgba(255, 140, 66, 0.28)' }
+        };
         
         // Game state
         const canvas = document.getElementById('gameCanvas');
@@ -394,13 +450,18 @@
         let currentSize = 'medium';
         let currentMode = 'classic';
         let obstacles = [];
-        
-        // Touch gesture state
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let touchEndX = 0;
-        let touchEndY = 0;
-        let swipeThreshold = 30; // Minimum swipe distance
+        let gameOverFlag = false;
+
+        /* 主题皮肤（localStorage 记忆） */
+        let currentSkin = localStorage.getItem('snakeSkin');
+        if (!skins[currentSkin]) currentSkin = 'forest';
+
+        /* 吃食反馈：涟漪 + 飘字（逐帧动画，不用 CSS） */
+        let ripples = [];
+        let floaters = [];
+
+        /* 手指跟随状态（T2-1 范式：主导轴位移消费，阈值 0.62 格） */
+        let followState = null;
         
         // Initialize high score display
         document.getElementById('highScore').textContent = 'High Score: ' + highScore;
@@ -420,12 +481,26 @@
             canvas.height = size.height;
             draw();
         }
-        
+
+        function applySkin(name) {
+            if (!skins[name]) return;
+            currentSkin = name;
+            localStorage.setItem('snakeSkin', name);
+            const vars = skinCssVars[name];
+            for (const prop in vars) {
+                document.documentElement.style.setProperty(prop, vars[prop]);
+            }
+            document.querySelectorAll('[id^="skin"]').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('skin' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+            draw();
+        }
+
         function drawGrid() {
             const tileCount = getGridSize();
             const tileSize = getTileSize();
+            const skin = skins[currentSkin];
             
-            ctx.strokeStyle = '#003300';
+            ctx.strokeStyle = skin.grid;
             ctx.lineWidth = 1;
             
             for (let i = 0; i <= tileCount; i++) {
@@ -444,16 +519,72 @@
         
         function drawObstacles() {
             const tileSize = getTileSize();
+            const skin = skins[currentSkin];
             
-            ctx.fillStyle = '#ff6600';
+            ctx.fillStyle = skin.obstacle;
             obstacles.forEach(obs => {
                 ctx.fillRect(obs.x * tileSize + 1, obs.y * tileSize + 1, tileSize - 2, tileSize - 2);
             });
         }
+
+        function spawnEatEffects(tileX, tileY) {
+            const tileSize = getTileSize();
+            const cx = tileX * tileSize + tileSize / 2;
+            const cy = tileY * tileSize + tileSize / 2;
+            ripples.push({ x: cx, y: cy, born: performance.now() });
+            floaters.push({ x: cx, y: cy, text: '+10', born: performance.now() });
+        }
+
+        function drawEffects(now) {
+            const RIPPLE_MS = 450, FLOAT_MS = 800;
+            ripples = ripples.filter(r => now - r.born < RIPPLE_MS);
+            floaters = floaters.filter(f => now - f.born < FLOAT_MS);
+            const skin = skins[currentSkin];
+            ripples.forEach(r => {
+                const t = (now - r.born) / RIPPLE_MS;
+                ctx.globalAlpha = (1 - t) * 0.8;
+                ctx.strokeStyle = skin.snakeHead;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(r.x, r.y, 4 + t * getTileSize() * 1.6, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(r.x, r.y, 2 + t * getTileSize() * 0.9, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+            ctx.font = 'bold 14px \'Courier New\', monospace';
+            ctx.textAlign = 'center';
+            floaters.forEach(f => {
+                const t = (now - f.born) / FLOAT_MS;
+                ctx.globalAlpha = 1 - t;
+                ctx.fillStyle = skin.food;
+                ctx.fillText(f.text, f.x, f.y - 8 - t * 22);
+            });
+            ctx.globalAlpha = 1;
+            ctx.textAlign = 'start';
+        }
+
+        function drawOverlay() {
+            if (!gameOverFlag) return;
+            const skin = skins[currentSkin];
+            ctx.fillStyle = skin.overlay;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 24px \'Courier New\', monospace';
+            ctx.fillText('游戏结束', canvas.width / 2, canvas.height / 2 - 18);
+            ctx.font = 'bold 18px \'Courier New\', monospace';
+            ctx.fillText('得分：' + score, canvas.width / 2, canvas.height / 2 + 12);
+            ctx.font = '14px \'Courier New\', monospace';
+            ctx.fillText('点按画布或「开始」再来一局', canvas.width / 2, canvas.height / 2 + 42);
+            ctx.textAlign = 'start';
+        }
         
         function draw() {
+            const skin = skins[currentSkin];
+            const now = performance.now();
             // Clear canvas
-            ctx.fillStyle = '#000000';
+            ctx.fillStyle = skin.bg;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             // Draw grid
@@ -466,20 +597,18 @@
             
             // Draw food
             const tileSize = getTileSize();
-            ctx.fillStyle = '#ff0000';
+            ctx.fillStyle = skin.food;
             ctx.fillRect(food.x * tileSize + 2, food.y * tileSize + 2, tileSize - 4, tileSize - 4);
             
             // Draw snake
-            ctx.fillStyle = '#00ff00';
             snake.forEach((segment, index) => {
-                // Head is slightly different color
-                if (index === 0) {
-                    ctx.fillStyle = '#33ff33';
-                } else {
-                    ctx.fillStyle = '#00ff00';
-                }
+                ctx.fillStyle = index === 0 ? skin.snakeHead : skin.snake;
                 ctx.fillRect(segment.x * tileSize + 1, segment.y * tileSize + 1, tileSize - 2, tileSize - 2);
             });
+            
+            // Draw eat feedback + game over overlay
+            drawEffects(now);
+            drawOverlay();
             
             // Update score display
             document.getElementById('score').textContent = 'Score: ' + score;
@@ -539,8 +668,8 @@
             if (head.x === food.x && head.y === food.y) {
                 score += 10;
                 snake.push({...head}); // Grow snake
+                spawnEatEffects(head.x, head.y);
                 generateFood();
-                console.log('[DEBUG] Food eaten! Score:', score);
             }
             
             // Remove tail if not eating
@@ -592,8 +721,6 @@
                 
                 attempts++;
             }
-            
-            console.log('[DEBUG] Food generated at', food.x, food.y, 'attempts:', attempts);
         }
         
         function generateObstacles() {
@@ -637,21 +764,25 @@
                 
                 attempts++;
             }
-            
-            console.log('[DEBUG] Generated', obstacles.length, 'obstacles');
+        }
+        
+        /* 基础档位之上随得分平滑爬速（每吃 1 个 ×0.98，地板=档位的 45%） */
+        function effectiveInterval() {
+            const base = config.speeds[currentSpeed].interval;
+            return Math.max(base * 0.45, base * Math.pow(0.98, score / 10));
         }
         
         function gameLoop(timestamp) {
             if (!gameRunning) return;
             
-            const speed = config.speeds[currentSpeed];
             const elapsed = timestamp - lastTime;
             
-            if (elapsed > speed.interval) {
+            if (elapsed > effectiveInterval()) {
                 update();
-                draw();
                 lastTime = timestamp;
             }
+            /* 逐帧重绘：涟漪/飘字才能在 tick 之间平滑动画（400px 画布开销可忽略） */
+            draw();
             
             if (gameRunning) {
                 animationId = requestAnimationFrame(gameLoop);
@@ -659,11 +790,6 @@
         }
         
         function startGame() {
-            console.log('[DEBUG] START button clicked');
-            console.log('[DEBUG] Speed:', currentSpeed);
-            console.log('[DEBUG] Size:', currentSize);
-            console.log('[DEBUG] Mode:', currentMode);
-            
             // Cancel existing animation
             if (gameLoopId) {
                 cancelAnimationFrame(gameLoopId);
@@ -671,6 +797,9 @@
             
             // Reset and start
             gameRunning = true;
+            gameOverFlag = false;
+            ripples = [];
+            floaters = [];
             score = 0;
             snake = [{x: Math.floor(getGridSize()/2), y: Math.floor(getGridSize()/2)}];
             direction = {x: 1, y: 0};
@@ -691,8 +820,6 @@
         }
         
         function resetGame() {
-            console.log('[DEBUG] RESET button clicked');
-            
             // Cancel existing animation
             if (gameLoopId) {
                 cancelAnimationFrame(gameLoopId);
@@ -700,6 +827,9 @@
             
             // Reset state
             gameRunning = false;
+            gameOverFlag = false;
+            ripples = [];
+            floaters = [];
             score = 0;
             snake = [{x: Math.floor(getGridSize()/2), y: Math.floor(getGridSize()/2)}];
             direction = {x: 1, y: 0};
@@ -710,8 +840,8 @@
         }
         
         function gameOver() {
-            console.log('[DEBUG] Game Over! Final Score:', score);
             gameRunning = false;
+            gameOverFlag = true;
             cancelAnimationFrame(gameLoopId);
             
             // Update high score if needed
@@ -721,15 +851,11 @@
                 document.getElementById('highScore').textContent = 'High Score: ' + highScore;
             }
             
-            if (!config.modes[currentMode].endless) {
-                alert('游戏结束！得分：' + score);
-            } else {
-                alert('无尽模式！得分：' + score);
-            }
+            /* 画布内结算（替代 alert）：点按画布或「开始」按钮再来一局 */
+            draw();
         }
         
         function setSpeed(speed) {
-            console.log('[DEBUG] Setting speed:', speed);
             currentSpeed = speed;
             
             // Update button styles
@@ -740,22 +866,10 @@
             
             // Update info
             document.getElementById('speedInfo').textContent = 'Speed: ' + speed.charAt(0).toUpperCase() + speed.slice(1);
-            
-            // If game is running, restart with new speed
-            if (gameRunning) {
-                const wasPlaying = true;
-                gameRunning = false;
-                if (gameLoopId) {
-                    cancelAnimationFrame(gameLoopId);
-                }
-                if (wasPlaying) {
-                    startGame();
-                }
-            }
+            /* 游戏中换档只改基准速度，不重开、不清分（速度爬升每 tick 读 effectiveInterval） */
         }
         
         function setSize(size) {
-            console.log('[DEBUG] Setting size:', size);
             currentSize = size;
             
             // Update button styles
@@ -772,7 +886,6 @@
         }
         
         function setMode(mode) {
-            console.log('[DEBUG] Setting mode:', mode);
             currentMode = mode;
             
             // Update button styles
@@ -795,9 +908,8 @@
             draw();
         }
         
-        // Virtual D-pad controls
+        // Virtual D-pad controls（辅助输入，手指跟随为主）
         function dpadUp() {
-            console.log('[DEBUG] DPAD: UP');
             if (direction.y === 0) {
                 direction = {x: 0, y: -1};
                 flashDpadButton('dpad-up');
@@ -805,7 +917,6 @@
         }
         
         function dpadDown() {
-            console.log('[DEBUG] DPAD: DOWN');
             if (direction.y === 0) {
                 direction = {x: 0, y: 1};
                 flashDpadButton('dpad-down');
@@ -813,7 +924,6 @@
         }
         
         function dpadLeft() {
-            console.log('[DEBUG] DPAD: LEFT');
             if (direction.x === 0) {
                 direction = {x: -1, y: 0};
                 flashDpadButton('dpad-left');
@@ -821,7 +931,6 @@
         }
         
         function dpadRight() {
-            console.log('[DEBUG] DPAD: RIGHT');
             if (direction.x === 0) {
                 direction = {x: 1, y: 0};
                 flashDpadButton('dpad-right');
@@ -836,152 +945,117 @@
             }, 150);
         }
         
-        // Swipe gesture controls
-        function handleTouchStart(e) {
-            e.preventDefault();
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            console.log('[DEBUG] Touch start:', touchStartX, touchStartY);
+        /* 手指跟随（T2-1 范式）：touchmove 累积位移，主导轴超过阈值（0.62 格）
+           触发一次转向并消费该轴；轴守卫禁止 180° 掉头。 */
+        function followThreshold() {
+            return getTileSize() * 0.62;
         }
         
-        function handleTouchEnd(e) {
+        function handleFollowStart(e) {
             e.preventDefault();
-            touchEndX = e.changedTouches[0].clientX;
-            touchEndY = e.changedTouches[0].clientY;
+            const t = e.touches[0];
+            followState = { x: t.clientX, y: t.clientY, ax: 0, ay: 0 };
+        }
+        
+        function handleFollowMove(e) {
+            e.preventDefault();
+            if (!followState) return;
+            const t = e.touches[0];
+            const dx = t.clientX - followState.x;
+            const dy = t.clientY - followState.y;
+            followState.x = t.clientX;
+            followState.y = t.clientY;
+            followState.ax += dx;
+            followState.ay += dy;
             
-            const deltaX = touchEndX - touchStartX;
-            const deltaY = touchEndY - touchStartY;
-            const absDeltaX = Math.abs(deltaX);
-            const absDeltaY = Math.abs(deltaY);
-            
-            console.log('[DEBUG] Touch end:', touchEndX, touchEndY);
-            console.log('[DEBUG] Delta X:', deltaX, 'Delta Y:', deltaY);
-            
-            // Check if swipe distance exceeds threshold
-            if (absDeltaX > swipeThreshold || absDeltaY > swipeThreshold) {
-                if (absDeltaX > absDeltaY) {
-                    // Horizontal swipe
-                    if (deltaX > 0) {
-                        dpadRight();
-                        console.log('[DEBUG] Swipe: RIGHT');
-                    } else {
-                        dpadLeft();
-                        console.log('[DEBUG] Swipe: LEFT');
+            const threshold = followThreshold();
+            if (Math.abs(followState.ax) >= threshold || Math.abs(followState.ay) >= threshold) {
+                if (Math.abs(followState.ax) >= Math.abs(followState.ay)) {
+                    // 水平手指：蛇在垂直走时才转弯（同轴忽略，禁止掉头）
+                    if (direction.y !== 0) {
+                        direction = {x: followState.ax > 0 ? 1 : -1, y: 0};
                     }
+                    followState.ax = 0;
                 } else {
-                    // Vertical swipe
-                    if (deltaY > 0) {
-                        dpadDown();
-                        console.log('[DEBUG] Swipe: DOWN');
-                    } else {
-                        dpadUp();
-                        console.log('[DEBUG] Swipe: UP');
+                    // 垂直手指：蛇在水平走时才转弯
+                    if (direction.x !== 0) {
+                        direction = {x: 0, y: followState.ay > 0 ? 1 : -1};
                     }
+                    followState.ay = 0;
                 }
             }
         }
         
-        // Keyboard controls
+        function handleFollowEnd(e) {
+            e.preventDefault();
+            followState = null;
+            /* 结算态/未开局：点按画布直接开一局（触屏主路径） */
+            if (!gameRunning) {
+                startGame();
+            }
+        }
+        
+        // Keyboard controls（桌面保留）
+        const keyDirs = {
+            ArrowUp: {x: 0, y: -1}, ArrowDown: {x: 0, y: 1},
+            ArrowLeft: {x: -1, y: 0}, ArrowRight: {x: 1, y: 0},
+            w: {x: 0, y: -1}, s: {x: 0, y: 1}, a: {x: -1, y: 0}, d: {x: 1, y: 0},
+            W: {x: 0, y: -1}, S: {x: 0, y: 1}, A: {x: -1, y: 0}, D: {x: 1, y: 0}
+        };
+        
         document.addEventListener('keydown', (e) => {
-            switch(e.key) {
-                case 'ArrowUp':
-                case 'w':
-                case 'W':
-                    if (direction.y === 0) {
-                        console.log('[DEBUG] Moving UP');
-                        direction = {x: 0, y: -1};
-                    }
-                    break;
-                case 'ArrowDown':
-                case 's':
-                case 'S':
-                    if (direction.y === 0) {
-                        console.log('[DEBUG] Moving DOWN');
-                        direction = {x: 0, y: 1};
-                    }
-                    break;
-                case 'ArrowLeft':
-                case 'a':
-                case 'A':
-                    if (direction.x === 0) {
-                        console.log('[DEBUG] Moving LEFT');
-                        direction = {x: -1, y: 0};
-                    }
-                    break;
-                case 'ArrowRight':
-                case 'd':
-                case 'D':
-                    if (direction.x === 0) {
-                        console.log('[DEBUG] Moving RIGHT');
-                        direction = {x: 1, y: 0};
-                    }
-                    break;
-            }
+            const dir = keyDirs[e.key];
+            if (!dir) return;
+            // 轴守卫（同 D-pad）：只在垂直轴上转向，禁止 180° 掉头
+            if (dir.x !== 0 && direction.y === 0) return;
+            if (dir.y !== 0 && direction.x === 0) return;
+            direction = dir;
         });
         
-        // Button controls
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('[DEBUG] DOM Content Loaded');
-            console.log('[DEBUG] START button:', document.getElementById('startBtn'));
-            console.log('[DEBUG] RESET button:', document.getElementById('resetBtn'));
-            
-            const startBtn = document.getElementById('startBtn');
-            const resetBtn = document.getElementById('resetBtn');
-            
-            if (startBtn) {
-                startBtn.addEventListener('click', function(e) {
-                    console.log('[DEBUG] START button click event triggered');
-                    e.preventDefault();
-                    startGame();
-                });
-                console.log('[DEBUG] START button event listener attached');
-            } else {
-                console.error('[DEBUG] ERROR: START button not found!');
-            }
-            
-            if (resetBtn) {
-                resetBtn.addEventListener('click', function(e) {
-                    console.log('[DEBUG] RESET button click event triggered');
-                    e.preventDefault();
-                    resetGame();
-                });
-                console.log('[DEBUG] RESET button event listener attached');
-            } else {
-                console.error('[DEBUG] ERROR: RESET button not found!');
-            }
-        });
-        
-        // Touch controls setup
-        document.getElementById('dpad-up').addEventListener('touchstart', function(e) {
+        // Button controls（脚本在 body 末尾，DOM 已就绪，直接绑定；
+        // 不用内联 onclick —— 那是 START 双触发的根因）
+        document.getElementById('startBtn').addEventListener('click', function(e) {
             e.preventDefault();
-            dpadUp();
+            startGame();
         });
         
-        document.getElementById('dpad-down').addEventListener('touchstart', function(e) {
+        document.getElementById('resetBtn').addEventListener('click', function(e) {
             e.preventDefault();
-            dpadDown();
+            resetGame();
         });
         
-        document.getElementById('dpad-left').addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            dpadLeft();
+        document.getElementById('skinForest').addEventListener('click', () => applySkin('forest'));
+        document.getElementById('skinKoi').addEventListener('click', () => applySkin('koi'));
+        
+        [['speedSlow', 'slow'], ['speedMedium', 'medium'], ['speedFast', 'fast']].forEach(([id, v]) => {
+            document.getElementById(id).addEventListener('click', () => setSpeed(v));
+        });
+        [['sizeSmall', 'small'], ['sizeMedium', 'medium'], ['sizeLarge', 'large']].forEach(([id, v]) => {
+            document.getElementById(id).addEventListener('click', () => setSize(v));
+        });
+        [['modeClassic', 'classic'], ['modeWall', 'wall'], ['modeObstacles', 'obstacles'], ['modeEndless', 'endless']].forEach(([id, v]) => {
+            document.getElementById(id).addEventListener('click', () => setMode(v));
         });
         
-        document.getElementById('dpad-right').addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            dpadRight();
+        // D-pad：pointerdown 统一鼠标/触摸，比 touchstart 响应更早且桌面可点
+        [['dpad-up', dpadUp], ['dpad-down', dpadDown], ['dpad-left', dpadLeft], ['dpad-right', dpadRight]].forEach(([id, fn]) => {
+            document.getElementById(id).addEventListener('pointerdown', function(e) {
+                e.preventDefault();
+                fn();
+            });
         });
         
-        // Swipe gesture controls on canvas
-        canvas.addEventListener('touchstart', handleTouchStart, {passive: false});
-        canvas.addEventListener('touchend', handleTouchEnd, {passive: false});
+        // Canvas：手指跟随 + 点按开局
+        canvas.addEventListener('touchstart', handleFollowStart, {passive: false});
+        canvas.addEventListener('touchmove', handleFollowMove, {passive: false});
+        canvas.addEventListener('touchend', handleFollowEnd, {passive: false});
+        canvas.addEventListener('click', () => {
+            if (!gameRunning) startGame();
+        });
         
-        // Initial draw
-        console.log('[DEBUG] Initial draw');
+        // 初始化：应用已存皮肤，首次绘制，不自动开局
+        applySkin(currentSkin);
         draw();
-        
-        // Don't auto-start game
-        console.log('[DEBUG] Waiting for user to click START...');
     </script>
 </body>
 </html>
