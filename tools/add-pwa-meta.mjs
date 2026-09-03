@@ -6,10 +6,12 @@
  *   - <link rel="manifest" href="/manifest.webmanifest">
  *   - theme-color / mobile-web-app-capable / apple-mobile-web-app-* 三件套
  *   - apple-touch-icon → /icons/icon-192.png
- * index.html 额外挂 <script src="/pwa.js" defer></script>
+ * 所有页面挂 <script src="/pwa.js" defer></script>（T3-2 补：原先只在 index 挂，
+ * 直链/主屏图标直接进子游戏页时 SW 永不注册，离线失效；pwa.js 同 scope 同 sw.js，
+ * 重复调用安全，更新横幅也因此全站可用）。
  *
  * 全部用站点根绝对路径，页面在 / 与 /classic-games/ 下均可用。
- * 已含 rel="manifest" 的文件跳过（幂等）。
+ * 已含 rel="manifest" 的文件跳过 meta 部分（幂等），但仍检查 pwa.js 注入。
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -52,6 +54,16 @@ for (const rel of PAGES) {
   const path = join(root, rel);
   let html = readFileSync(path, "utf8");
 
+  // pwa.js 注入（独立于 meta，页面已有 manifest 时也要补挂）
+  if (!html.includes("/pwa.js")) {
+    html = html.replace(
+      /(\s*)<\/body>/,
+      `\n$1    <script src="/pwa.js" defer></script>$1</body>`,
+    );
+    writeFileSync(path, html);
+    console.log(`已挂 pwa.js: ${rel}`);
+  }
+
   if (html.includes('rel="manifest"')) {
     console.log(`跳过（已有 manifest）: ${rel}`);
     continue;
@@ -73,13 +85,6 @@ for (const rel of PAGES) {
     .map((line) => indent + line)
     .join("\n");
   html = html.replace(viewportRe, `$1$2${block}\n`);
-
-  if (rel === "index.html" && !html.includes("/pwa.js")) {
-    html = html.replace(
-      /(\s*)<\/body>/,
-      `\n$1    <script src="/pwa.js" defer></script>$1</body>`,
-    );
-  }
 
   writeFileSync(path, html);
   changed++;
