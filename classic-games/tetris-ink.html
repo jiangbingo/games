@@ -13,7 +13,29 @@
     <title>水墨方块 - 俄罗斯方块</title>
     <style>
         /* ==================== 全局样式 ==================== */
-        @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;700&display=swap');
+        /* 字体本地化（T3-2）：Google Fonts 远程字体改为自托管子集（仅含页面用字，
+           pyftsubset 生成，共 ~110KB），离线/被墙环境不再降级 */
+        @font-face {
+            font-family: 'Ma Shan Zheng';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('fonts/MaShanZheng-sub.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Noto Serif SC';
+            font-style: normal;
+            font-weight: 400;
+            font-display: swap;
+            src: url('fonts/NotoSerifSC-400-sub.woff2') format('woff2');
+        }
+        @font-face {
+            font-family: 'Noto Serif SC';
+            font-style: normal;
+            font-weight: 700;
+            font-display: swap;
+            src: url('fonts/NotoSerifSC-700-sub.woff2') format('woff2');
+        }
 
         * {
             margin: 0;
@@ -119,6 +141,7 @@
             display: block;
             background: var(--bg-paper);
             border-radius: 2px;
+            touch-action: none; /* 手势全部由画布接管：拖动/点按/下滑 */
         }
 
         /* ==================== 侧边栏 ==================== */
@@ -443,7 +466,7 @@
         <path fill="#C23531" d="M50 10 C30 10 20 25 20 40 C20 50 30 55 40 60 L40 70 C30 68 25 72 25 80 C25 90 35 95 50 95 C65 95 75 90 75 80 C75 72 70 68 60 70 L60 60 C70 55 80 50 80 40 C80 25 70 10 50 10 Z"/>
     </svg>
     <svg class="chinese-knot bottom-right" viewBox="0 0 100 100">
-        <path fill="#C23531" d="M50 10 20 10 C30 25 20 40 C20 50 30 55 40 60 L40 70 C30 68 25 72 25 80 C25 90 35 95 50 95 C65 95 75 90 75 80 C75 72 70 68 60 70 L60 60 C70 55 80 50 80 40 C80 25 70 10 50 10 Z"/>
+        <path fill="#C23531" d="M50 10 C30 10 20 25 20 40 C20 50 30 55 40 60 L40 70 C30 68 25 72 25 80 C25 90 35 95 50 95 C65 95 75 90 75 80 C75 72 70 68 60 70 L60 60 C70 55 80 50 80 40 C80 25 70 10 50 10 Z"/>
     </svg>
 
     <!-- 游戏标题 -->
@@ -485,6 +508,18 @@
             <div class="info-box">
                 <h3>操作说明</h3>
                 <div class="controls-info">
+                    <div class="control-item">
+                        <span class="key-badge">拖动</span>
+                        <span>左右平移 / 慢慢下滑=软降</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key-badge">点按</span>
+                        <span>旋转（点画布任意处）</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key-badge">快滑</span>
+                        <span>快速下滑到底（速降）</span>
+                    </div>
                     <div class="control-item">
                         <span class="key-badge">←→</span>
                         <span>左右移动</span>
@@ -588,6 +623,20 @@
         let dropInterval = 1000;     // 下落间隔(ms)
         let lastDropTime = 0;        // 上次下落时间
         let animationId = null;      // 动画帧ID
+
+        /* T3-2 内容增强：行消除墨晕 + 连击提示 + 难度缓坡 */
+        let inkSplats = [];          // 墨晕扩散动效 [{row, born}]
+        let floaters = [];           // 连击飘字 [{text, born}]
+        let combo = 0;               // 连续消行计数（未消行则断连）
+
+        /**
+         * 难度曲线（T3-2 复核）：前 3 级（前 30 行）缓坡宽容，
+         * 之后每级 -100ms，地板 100ms
+         */
+        function dropIntervalForLevel(lv) {
+            if (lv <= 3) return 1000 - (lv - 1) * 50;   // 1000 / 950 / 900
+            return Math.max(100, 900 - (lv - 3) * 100); // 4级=800 …地板 100
+        }
 
         // 音效上下文
         let audioCtx = null;
@@ -1043,11 +1092,52 @@
         }
 
         /**
+         * 绘制消除墨晕与连击飘字（T3-2 内容增强）
+         */
+        function drawEffects(now) {
+            const INK_MS = 600, FLOAT_MS = 900;
+            inkSplats = inkSplats.filter(s => now - s.born < INK_MS);
+            floaters = floaters.filter(f => now - f.born < FLOAT_MS);
+
+            // 墨晕扩散：每个被消行一团墨点，中间大两側小，透明度衰减
+            inkSplats.forEach(s => {
+                const t = (now - s.born) / INK_MS;
+                const cy = s.row * BLOCK_SIZE + BLOCK_SIZE / 2;
+                ctx.save();
+                ctx.globalAlpha = (1 - t) * 0.3;
+                ctx.fillStyle = '#2B2B2B';
+                for (let i = 0; i < 3; i++) {
+                    const cx = canvas.width * (0.25 + 0.25 * i);
+                    const r = (12 + i * 5) * (0.5 + t * 1.8);
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            });
+
+            // 连击提示：红色飘字上浮淡出
+            if (floaters.length) {
+                ctx.save();
+                ctx.font = "30px 'Ma Shan Zheng', cursive";
+                ctx.textAlign = 'center';
+                floaters.forEach(f => {
+                    const t = (now - f.born) / FLOAT_MS;
+                    ctx.globalAlpha = 1 - t;
+                    ctx.fillStyle = '#C23531';
+                    ctx.fillText(f.text, canvas.width / 2, canvas.height * 0.35 - t * 45);
+                });
+                ctx.restore();
+            }
+        }
+
+        /**
          * 绘制游戏（主渲染函数）
          */
         function render() {
             drawBoard();
             drawCurrentPiece();
+            drawEffects(performance.now());
         }
 
         // ==================== 游戏逻辑 ====================
@@ -1181,11 +1271,10 @@
         }
 
         /**
-         * 消除行
+         * 消除行（T3-2：先记录满行→墨晕/连击动效，再移除）
          */
         function clearLines() {
-            let linesCleared = 0;
-
+            const fullRows = [];
             for (let row = ROWS - 1; row >= 0; row--) {
                 let full = true;
                 for (let col = 0; col < COLS; col++) {
@@ -1194,34 +1283,46 @@
                         break;
                     }
                 }
-
-                if (full) {
-                    // 移除该行
-                    board.splice(row, 1);
-                    // 在顶部添加新行
-                    board.unshift(new Array(COLS).fill(EMPTY));
-                    linesCleared++;
-                    row++; // 重新检查当前行
-                }
+                if (full) fullRows.push(row); // 降序收集，splice 安全
             }
 
-            if (linesCleared > 0) {
+            if (fullRows.length > 0) {
+                const now = performance.now();
+
+                // 墨晕扩散：每个被消行一团
+                fullRows.forEach(row => inkSplats.push({ row, born: now }));
+
+                // 连击：连续消行 ≥2 时飘字提示
+                combo++;
+                if (combo >= 2) {
+                    floaters.push({ text: '连击 ×' + combo + '！', born: now });
+                }
+
+                // 从底部向上逐个移除（降序安全）
+                fullRows.forEach(row => {
+                    board.splice(row, 1);
+                    board.unshift(new Array(COLS).fill(EMPTY));
+                });
+
                 // 更新得分
+                const linesCleared = fullRows.length;
                 const points = [0, 100, 300, 500, 800]; // 1-4行得分
                 score += points[linesCleared] || points[4] * linesCleared;
                 lines += linesCleared;
 
-                // 升级检查
+                // 升级检查（难度曲线见 dropIntervalForLevel）
                 const newLevel = Math.floor(lines / 10) + 1;
                 if (newLevel > level) {
                     level = newLevel;
-                    dropInterval = Math.max(100, 1000 - (level - 1) * 100);
+                    dropInterval = dropIntervalForLevel(level);
                     playSound('levelup');
                 } else {
                     playSound('clear');
                 }
 
                 updateUI();
+            } else {
+                combo = 0; // 这次落地没消行，断连
             }
         }
 
@@ -1304,7 +1405,7 @@
         }
 
         /**
-         * 游戏循环
+         * 游戏循环（T3-2：逐帧 render，墨晕/飘字才能在 tick 之间平滑动画）
          */
         function gameLoop(timestamp) {
             if (gameState !== 'playing') return;
@@ -1318,6 +1419,7 @@
                 lastDropTime = timestamp;
             }
 
+            render();
             animationId = requestAnimationFrame(gameLoop);
         }
 
@@ -1331,7 +1433,10 @@
             score = 0;
             level = 1;
             lines = 0;
-            dropInterval = 1000;
+            dropInterval = dropIntervalForLevel(1);
+            combo = 0;
+            inkSplats = [];
+            floaters = [];
 
             nextPiece = randomPiece();
             spawnPiece();
@@ -1387,7 +1492,10 @@
             score = 0;
             level = 1;
             lines = 0;
-            dropInterval = 1000;
+            dropInterval = dropIntervalForLevel(1);
+            combo = 0;
+            inkSplats = [];
+            floaters = [];
 
             updateUI();
             render();
@@ -1476,6 +1584,72 @@
         addTouchEvent(btnDown, moveDown);
         addTouchEvent(btnDrop, () => { hardDrop(); render(); });
 
+        // ==================== 画布手势（T3-2，单手主控，按钮降为辅助） ====================
+        // 横向拖动=平移（位移消费模型，每满一格走一步）；
+        // 慢慢下滑=软降（每满一格降一格）；快速长滑=速降；点按=旋转
+        const TAP_MAX_DIST = 12;       // 点按判定：总位移小于此值
+        const HARD_DROP_DIST = 90;     // 下滑超过此距离（约 3 格）触发速降
+        let gesture = null;
+
+        /**
+         * 屏幕上一格的实际像素（画布可能被 CSS 缩放，不能直接用 BLOCK_SIZE）
+         */
+        function cellSizeOnScreen() {
+            return canvas.getBoundingClientRect().width / COLS;
+        }
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const t = e.touches[0];
+            gesture = { x: t.clientX, startX: t.clientX, startY: t.clientY, accX: 0, consumedDown: 0, dropped: false };
+        }, { passive: false });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!gesture || gameState !== 'playing') return;
+            const t = e.touches[0];
+            const cell = cellSizeOnScreen();
+            const dx = t.clientX - gesture.x;
+            const netDown = t.clientY - gesture.startY;
+            gesture.x = t.clientX;
+
+            // 横向平移：位移跨事件累积，每满一格消费一步（位移消费模型）
+            gesture.accX += dx;
+            while (Math.abs(gesture.accX) >= cell) {
+                if (gesture.accX > 0) { moveRight(); gesture.accX -= cell; }
+                else { moveLeft(); gesture.accX += cell; }
+            }
+
+            // 下滑软降：净下滑减去已消费量，每满一格降一格（不重复消费）
+            let unconsumed = netDown - gesture.consumedDown;
+            while (unconsumed >= cell && !gesture.dropped) {
+                moveDown();
+                gesture.consumedDown += cell;
+                unconsumed -= cell;
+            }
+
+            // 快速长滑 → 速降（一次手势只触发一次，之后忽略本次手势的旋转）
+            if (!gesture.dropped && netDown >= HARD_DROP_DIST) {
+                gesture.dropped = true;
+                hardDrop();
+            }
+        }, { passive: false });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (!gesture) return;
+            const dist = Math.hypot(
+                e.changedTouches[0].clientX - gesture.startX,
+                e.changedTouches[0].clientY - gesture.startY
+            );
+            const wasTap = !gesture.dropped && dist < TAP_MAX_DIST;
+            gesture = null;
+            if (wasTap && gameState === 'playing') {
+                rotatePiece();
+                render();
+            }
+        }, { passive: false });
+
         // 窗口大小改变时暂停
         window.addEventListener('resize', () => {
             if (gameState === 'playing') {
@@ -1485,30 +1659,23 @@
 
         // ==================== 初始化 ====================
 
+        // 预载水墨字体：canvas 飘字用 Ma Shan Zheng，标题/加粗用 700 字重，
+        // 不预载首帧会退化为系统字体
+        if (document.fonts && document.fonts.load) {
+            document.fonts.load("30px 'Ma Shan Zheng'");
+            document.fonts.load("16px 'Noto Serif SC'");
+            document.fonts.load("bold 16px 'Noto Serif SC'");
+        }
+
         // 初始化显示
         initBoard();
         render();
-
-        console.log('水墨方块 - 俄罗斯方块游戏已加载');
-        console.log('操作说明:');
-        console.log('← → : 左右移动');
-        console.log('↑ : 旋转');
-        console.log('↓ : 加速下落');
-        console.log('空格 : 快速下落');
-        console.log('P : 暂停/继续');
     </script>
 
 <style>
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-}
+/* MiniMax 署名页脚样式（T3-2：删除原块中的 * reset 与 body font-family ——
+   它们会覆盖水墨主题的全局字体，导致 700 字重永远不被使用） */
 
 .inland-security-footer {
   position: fixed;
@@ -1659,7 +1826,7 @@ body {
 
       <section class="info-section">
         <a class="beian-link" href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=31010402010179" target="_blank" rel="noreferrer">
-          <img alt="hailuo-beian-icon" src="https://cdn.hailuoai.com/hailuo-video-web/public_assets/223037d3-79fd-4db0-a456-749f38a6a14b.png" class="beian-icon">
+          <img alt="hailuo-beian-icon" src="icons/beian-icon.png" class="beian-icon">
           <span class="underline-text">沪公网安备31010402010179号</span>
         </a>
         <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer" class="underline-text">

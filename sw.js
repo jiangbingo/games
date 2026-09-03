@@ -31,6 +31,10 @@ const PRECACHE = [
   "/pattern-match.html",
   "/classic-games/snake-game.html",
   "/classic-games/tetris-ink.html",
+  "/classic-games/fonts/MaShanZheng-sub.woff2",
+  "/classic-games/fonts/NotoSerifSC-400-sub.woff2",
+  "/classic-games/fonts/NotoSerifSC-700-sub.woff2",
+  "/classic-games/icons/beian-icon.png",
 ];
 
 self.addEventListener("install", (event) => {
