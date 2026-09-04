@@ -2,14 +2,14 @@
 
 > 适合3-6岁儿童的趣味逻辑思维网页游戏集，完美适配iPhone/iPad等移动设备
 
-![Version](https://img.shields.io/badge/version-v4.0-blue)
+![Version](https://img.shields.io/badge/version-v4.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android%20%7C%20Web-lightgrey)
 
 ## ✨ 核心特性
 
 - **🎮 13个游戏**：覆盖3-6岁全年龄段
-- **📊 69+关卡**：丰富的游戏内容
+- **📊 189+关卡**：丰富的游戏内容
 - **👤 用户系统**：多用户支持，独立进度保存
 - **💾 双模式存储**：本地+云端
 - **📱 完美适配**：响应式设计，触摸优化
@@ -89,6 +89,11 @@ games/
 - **交互**: htmx（部分游戏）
 
 ## 📝 更新日志
+
+### v4.1 (2026-09-03)
+- ✅ 贪吃蛇增强：双皮肤、手指跟随、吃食动效、速度爬升
+- ✅ 水墨方块增强：字体/图标本地化、触摸手势、墨晕与连击动效
+- ✅ PWA 直链离线修复、关卡口径统一（189+）
 
 ### v4.0 (2026-02-14)
 - ✅ 新增7个单文件游戏
