@@ -1,4 +1,4 @@
-.PHONY: help start stop build deploy deploy-root clean test
+.PHONY: help start stop build deploy deploy-root deploy-cf build-cf clean test
 
 help:
 	@echo "儿童逻辑思维游戏 - 可用命令:"
@@ -9,6 +9,8 @@ help:
 	@echo "  make build    - 构建生产版本"
 	@echo "  make deploy   - 部署到EdgeOne"
 	@echo "  make deploy-root - 注入SW版本号并部署根站到Vercel（游戏中心PWA）"
+	@echo "  make build-cf - 组装 Cloudflare Pages 完整 dist/"
+	@echo "  make deploy-cf - 注入SW版本号并部署根站到 Cloudflare Pages"
 	@echo "  make clean    - 清理构建文件"
 	@echo "  make status   - 查看服务状态"
 	@echo ""
@@ -73,6 +75,22 @@ deploy-root:
 	@node tools/inject-sw-version.mjs
 	-@vercel --prod || echo "⚠️  vercel 部署失败，sw.js 已还原，可重试"
 	@node tools/inject-sw-version.mjs --restore
+	@git diff --exit-code -- sw.js
+
+CF_PROJECT_NAME ?= games-hub
+# wrangler 执行方式：默认 pnpm dlx 瞬态（免全局安装/PATH 配置）；已全局安装可 make deploy-cf WRANGLER=wrangler
+WRANGLER ?= pnpm dlx wrangler@latest
+
+build-cf:
+	@node tools/build-cf-pages.mjs
+
+deploy-cf:
+	@echo "📦 部署根站（游戏中心 PWA）到 Cloudflare Pages（项目：$(CF_PROJECT_NAME)）..."
+	@node tools/inject-sw-version.mjs
+	@node tools/build-cf-pages.mjs
+	-@$(WRANGLER) pages deploy dist --project-name=$(CF_PROJECT_NAME) --commit-dirty=true || echo "⚠️  Cloudflare Pages 部署失败，sw.js 已还原，可重试"
+	@node tools/inject-sw-version.mjs --restore
+	@rm -rf dist
 	@git diff --exit-code -- sw.js
 
 set-sw-version:

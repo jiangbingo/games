@@ -1,0 +1,5 @@
+# Cloudflare Pages 重写规则：
+# CF 默认把 /x.html 308 到 /x，导致 addAll 预缓存的响应带 redirected 标记，
+# 离线导航时浏览器重放重定向、二次请求落空（ERR_FAILED）。
+# 此处把 .html 请求 200 改写为对应的无扩展名路径，消灭重定向，行为对齐 Vercel。
+/*.html /:splat 200

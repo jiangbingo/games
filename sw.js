@@ -19,6 +19,7 @@ const PRECACHE = [
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/js/storage.js",
+  "/pwa.js",
   "/color-matching.html",
   "/shape-puzzle.html",
   "/memory-cards.html",
@@ -58,6 +59,21 @@ self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") self.skipWaiting();
 });
 
+/* 缓存匹配 + 平台 URL 归一化回退。
+ * Cloudflare Pages 会把 /x.html 308 到 /x，Chrome 的 cache.addAll 跟随重定向后
+ * 以最终 URL（无扩展名）为键存储；Vercel 则直接以 .html 为键。
+ * 因此先按原请求匹配，未命中再试去扩展名变体，两平台皆可离线命中。 */
+async function matchWithFallback(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  const url = new URL(request.url);
+  if (url.pathname.endsWith(".html")) {
+    url.pathname = url.pathname.replace(/\.html$/, "");
+    return caches.match(url.toString());
+  }
+  return null;
+}
+
 async function cacheFirst(request) {
   const cached = await caches.match(request);
   if (cached) return cached;
@@ -78,11 +94,16 @@ async function networkFirst(request) {
     }
     return response;
   } catch {
-    const cached = await caches.match(request);
+    const cached = await matchWithFallback(request);
     if (cached) return cached;
     /* 仅导航请求回退到主页外壳；子资源失败直接报错，
-       避免把 HTML 当 JS/CSS 喂出去（迷宫版无此分支，本站页面结构不同故细化）。 */
-    if (request.mode === "navigate") return caches.match("/index.html");
+       避免把 HTML 当 JS/CSS 喂出去（迷宫版无此分支，本站页面结构不同故细化）。
+       主页键在 Vercel 为 /index.html、CF Pages 为 /，逐一尝试。 */
+    if (request.mode === "navigate") {
+      return (
+        (await caches.match("/index.html")) || (await caches.match("/"))
+      );
+    }
     return Response.error();
   }
 }

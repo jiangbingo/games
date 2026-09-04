@@ -13,7 +13,7 @@
 - **👤 用户系统**：多用户支持，独立进度保存
 - **💾 双模式存储**：本地+云端
 - **📱 完美适配**：响应式设计，触摸优化
-- **🚀 Vercel 部署**：一键部署
+- **🚀 Cloudflare Pages 部署**：一键部署（games-hub-nsd.pages.dev）
 
 ## 🎮 游戏列表
 
@@ -44,14 +44,16 @@ cd games
 python3 -m http.server 8000
 ```
 
-### 方式2: Vercel 部署
+### 方式2: Cloudflare Pages 部署
 ```bash
-# 安装 Vercel CLI
-npm install -g vercel
+# 登录（一次性，浏览器 OAuth）
+pnpm dlx wrangler@latest login
 
-# 部署
-vercel --prod
+# 部署（注入 SW 版本 → 组装 dist/ → 上传 → 还原）
+make deploy-cf
 ```
+
+> 回滚兜底：Vercel 站（games-six-omega.vercel.app）保持在线，`make deploy-root` 仍可用。
 
 ## 📁 项目结构
 
@@ -61,7 +63,10 @@ games/
 ├── *.html                  # 各单文件游戏
 ├── classic-games/          # 贪吃蛇、水墨方块
 ├── kids-maze-world/        # 独立React迷宫游戏（Vite构建）
-├── vercel.json             # Vercel 配置
+├── vercel.json             # Vercel 配置（回滚兜底）
+├── _headers                # Cloudflare Pages 响应头（sw/manifest 缓存策略）
+├── _redirects              # Cloudflare Pages 重写规则（.html 200 改写，防 308）
+├── tools/                  # 部署工具（build-cf-pages.mjs、inject-sw-version.mjs）
 ├── .vercelignore           # Vercel 忽略文件
 ├── js/                     # JavaScript 模块
 ├── css/                    # 样式
@@ -85,7 +90,7 @@ games/
 
 - **前端**: HTML5 + CSS3 + JavaScript
 - **存储**: localStorage + PostgreSQL（可选）
-- **部署**: Vercel / EdgeOne
+- **部署**: Cloudflare Pages / Vercel（回滚）/ EdgeOne
 - **交互**: htmx（部分游戏）
 
 ## 📝 更新日志

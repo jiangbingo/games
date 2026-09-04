@@ -1,0 +1,7 @@
+# Cloudflare Pages 响应头（等价 vercel.json 中 sw.js/manifest 的缓存策略）
+# sw.js 必须逐次校验，否则 PWA 更新横幅会因缓存失效（BACKLOG T3-0c/T3-1 教训）
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/manifest.webmanifest
+  Cache-Control: public, max-age=0, must-revalidate

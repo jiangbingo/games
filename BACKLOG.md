@@ -120,6 +120,17 @@
 - **部署中抓到盲区**：`add-pwa-meta.mjs` 原先只在 index 挂 `/pwa.js`，直链/主屏图标直接进子游戏页时 SW 永不注册、离线失效（此前冒烟恰好从 index 进入未暴露）。已改为全部 13 页注册（同 scope 同 sw.js，幂等；更新横幅因此全站可用）
 - 生产验证（games-six-omega.vercel.app）：sw 版本 `games-hub-shell-1db9414-mtlek2rf`，预缓存 23/23，直链进 tetris/snake SW 均激活，**离线直链两游戏可玩零报错**，三支子集字体 + 备案图标 200，tetris 页零远程请求
 
+### 根站迁移 Cloudflare Pages 记录（✅ 2026-09-04 完成）
+
+- 背景：用户指令"统一部署在 Cloudflare 平台"。方案 A（用户拍板）：根站迁移 CF Pages，迷宫保持独立 Pages 项目，导航经游戏卡片外链
+- 产物：`tools/build-cf-pages.mjs`（完整 dist/ 组装，修复历史 `make build` 只拷 css/js/index 的缺口）、`_headers`（sw/manifest must-revalidate）、`_redirects`、`make deploy-cf`（注入 sw 版本 → 组装 → `wrangler pages deploy` → 还原）
+- 线上：**games-hub-nsd.pages.dev**（`games-hub.pages.dev` 已被占用，CF 自动加了 `-nsd` 后缀）；wrangler OAuth 登录，`pnpm dlx` 瞬态执行
+- **迁移中抓到两个 CF 特有坑**（均已修复并回填 sw.js）：
+  1. `/pwa.js` 不在预缓存且 CF 对缺失路径回退 index.html → MIME 类型错误 → SW 永不注册。修复：pwa.js 加入预缓存（23→24）并纳入 build 脚本
+  2. CF 默认把 `/x.html` 308 到 `/x`，`cache.addAll` 跟随重定向后预缓存响应带 redirected 标记，离线导航时浏览器重放重定向、二次请求（clean URL）落入 cacheFirst 未捕获拒绝 → ERR_FAILED。修复：`_redirects` 增加 `/*.html /:splat 200` 改写消灭 308；sw.js 增加 `matchWithFallback`（原键→去扩展名键）与导航回退双键尝试（`/index.html` 或 `/`）
+- 验收（Playwright + 系统 Chrome，8/8）：SW 激活接管、预缓存 24/24、在线 tetris 渲染、**离线首页 13 卡片、离线 tetris/snake/color-matching 直链全可玩**、控制台零错误
+- 回滚：Vercel（games-six-omega.vercel.app）保持在线未动，vercel.json 保留；页脚 "Powered by Cloudflare Pages"
+
 ### 阶段 3 并行项（不阻塞，随时可做）
 
 - T1-3 双 iPad 清单 + T2-4 真机回归：改对**生产站**执行（kids-maze-world.pages.dev），结果补录本文件
