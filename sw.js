@@ -107,6 +107,7 @@ async function networkFirst(request) {
     if (request.mode === "navigate") {
       /* /maze/* 导航回退迷宫外壳，其余回退主页外壳。
          键在 Vercel 为 /index.html、CF Pages 为 /，逐一尝试。 */
+      const url = new URL(request.url);
       if (url.pathname.startsWith("/maze/")) {
         return (
           (await caches.match("/maze/index.html")) || (await caches.match("/maze/"))
