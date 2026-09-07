@@ -36,6 +36,7 @@ const PRECACHE = [
   "/classic-games/fonts/NotoSerifSC-400-sub.woff2",
   "/classic-games/fonts/NotoSerifSC-700-sub.woff2",
   "/classic-games/icons/beian-icon.png",
+  /* __MAZE_ENTRIES__ */
 ];
 
 self.addEventListener("install", (event) => {
@@ -100,6 +101,13 @@ async function networkFirst(request) {
        避免把 HTML 当 JS/CSS 喂出去（迷宫版无此分支，本站页面结构不同故细化）。
        主页键在 Vercel 为 /index.html、CF Pages 为 /，逐一尝试。 */
     if (request.mode === "navigate") {
+      /* /maze/* 导航回退迷宫外壳，其余回退主页外壳。
+         键在 Vercel 为 /index.html、CF Pages 为 /，逐一尝试。 */
+      if (url.pathname.startsWith("/maze/")) {
+        return (
+          (await caches.match("/maze/index.html")) || (await caches.match("/maze/"))
+        );
+      }
       return (
         (await caches.match("/index.html")) || (await caches.match("/"))
       );

@@ -12,7 +12,7 @@ import { SoundManager, type SoundEffect } from "@/game/SoundManager";
 import { getThemePresentation } from "@/game/themePresentation";
 import type { Direction, GameSnapshot, Level } from "@/game/types";
 
-const LOGO_URL = "/assets/maze-leaf-compass-logo.png";
+const LOGO_URL = `${import.meta.env.BASE_URL}assets/maze-leaf-compass-logo.png`;
 const STICKERS = [
   { id: "acorn", name: "橡果邮包", hint: "送好第一封信", icon: PackageOpen },
   { id: "mushroom", name: "蘑菇灯笼", hint: "收集3枚邮票", icon: Flower2 },

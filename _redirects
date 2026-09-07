@@ -3,3 +3,5 @@
 # 离线导航时浏览器重放重定向、二次请求落空（ERR_FAILED）。
 # 此处把 .html 请求 200 改写为对应的无扩展名路径，消灭重定向，行为对齐 Vercel。
 /*.html /:splat 200
+# /maze 无尾斜杠 → /maze/（CF Pages 静态目录 301）
+/maze /maze/ 301

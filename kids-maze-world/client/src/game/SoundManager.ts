@@ -2,7 +2,7 @@ import type { ThemePresentation } from "./themePresentation";
 
 export type SoundEffect = "move" | "bump" | "hint" | "undo" | "restart" | "celebrate" | "click";
 
-const FOREST_AMBIENCE_URL = "/assets/forest-ambience-cc0.mp3";
+const FOREST_AMBIENCE_URL = `${import.meta.env.BASE_URL}assets/forest-ambience-cc0.mp3`;
 
 /**
  * 森林邮差日记：互动音由Web Audio实时生成；真实环境录音仅在首次用户操作后按需加载，避免影响首屏。
