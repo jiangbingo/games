@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="🎨 涂色画工坊">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    <title>🎨 涂色画工坊</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ff6b4a'/%3E%3Ctext x='16' y='23' font-size='18' text-anchor='middle' fill='white'%3E🖍%3C/text%3E%3C/svg%3E">
+    <style>
+        :root {
+            --paper: #faf5ec;
+            --card: #fffdf8;
+            --ink: #2f2a25;
+            --ink-soft: #6f675e;
+            --accent: #ff6b4a;
+            --accent-deep: #e2532f;
+            --sun: #ffb84d;
+            --mint: #7fd8be;
+            --border: 2px solid var(--ink);
+            --shadow: 4px 4px 0 rgba(47, 42, 37, 0.14);
+            --radius: 16px;
+            --font-round: "Yuanti SC", "YouYuan", "PingFang SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: var(--font-round);
+            background: var(--paper);
+            background-image: radial-gradient(rgba(47, 42, 37, 0.045) 1px, transparent 1px);
+            background-size: 22px 22px;
+            color: var(--ink);
+            min-height: 100vh;
+        }
+
+        body.coloring { overflow: hidden; }
+        body.is-printing > *:not(#printArea) { display: none !important; }
+
+        button { font-family: inherit; cursor: pointer; }
+        button:disabled { opacity: 0.4; cursor: default; }
+        [hidden] { display: none !important; }
+
+        /* ---------- 工作台头部 ---------- */
+        .topbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 18px 20px 6px;
+        }
+        .topbar h1 { font-size: 1.7rem; letter-spacing: 2px; }
+        .topbar .spacer { flex: 1; }
+        .btn-link {
+            border: var(--border);
+            background: var(--card);
+            border-radius: 999px;
+            padding: 8px 16px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--ink);
+            text-decoration: none;
+            box-shadow: var(--shadow);
+        }
+        .btn-link:hover { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 rgba(47, 42, 37, 0.18); }
+        .badge-count {
+            display: inline-block;
+            min-width: 20px;
+            padding: 1px 6px;
+            margin-left: 4px;
+            border-radius: 999px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+        .privacy {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 0 20px 8px;
+            color: var(--ink-soft);
+            font-size: 0.9rem;
+        }
+        .steps {
+            max-width: 1180px;
+            margin: 0 auto 14px;
+            padding: 0 20px;
+            color: var(--ink-soft);
+            font-size: 0.95rem;
+        }
+        .steps b { color: var(--ink); }
+
+        /* ---------- 继续涂色横幅 ---------- */
+        .resume {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            max-width: 1180px;
+            margin: 0 auto 12px;
+            padding: 10px 16px;
+            border: var(--border);
+            border-radius: var(--radius);
+            background: var(--sun);
+            box-shadow: var(--shadow);
+            font-size: 0.95rem;
+        }
+        .resume button {
+            border: var(--border);
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-weight: 600;
+            background: var(--card);
+        }
+
+        /* ---------- 上传区 ---------- */
+        .studio { max-width: 1180px; margin: 0 auto; padding: 0 20px 60px; }
+        .dropzone {
+            border: 3px dashed var(--ink);
+            border-radius: 22px;
+            background: var(--card);
+            padding: 44px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.15s;
+        }
+        .dropzone.drag { background: #fff3e8; transform: scale(1.01); border-color: var(--accent); }
+        .dropzone .dz-icon { font-size: 2.6rem; display: block; margin-bottom: 8px; }
+        .dropzone h2 { font-size: 1.25rem; margin-bottom: 6px; }
+        .dropzone p { color: var(--ink-soft); font-size: 0.9rem; }
+        .has-items .dropzone { padding: 16px 20px; border-width: 2px; border-radius: 16px; }
+        .has-items .dropzone .dz-icon { font-size: 1.4rem; display: inline; margin: 0 6px 0 0; }
+        .has-items .dropzone h2 { display: inline; font-size: 1rem; margin: 0 8px 0 0; }
+
+        /* ---------- 示例 ---------- */
+        .samples { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
+        .samples .tip { color: var(--ink-soft); font-size: 0.92rem; }
+        .sample-btn {
+            border: var(--border);
+            border-radius: 14px;
+            background: var(--card);
+            padding: 8px 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            box-shadow: var(--shadow);
+        }
+        .sample-btn:nth-child(2) { transform: rotate(-1.2deg); }
+        .sample-btn:nth-child(3) { transform: rotate(0.8deg); }
+        .sample-btn:nth-child(4) { transform: rotate(-0.6deg); }
+        .sample-btn:hover { background: #fff3e8; }
+
+        /* ---------- 控制区 ---------- */
+        .controls {
+            display: flex;
+            align-items: end;
+            gap: 14px 22px;
+            flex-wrap: wrap;
+            background: var(--card);
+            border: var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 16px 18px;
+            margin: 14px 0;
+        }
+        .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+        .ctrl-label { font-size: 0.82rem; color: var(--ink-soft); font-weight: 600; }
+        .seg { display: flex; border: var(--border); border-radius: 12px; overflow: hidden; background: #fff; }
+        .seg button {
+            border: none;
+            background: transparent;
+            padding: 8px 13px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-right: 2px solid var(--ink);
+        }
+        .seg button:last-child { border-right: none; }
+        .seg button.active { background: var(--ink); color: #fff; }
+        input[type="range"] { width: 150px; accent-color: var(--accent); }
+        .ctrl-check { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; padding-bottom: 8px; }
+        .ctrl-check input { width: 18px; height: 18px; accent-color: var(--accent); }
+        .btn {
+            border: var(--border);
+            border-radius: 14px;
+            background: var(--card);
+            padding: 10px 18px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            box-shadow: var(--shadow);
+        }
+        .btn:hover:not(:disabled) { transform: translate(-1px, -1px); box-shadow: 5px 5px 0 rgba(47, 42, 37, 0.18); }
+        .btn.accent { background: var(--accent); color: #fff; }
+
+        #summary { min-height: 1.4em; color: var(--ink-soft); font-size: 0.9rem; margin: 4px 2px 12px; }
+
+        /* ---------- 图片卡片网格 ---------- */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 18px; }
+        .card {
+            background: var(--card);
+            border: var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .card:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 rgba(47, 42, 37, 0.18); }
+        .card .thumb { position: relative; background: #fff; min-height: 120px; }
+        .card .thumb img { display: block; width: 100%; }
+        .card .thumb img.raw { opacity: 0.35; filter: saturate(0.6); }
+        .card.busy .thumb::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(110deg, transparent 30%, rgba(255, 184, 77, 0.35) 50%, transparent 70%);
+            background-size: 220% 100%;
+            animation: shimmer 1.1s linear infinite;
+        }
+        @keyframes shimmer { from { background-position: 130% 0; } to { background-position: -90% 0; } }
+        .badge {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(47, 42, 37, 0.85);
+            color: #fff;
+            border-radius: 999px;
+            padding: 3px 10px;
+            font-size: 0.75rem;
+        }
+        .badge.bad { background: var(--accent-deep); }
+        .card-name {
+            font-size: 0.92rem;
+            font-weight: 700;
+            padding: 8px 12px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card-actions { display: flex; align-items: center; gap: 6px; padding: 10px 12px 12px; flex-wrap: wrap; }
+        .chip {
+            border: 2px solid var(--ink);
+            border-radius: 999px;
+            background: #fff;
+            padding: 5px 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .chip.primary { background: var(--accent); color: #fff; }
+        .chip.danger { background: #ffe9e2; }
+        .chip.check { display: inline-flex; align-items: center; gap: 5px; }
+        .chip.check input { width: 15px; height: 15px; accent-color: var(--accent); }
+        .chip:hover:not(:disabled) { background: #fff3e8; }
+
+        /* ---------- 涂色视图 ---------- */
+        #colorView {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            background: var(--paper);
+            background-image: radial-gradient(rgba(47, 42, 37, 0.045) 1px, transparent 1px);
+            background-size: 22px 22px;
+        }
+        .color-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-bottom: var(--border);
+            background: var(--card);
+        }
+        .color-top h2 { font-size: 1.1rem; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .top-btn {
+            border: var(--border);
+            border-radius: 12px;
+            background: #fff;
+            padding: 8px 13px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            box-shadow: 3px 3px 0 rgba(47, 42, 37, 0.14);
+        }
+        .top-btn.accent { background: var(--accent); color: #fff; }
+        .top-btn.mint { background: var(--mint); }
+        .color-main { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; padding: 12px; }
+        #colorStage {
+            position: relative;
+            background: #fff;
+            border: var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            touch-action: none;
+            box-shadow: var(--shadow);
+        }
+        #colorStage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+        #lineCanvas { mix-blend-mode: multiply; pointer-events: none; }
+
+        #refFloat {
+            position: fixed;
+            top: 70px;
+            right: 14px;
+            width: min(38vw, 280px);
+            border: 3px solid var(--ink);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            z-index: 60;
+            pointer-events: none;
+            display: none;
+            background: #fff;
+        }
+        #refFloat.show { display: block; }
+        #refFloat .ref-tag {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background: var(--ink);
+            color: #fff;
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            border-radius: 0 0 8px 0;
+        }
+        #refFloat img { display: block; width: 100%; }
+
+        .color-toolbar {
+            border-top: var(--border);
+            background: var(--card);
+            padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .tool-row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+        .tool-btn, .brush-btn {
+            min-width: 46px;
+            min-height: 44px;
+            border: 2px solid var(--ink);
+            border-radius: 12px;
+            background: #fff;
+            font-size: 0.9rem;
+            font-weight: 700;
+            padding: 0 12px;
+        }
+        .tool-btn.active, .brush-btn.active { background: var(--sun); box-shadow: inset 0 -3px 0 rgba(47, 42, 37, 0.25); }
+        .brush-btn .dot { display: inline-block; background: var(--ink); border-radius: 50%; vertical-align: middle; margin-right: 4px; }
+        .brush-btn[data-size="0"] .dot { width: 7px; height: 7px; }
+        .brush-btn[data-size="1"] .dot { width: 13px; height: 13px; }
+        .brush-btn[data-size="2"] .dot { width: 19px; height: 19px; }
+        .tb-sep { width: 2px; height: 30px; background: rgba(47, 42, 37, 0.18); border-radius: 2px; }
+
+        #palette { display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; }
+        .swatch {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 2.5px solid var(--ink);
+        }
+        .swatch.active { outline: 3px solid var(--accent); outline-offset: 2px; transform: scale(1.08); }
+
+        /* ---------- 相册 ---------- */
+        #galleryView { max-width: 1180px; margin: 0 auto; padding: 0 20px 60px; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 18px; }
+        .work-card {
+            background: var(--card);
+            border: var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .work-card img { display: block; width: 100%; }
+        .work-bar { display: flex; gap: 6px; padding: 8px 10px; flex-wrap: wrap; }
+        .work-name { font-size: 0.85rem; font-weight: 700; padding: 0 10px 10px; }
+        .empty-tip { grid-column: 1 / -1; text-align: center; color: var(--ink-soft); padding: 40px 0; }
+        dialog#workModal { border: var(--border); border-radius: var(--radius); padding: 0; max-width: min(92vw, 700px); background: var(--card); }
+        dialog#workModal img { display: block; max-width: 100%; max-height: 74vh; }
+        dialog#workModal::backdrop { background: rgba(47, 42, 37, 0.55); }
+        .modal-close {
+            display: block;
+            width: 100%;
+            border: none;
+            border-top: var(--border);
+            background: var(--sun);
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 12px;
+        }
+
+        /* ---------- 提示 ---------- */
+        #toast {
+            position: fixed;
+            left: 50%;
+            bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+            transform: translate(-50%, 20px);
+            background: rgba(47, 42, 37, 0.92);
+            color: #fff;
+            padding: 12px 26px;
+            border-radius: 999px;
+            font-size: 1rem;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 200;
+            transition: opacity 0.25s, transform 0.25s;
+        }
+        #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+        /* ---------- 打印 ---------- */
+        #printArea { display: none; }
+        @media print {
+            body.is-printing > *:not(#printArea) { display: none !important; }
+            #printArea { display: block; }
+            @page { size: A4 portrait; margin: 0; }
+            .sheet {
+                width: 210mm;
+                height: 296mm;
+                padding: 10mm;
+                display: grid;
+                gap: 6mm;
+                break-after: page;
+                page-break-after: always;
+            }
+            .sheet:last-child { break-after: auto; page-break-after: auto; }
+            .sheet.s1 { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+            .sheet.s2 { grid-template-columns: 1fr; grid-template-rows: auto 1fr 1fr; }
+            .sheet.s4 { grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr 1fr; }
+            .namebar {
+                grid-column: 1 / -1;
+                font-size: 4mm;
+                color: #444;
+                padding-bottom: 2mm;
+                border-bottom: 0.4mm solid #ccc;
+            }
+            .cell {
+                display: flex;
+                border: 0.5mm dashed #cfc8bd;
+                border-radius: 4mm;
+                overflow: hidden;
+            }
+            .sheet.s1 .cell { border: none; border-radius: 0; }
+            .cell img { width: 100%; height: 100%; object-fit: contain; }
+        }
+
+        @media (max-width: 700px) {
+            .topbar h1 { font-size: 1.35rem; }
+            .controls { gap: 12px; }
+            input[type="range"] { width: 120px; }
+            .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+            .steps { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 工作台 -->
+    <section id="studio" class="studio">
+        <div class="topbar">
+            <a href="/" class="btn-link">← 游戏中心</a>
+            <h1>🎨 涂色画工坊</h1>
+            <span class="spacer"></span>
+            <button id="galleryBtn" class="btn-link">🖼 我的作品<span id="galleryBadge" class="badge-count"></span></button>
+        </div>
+        <p class="privacy">🔒 图片只在你的浏览器里处理，不会上传到任何服务器，断网也能用</p>
+        <p class="steps"><b>①</b> 拖入彩色图片 → <b>②</b> 一键变成线稿、按孩子年龄调整线条 → <b>③</b> 批量打印拿去涂，或直接在屏幕上涂</p>
+
+        <div id="resumeBar" class="resume" hidden>
+            <span>有一幅没涂完的画：<b id="resumeName"></b></span>
+            <button id="resumeGo">🖍 继续涂</button>
+            <button id="resumeDrop" aria-label="放弃这幅画">✕ 放弃</button>
+        </div>
+
+        <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="点击或拖入图片">
+            <span class="dz-icon">🖼️</span>
+            <h2>点击选择，或把彩色图片拖到这里</h2>
+            <p>支持 JPG / PNG / WebP，可一次多选批量转换 · 最多 40 张</p>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" multiple hidden>
+
+        <div id="samples" class="samples">
+            <span class="tip">没有图片？先用示例试一试：</span>
+            <button class="sample-btn" data-sample="0">🌸 花朵</button>
+            <button class="sample-btn" data-sample="1">🐟 小鱼</button>
+            <button class="sample-btn" data-sample="2">🚗 小汽车</button>
+        </div>
+
+        <div class="controls">
+            <div class="ctrl-group">
+                <span class="ctrl-label">年龄预设</span>
+                <div class="seg" role="group" aria-label="年龄预设">
+                    <button class="preset-btn" data-preset="simple">简洁 3-4岁</button>
+                    <button class="preset-btn active" data-preset="standard">标准 4-6岁</button>
+                    <button class="preset-btn" data-preset="fine">精细 6岁+</button>
+                </div>
+            </div>
+            <div class="ctrl-group">
+                <label class="ctrl-label" for="sigmaInput">线条粗细</label>
+                <input type="range" id="sigmaInput" min="0.6" max="2.4" step="0.1" value="1.2">
+            </div>
+            <div class="ctrl-group">
+                <label class="ctrl-label" for="densityInput">线条密度</label>
+                <input type="range" id="densityInput" min="1" max="10" step="1" value="5">
+            </div>
+            <div class="ctrl-group">
+                <span class="ctrl-label">打印每页</span>
+                <div class="seg" role="group" aria-label="每页张数">
+                    <button class="perpage-btn active" data-perpage="1">1 张</button>
+                    <button class="perpage-btn" data-perpage="2">2 张</button>
+                    <button class="perpage-btn" data-perpage="4">4 张</button>
+                </div>
+            </div>
+            <label class="ctrl-check"><input type="checkbox" id="labelCheck">姓名日期栏</label>
+            <button class="btn accent" id="printBtn" disabled>🖨 打印选中的 0 张</button>
+            <button class="btn" id="downloadAllBtn">⬇️ 全部下载</button>
+        </div>
+
+        <p id="summary"></p>
+        <div id="grid" class="grid"></div>
+    </section>
+
+    <!-- 涂色视图 -->
+    <section id="colorView" hidden>
+        <div class="color-top" id="colorTopbar">
+            <button class="top-btn" id="colorBack">← 返回</button>
+            <h2 id="colorTitle">涂色</h2>
+            <button class="top-btn mint" id="saveWorkBtn">💾 存作品</button>
+            <button class="top-btn" id="dlWorkBtn">⬇️ 下载</button>
+        </div>
+        <main class="color-main">
+            <div id="colorStage">
+                <canvas id="paintCanvas"></canvas>
+                <canvas id="lineCanvas"></canvas>
+            </div>
+        </main>
+        <div class="color-toolbar">
+            <div class="tool-row">
+                <button class="tool-btn active" data-tool="crayon">🖍 蜡笔</button>
+                <button class="tool-btn" data-tool="bucket">🪣 油漆桶</button>
+                <button class="tool-btn" data-tool="eraser">🧽 橡皮</button>
+                <span class="tb-sep"></span>
+                <button class="brush-btn" data-size="0"><span class="dot"></span>细</button>
+                <button class="brush-btn active" data-size="1"><span class="dot"></span>中</button>
+                <button class="brush-btn" data-size="2"><span class="dot"></span>粗</button>
+                <span class="tb-sep"></span>
+                <button class="tool-btn" id="undoBtn" disabled>↩︎</button>
+                <button class="tool-btn" id="redoBtn" disabled>↪︎</button>
+                <button class="tool-btn" id="refBtn" hidden>👁 原图</button>
+                <button class="tool-btn" id="clearBtn">🗑</button>
+            </div>
+            <div id="palette" aria-label="颜色盘"></div>
+        </div>
+    </section>
+
+    <!-- 原图对照浮窗 -->
+    <div id="refFloat"><span class="ref-tag">原图参考</span><img alt="原图参考"></div>
+
+    <!-- 相册视图 -->
+    <section id="galleryView" hidden>
+        <div class="topbar">
+            <button class="btn-link" id="galleryBack">← 返回工坊</button>
+            <h1>🖼 我的作品</h1>
+        </div>
+        <p class="privacy">作品保存在这台设备上，最多保留 12 幅</p>
+        <div id="galleryGrid" class="gallery-grid"></div>
+    </section>
+
+    <!-- 作品大图 -->
+    <dialog id="workModal">
+        <img alt="作品大图">
+        <button class="modal-close" onclick="this.closest('dialog').close()">关闭</button>
+    </dialog>
+
+    <!-- 打印排版区（仅打印时可见） -->
+    <div id="printArea"></div>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <script src="/js/coloring-lineart.js"></script>
+    <script src="/js/coloring-studio.js"></script>
+    <script src="/js/coloring-paint.js"></script>
+    <script src="/pwa.js" defer></script>
+</body>
+</html>

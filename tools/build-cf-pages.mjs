@@ -67,6 +67,7 @@ const pages = [
   "shape-matching.html",
   "number-counting.html",
   "pattern-match.html",
+  "coloring-studio.html",
   "ai-api-test.html",
   "animal-sounds-voice-demo.html",
   "test_category.html",
