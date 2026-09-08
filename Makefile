@@ -31,16 +31,12 @@ status:
 test:
 	@echo "🧪 运行测试..."
 	@echo "检查HTML文件..."
-	@python3 -m http.server 8000 &
-	@SERVER_PID=$$!
-	@sleep 2
-	@curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/ && echo "✅ HTML测试通过" || echo "❌ HTML测试失败"
-	@kill $$SERVER_PID 2>/dev/null || true
+	@python3 -m http.server 8000 >/dev/null 2>&1 & SRV=$$!; sleep 2; CODE=$$(curl -m 5 -s -o /dev/null -w "%{http_code}" http://localhost:8000/ || echo 000); kill $$SRV 2>/dev/null; [ "$$CODE" = "200" ] && echo "✅ HTML测试通过 (200)" || echo "❌ HTML测试失败 ($$CODE)"
 	@echo "检查CSS文件..."
-	@test -f css/styles.css && echo "✅ CSS文件存在" || echo "❌ CSS文件缺失"
+	@test -f css/kids.css && echo "✅ kids.css存在" || echo "❌ kids.css缺失"
 	@echo "检查JavaScript文件..."
-	@test -f js/games.js && echo "✅ games.js存在" || echo "❌ games.js缺失"
-	@test -f js/app.js && echo "✅ app.js存在" || echo "❌ app.js缺失"
+	@test -f js/kids-ui.js && echo "✅ kids-ui.js存在" || echo "❌ kids-ui.js缺失"
+	@test -f js/storage.js && echo "✅ storage.js存在" || echo "❌ storage.js缺失"
 	@echo "🎉 测试完成"
 
 build:

@@ -2,15 +2,16 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#8d6e63">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="水墨方块 - 俄罗斯方块">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <title>水墨方块 - 俄罗斯方块</title>
+    <link rel="stylesheet" href="/css/kids.css">
     <style>
         /* ==================== 全局样式 ==================== */
         /* 字体本地化（T3-2）：Google Fonts 远程字体改为自托管子集（仅含页面用字，
@@ -502,6 +503,10 @@
                     <span class="info-label">行数</span>
                     <span class="info-value" id="lines">0</span>
                 </div>
+                <div class="info-item">
+                    <span class="info-label">最高分</span>
+                    <span class="info-value" id="bestScore">0</span>
+                </div>
             </div>
 
             <!-- 操作说明 -->
@@ -576,6 +581,7 @@
         </div>
     </div>
 
+    <script src="/js/kids-ui.js"></script>
     <script>
         /**
          * 水墨方块 - 俄罗斯方块游戏
@@ -619,6 +625,7 @@
         let score = 0;               // 得分
         let level = 1;               // 等级
         let lines = 0;               // 消除行数
+        let bestScore = parseInt(localStorage.getItem('tetris_ink_best')) || 0; // 最高分（枢纽页徽章读同一 key）
         let gameState = 'idle';      // idle/playing/paused/gameover
         let dropInterval = 1000;     // 下落间隔(ms)
         let lastDropTime = 0;        // 上次下落时间
@@ -650,6 +657,7 @@
         const scoreEl = document.getElementById('score');
         const levelEl = document.getElementById('level');
         const linesEl = document.getElementById('lines');
+        const bestScoreEl = document.getElementById('bestScore');
 
         const startBtn = document.getElementById('startBtn');
         const pauseBtn = document.getElementById('pauseBtn');
@@ -681,7 +689,8 @@
          * 播放音效 - 使用Web Audio API合成
          */
         function playSound(type) {
-            if (!audioCtx) return;
+            // 尊重共享底座的静音开关（顶栏 🔊/🔇）
+            if (!audioCtx || !KidsUI.SFX.enabled) return;
 
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
@@ -1402,6 +1411,7 @@
             scoreEl.textContent = score;
             levelEl.textContent = level;
             linesEl.textContent = lines;
+            bestScoreEl.textContent = bestScore;
         }
 
         /**
@@ -1509,6 +1519,13 @@
             cancelAnimationFrame(animationId);
 
             playSound('gameover');
+            KidsUI.haptic('bad');
+
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('tetris_ink_best', bestScore);
+            }
+            updateUI();
 
             finalScore.textContent = score;
             overlayTitle.textContent = lines >= 200 ? '恭喜通关' : '再接再厉';
@@ -1657,6 +1674,11 @@
             }
         });
 
+        // 切后台/切应用自动暂停，避免回来时方块堆顶（pauseGame 是 toggle，须守卫）
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden && gameState === 'playing') pauseGame();
+        });
+
         // ==================== 初始化 ====================
 
         // 预载水墨字体：canvas 飘字用 Ma Shan Zheng，标题/加粗用 700 字重，
@@ -1668,7 +1690,14 @@
         }
 
         // 初始化显示
+        KidsUI.Touch.guard();
+        KidsUI.Header.render({
+            title: '水墨方块',
+            accent: '#8d6e63',
+            showReplay: false
+        });
         initBoard();
+        updateUI();
         render();
     </script>
 

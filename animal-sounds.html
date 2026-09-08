@@ -4,492 +4,236 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#2a9d8f">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="动物叫声 - 儿童游戏">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="动物叫声">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
-    <title>动物叫声 - 儿童游戏</title>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <title>动物叫声 - 儿童逻辑思维游戏</title>
+    <link rel="stylesheet" href="/css/kids.css">
     <style>
+        :root {
+            --game-accent: #2a9d8f;
+        }
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--kui-paper);
+            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-size: 26px 26px;
             min-height: 100vh;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        h1 {
-            color: white;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            overflow-x: hidden;
+            color: var(--kui-ink);
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
-        .tts-status {
-            background: rgba(255,255,255,0.95);
-            border-radius: 15px;
-            padding: 15px 25px;
-            margin-bottom: 20px;
-            text-align: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            max-width: 600px;
-            width: 100%;
-            font-size: 1.1em;
-            color: #333;
+        #app {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 14px 14px 30px;
         }
 
-        .tts-status.available {
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-            color: white;
+        .game-container {
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-lg);
+            box-shadow: var(--kui-shadow);
+            padding: 18px;
         }
 
-        .tts-status.unavailable {
-            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
-            color: white;
-        }
-        
         .mode-toggle {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
             margin-bottom: 20px;
         }
-        
-        .mode-toggle button {
-            padding: 12px 24px;
-            font-size: 1.1em;
-            border: none;
-            border-radius: 25px;
+
+        .mode-btn {
+            padding: 12px 26px;
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--kui-ink);
+            background: var(--kui-paper);
+            border: 3px solid var(--kui-line);
+            border-radius: 999px;
             cursor: pointer;
-            margin: 0 5px;
-            transition: all 0.3s;
+            touch-action: manipulation;
+            transition: transform 0.12s var(--kui-bounce);
         }
-        
-        .mode-toggle button.active {
-            background: #4CAF50;
-            color: white;
-            transform: scale(1.05);
+
+        .mode-btn:active {
+            transform: scale(0.95);
         }
-        
-        .mode-toggle button:not(.active) {
-            background: rgba(255,255,255,0.3);
-            color: white;
+
+        .mode-btn.active {
+            background: var(--game-accent);
+            border-color: var(--game-accent);
+            color: #fff;
+            box-shadow: var(--kui-shadow);
         }
-        
+
         .animals-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            max-width: 600px;
-            width: 100%;
+            gap: 14px;
         }
-        
+
         .animal-btn {
-            background: white;
-            border: none;
-            border-radius: 20px;
-            padding: 20px;
-            font-size: 4em;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: var(--kui-paper);
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            box-shadow: var(--kui-shadow);
+            padding: 14px 8px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: transform 0.12s var(--kui-bounce);
         }
-        
-        .animal-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 8px 12px rgba(0,0,0,0.2);
+
+        .animal-btn .emoji {
+            font-size: clamp(38px, 11vw, 54px);
         }
-        
+
+        .animal-btn .name {
+            font-size: 0.95rem;
+            font-weight: 800;
+        }
+
         .animal-btn:active {
+            transform: scale(0.93);
+        }
+
+        .guess-section {
+            text-align: center;
+        }
+
+        .guess-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .play-sound-btn {
+            padding: 14px 34px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #fff;
+            background: var(--game-accent);
+            border: none;
+            border-radius: 999px;
+            box-shadow: var(--kui-shadow);
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: transform 0.12s var(--kui-bounce);
+        }
+
+        .play-sound-btn:active {
             transform: scale(0.95);
         }
-        
-        .animal-btn .name {
-            font-size: 0.25em;
-            color: #333;
-            font-weight: bold;
-        }
-        
-        .guess-section {
-            background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            padding: 30px;
-            margin-top: 30px;
-            text-align: center;
-            max-width: 400px;
-            width: 100%;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-        }
-        
-        .guess-section h2 {
-            margin-bottom: 15px;
-            color: #333;
-        }
-        
-        .play-sound-btn {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 1.2em;
-            border-radius: 30px;
-            cursor: pointer;
-            margin-bottom: 20px;
-            transition: all 0.3s;
-        }
-        
-        .play-sound-btn:hover {
-            background: #45a049;
-            transform: scale(1.05);
-        }
-        
+
         .options {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            gap: 14px;
+            max-width: 420px;
+            margin: 18px auto 0;
         }
-        
+
         .option-btn {
-            padding: 15px;
-            font-size: 2em;
-            border: 2px solid #ddd;
-            border-radius: 15px;
-            background: white;
+            font-size: clamp(38px, 11vw, 52px);
+            padding: 16px 0;
+            background: var(--kui-card);
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            box-shadow: var(--kui-shadow);
             cursor: pointer;
-            transition: all 0.3s;
+            touch-action: manipulation;
+            transition: transform 0.12s var(--kui-bounce);
         }
-        
-        .option-btn:hover {
-            border-color: #4CAF50;
-            transform: scale(1.05);
+
+        .option-btn:active {
+            transform: scale(0.95);
         }
-        
+
         .option-btn.correct {
-            background: #4CAF50;
-            border-color: #4CAF50;
-            animation: pulse 0.5s;
+            background: #e8f5ee;
+            border-color: var(--kui-good);
+            animation: pop 0.5s ease;
         }
-        
-        .option-btn.wrong {
-            background: #f44336;
-            border-color: #f44336;
-            animation: shake 0.5s;
-        }
-        
-        .score {
-            font-size: 1.5em;
-            color: #333;
-            margin-top: 15px;
-            font-weight: bold;
-        }
-        
-        @keyframes pulse {
+
+        @keyframes pop {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
+            50% { transform: scale(1.12); }
         }
-        
+
+        .option-btn.wrong {
+            animation: shake 0.4s ease;
+            border-color: var(--kui-bad);
+            background: #fdeae7;
+        }
+
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        .stats-area {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
         }
 
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
+        @media (max-width: 480px) {
+            .animals-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
-        .tts-feedback {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 20px 40px;
-            border-radius: 15px;
-            font-size: 1.5em;
-            z-index: 10000;
-            animation: fadeIn 0.3s ease;
-            pointer-events: none;
-        }
-        
-        .hidden {
-            display: none !important;
+        @media (prefers-reduced-motion: reduce) {
+            .mode-btn, .animal-btn, .option-btn, .play-sound-btn { transition: none; }
+            .option-btn.correct, .option-btn.wrong { animation-duration: 0.01s; }
         }
     </style>
 </head>
 <body>
-    <h1>🎵 动物叫声 🎵</h1>
+    <div id="app">
+        <div class="game-container">
+            <div class="mode-toggle">
+                <button type="button" class="mode-btn active" id="freeBtn">🎵 自由听</button>
+                <button type="button" class="mode-btn" id="guessBtn">🎯 猜一猜</button>
+            </div>
 
-    <!-- TTS 状态显示 -->
-    <div id="ttsStatus" class="tts-status">
-        <span id="ttsStatusIcon">⏳</span>
-        <span id="ttsStatusText">检测语音功能...</span>
-    </div>
+            <div id="freePlayMode" class="animals-grid" aria-label="自由听动物叫声"></div>
 
-    <div class="mode-toggle">
-        <button id="freePlayBtn" class="active" onclick="setMode('free')">自由模式</button>
-        <button id="guessBtn" onclick="setMode('guess')">猜一猜</button>
-    </div>
-    
-    <!-- 自由模式 -->
-    <div id="freePlayMode" class="animals-grid">
-        <button class="animal-btn" onclick="playSound('🐶')" hx-trigger="click">
-            <span>🐶</span>
-            <span class="name">小狗</span>
-        </button>
-        <button class="animal-btn" onclick="playSound('🐱')" hx-trigger="click">
-            <span>🐱</span>
-            <span class="name">小猫</span>
-        </button>
-        <button class="animal-btn" onclick="playSound('🐮')" hx-trigger="click">
-            <span>🐮</span>
-            <span class="name">奶牛</span>
-        </button>
-        <button class="animal-btn" onclick="playSound('🐷')" hx-trigger="click">
-            <span>🐷</span>
-            <span class="name">小猪</span>
-        </button>
-        <button class="animal-btn" onclick="playSound('🐸')" hx-trigger="click">
-            <span>🐸</span>
-            <span class="name">青蛙</span>
-        </button>
-        <button class="animal-btn" onclick="playSound('🦁')" hx-trigger="click">
-            <span>🦁</span>
-            <span class="name">狮子</span>
-        </button>
-        <button class="animal-btn" onclick="playSound('🐔')" hx-trigger="click">
-            <span>🐔</span>
-            <span class="name">公鸡</span>
-        </button>
-        <button class="animal-btn" onclick="playSound('🦆')" hx-trigger="click">
-            <span>🦆</span>
-            <span class="name">鸭子</span>
-        </button>
-    </div>
-    
-    <!-- 猜一猜模式 -->
-    <div id="guessMode" class="guess-section hidden">
-        <h2>🎯 猜猜是哪个动物？</h2>
-        <button class="play-sound-btn" onclick="playGuessSound()">🔊 播放声音</button>
-        <div class="options" id="guessOptions"></div>
-        <div class="score">得分: <span id="scoreValue">0</span></div>
+            <div id="guessMode" class="guess-section" hidden>
+                <p class="guess-title">👂 猜猜是谁在叫？</p>
+                <button type="button" class="play-sound-btn" id="playSoundBtn">🔊 再听一次</button>
+                <div class="options" id="guessOptions" aria-label="动物选项"></div>
+            </div>
+
+            <div class="stats-area">
+                <span class="kui-chip">⭐ 猜对 <b id="score">0</b> 次</span>
+            </div>
+        </div>
     </div>
 
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
     <script>
-        // ==================== TTS 语音合成管理器 ====================
-
-        /**
-         * 语音合成管理器
-         * @description 管理 Web Speech API 的语音合成功能，提供优雅降级
-         */
-        class VoiceManager {
-            constructor() {
-                this.isAvailable = false;
-                this.voices = [];
-                this.chineseVoice = null;
-                this.currentUtterance = null;
-                this.isSpeaking = false;
-
-                this.init();
-            }
-
-            /**
-             * 初始化语音合成
-             */
-            init() {
-                // 检查 API 是否可用
-                if (!('speechSynthesis' in window) || !window.speechSynthesis) {
-                    console.log('浏览器不支持语音合成 API');
-                    this.updateStatus(false);
-                    return;
-                }
-
-                // 监听语音列表加载
-                if (window.speechSynthesis.onvoiceschanged !== undefined) {
-                    window.speechSynthesis.onvoiceschanged = () => this.loadVoices();
-                }
-
-                // 加载语音列表
-                this.loadVoices();
-
-                // 延迟检查，确保语音列表已加载
-                setTimeout(() => this.finalizeInit(), 500);
-            }
-
-            /**
-             * 加载可用语音列表
-             */
-            loadVoices() {
-                this.voices = window.speechSynthesis.getVoices();
-
-                // 查找中文语音
-                this.chineseVoice = this.voices.find(voice => {
-                    return voice.lang.includes('zh') ||
-                           voice.lang.includes('CN') ||
-                           voice.name.includes('中文') ||
-                           voice.name.includes('Chinese');
-                });
-
-                console.log('加载语音:', this.voices.length, '个');
-                if (this.chineseVoice) {
-                    console.log('找到中文语音:', this.chineseVoice.name);
-                }
-            }
-
-            /**
-             * 完成初始化
-             */
-            finalizeInit() {
-                if (this.voices.length > 0) {
-                    this.isAvailable = true;
-                    this.updateStatus(true);
-                } else {
-                    this.updateStatus(false);
-                }
-            }
-
-            /**
-             * 更新状态显示
-             */
-            updateStatus(available) {
-                const statusIcon = document.getElementById('ttsStatusIcon');
-                const statusText = document.getElementById('ttsStatusText');
-                const statusDiv = document.getElementById('ttsStatus');
-
-                if (!statusIcon || !statusText || !statusDiv) return;
-
-                if (available) {
-                    statusDiv.className = 'tts-status available';
-                    statusIcon.textContent = '✅';
-                    statusText.textContent = '语音功能可用（' + (this.chineseVoice ? '中文语音' : '默认语音') + '）';
-                } else {
-                    statusDiv.className = 'tts-status unavailable';
-                    statusIcon.textContent = '❌';
-                    statusText.textContent = '语音功能不可用，将使用文字反馈';
-                }
-            }
-
-            /**
-             * 朗读文字
-             * @param {string} text - 要朗读的文字
-             * @param {object} options - 可选参数
-             */
-            speak(text, options = {}) {
-                if (!this.isAvailable) {
-                    console.log('语音不可用:', text);
-                    this.showTextFeedback(text);
-                    return;
-                }
-
-                // 防止同时播放多个语音
-                if (this.isSpeaking) {
-                    window.speechSynthesis.cancel();
-                }
-
-                // 停止当前语音
-                window.speechSynthesis.cancel();
-
-                // 创建新的语音实例
-                const utterance = new SpeechSynthesisUtterance(text);
-
-                // 设置语音
-                utterance.voice = this.chineseVoice || this.voices[0];
-
-                // 设置参数（儿童友好的设置）
-                utterance.rate = options.rate !== undefined ? options.rate : 0.8;
-                utterance.pitch = options.pitch !== undefined ? options.pitch : 1.2;
-                utterance.volume = options.volume !== undefined ? options.volume : 1;
-
-                // 事件处理
-                utterance.onstart = () => {
-                    this.isSpeaking = true;
-                    console.log('开始朗读:', text);
-                };
-
-                utterance.onend = () => {
-                    this.isSpeaking = false;
-                    console.log('朗读完成:', text);
-                };
-
-                utterance.onerror = (e) => {
-                    this.isSpeaking = false;
-                    console.error('朗读失败:', e);
-                    this.showTextFeedback(text);
-                };
-
-                // 播放语音
-                window.speechSynthesis.speak(utterance);
-                this.currentUtterance = utterance;
-            }
-
-            /**
-             * 显示文字反馈（降级方案）
-             */
-            showTextFeedback(text) {
-                const feedback = document.createElement('div');
-                feedback.className = 'tts-feedback';
-                feedback.textContent = text;
-                document.body.appendChild(feedback);
-
-                setTimeout(() => {
-                    feedback.style.animation = 'fadeOut 0.3s ease';
-                    setTimeout(() => feedback.remove(), 300);
-                }, 1500);
-            }
-
-            /**
-             * 停止当前朗读
-             */
-            stop() {
-                if (this.isSpeaking) {
-                    window.speechSynthesis.cancel();
-                    this.isSpeaking = false;
-                }
-            }
-        }
-
-        // 创建全局语音管理器
-        const voiceManager = new VoiceManager();
-
-        // 鼓励语料库
-        const encouragements = {
-            correct: [
-                '答对了！太棒了！',
-                '真聪明！',
-                '做得好！',
-                '你真棒！',
-                '继续加油！'
-            ],
-            retry: [
-                '再试一次，你可以的！',
-                '没关系，再想想！',
-                '别灰心，继续努力！',
-                '相信自己，你能行！'
-            ],
-            complete: '恭喜你！完成了所有关卡！'
-        };
-
-        // 动物数据配置
-        const animals = {
+        const ANIMALS = {
             '🐶': { name: '小狗', freq: 400, duration: 0.3, pattern: 'bark' },
             '🐱': { name: '小猫', freq: 600, duration: 0.4, pattern: 'meow' },
             '🐮': { name: '奶牛', freq: 150, duration: 0.8, pattern: 'moo' },
@@ -501,11 +245,7 @@
         };
 
         let audioContext = null;
-        let currentMode = 'free';
-        let currentGuessAnimal = null;
-        let score = 0;
 
-        // 初始化音频上下文
         function getAudioContext() {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -513,56 +253,12 @@
             return audioContext;
         }
 
-        // 播放声音（核心函数）
-        function playSound(emoji) {
-            const audio = getAudioContext();
-            const animal = animals[emoji];
-            if (!animal) return;
-
-            const osc = audio.createOscillator();
-            const gain = audio.createGain();
-            
-            osc.connect(gain);
-            gain.connect(audio.destination);
-            
-            // 根据动物类型设置不同的音效模式
-            switch(animal.pattern) {
-                case 'bark': // 狗叫
-                    playBark(audio, osc, gain, animal);
-                    break;
-                case 'meow': // 猫叫
-                    playMeow(audio, osc, gain, animal);
-                    break;
-                case 'moo': // 牛叫
-                    playMoo(audio, osc, gain, animal);
-                    break;
-                case 'oink': // 猪叫
-                    playOink(audio, osc, gain, animal);
-                    break;
-                case 'croak': // 青蛙
-                    playCroak(audio, osc, gain, animal);
-                    break;
-                case 'roar': // 狮子
-                    playRoar(audio, osc, gain, animal);
-                    break;
-                case 'crow': // 公鸡
-                    playCrow(audio, osc, gain, animal);
-                    break;
-                case 'quack': // 鸭子
-                    playQuack(audio, osc, gain, animal);
-                    break;
-            }
-        }
-
-        // 各种动物的叫声实现
         function playBark(audio, osc, gain, animal) {
             osc.type = 'square';
             gain.gain.setValueAtTime(0.3, audio.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
-            
             osc.frequency.setValueAtTime(animal.freq, audio.currentTime);
             osc.frequency.setValueAtTime(animal.freq * 0.8, audio.currentTime + 0.1);
-            
             osc.start(audio.currentTime);
             osc.stop(audio.currentTime + animal.duration);
         }
@@ -571,11 +267,9 @@
             osc.type = 'sine';
             gain.gain.setValueAtTime(0.3, audio.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
-            
             osc.frequency.setValueAtTime(animal.freq * 0.7, audio.currentTime);
             osc.frequency.linearRampToValueAtTime(animal.freq * 1.2, audio.currentTime + animal.duration * 0.5);
             osc.frequency.linearRampToValueAtTime(animal.freq * 0.8, audio.currentTime + animal.duration);
-            
             osc.start(audio.currentTime);
             osc.stop(audio.currentTime + animal.duration);
         }
@@ -584,9 +278,7 @@
             osc.type = 'sawtooth';
             gain.gain.setValueAtTime(0.2, audio.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
-            
             osc.frequency.setValueAtTime(animal.freq, audio.currentTime);
-            
             osc.start(audio.currentTime);
             osc.stop(audio.currentTime + animal.duration);
         }
@@ -596,11 +288,9 @@
             for (let i = 0; i < 2; i++) {
                 gain.gain.setValueAtTime(0.3, audio.currentTime + i * 0.25);
                 gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + i * 0.25 + 0.2);
-                
                 osc.frequency.setValueAtTime(animal.freq, audio.currentTime + i * 0.25);
                 osc.frequency.setValueAtTime(animal.freq * 1.2, audio.currentTime + i * 0.25 + 0.1);
             }
-            
             osc.start(audio.currentTime);
             osc.stop(audio.currentTime + 0.5);
         }
@@ -611,11 +301,9 @@
                 gain.gain.setValueAtTime(0.3, audio.currentTime + i * 0.15);
                 gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + i * 0.15 + 0.1);
             }
-            
             osc.frequency.setValueAtTime(animal.freq, audio.currentTime);
             osc.frequency.setValueAtTime(animal.freq * 1.5, audio.currentTime + 0.15);
             osc.frequency.setValueAtTime(animal.freq * 2, audio.currentTime + 0.3);
-            
             osc.start(audio.currentTime);
             osc.stop(audio.currentTime + 0.45);
         }
@@ -625,10 +313,8 @@
             gain.gain.setValueAtTime(0, audio.currentTime);
             gain.gain.linearRampToValueAtTime(0.4, audio.currentTime + 0.1);
             gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
-            
             osc.frequency.setValueAtTime(animal.freq * 0.5, audio.currentTime);
             osc.frequency.linearRampToValueAtTime(animal.freq, audio.currentTime + animal.duration);
-            
             osc.start(audio.currentTime);
             osc.stop(audio.currentTime + animal.duration);
         }
@@ -637,11 +323,9 @@
             osc.type = 'sine';
             gain.gain.setValueAtTime(0.3, audio.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
-            
             osc.frequency.setValueAtTime(animal.freq * 0.5, audio.currentTime);
             osc.frequency.linearRampToValueAtTime(animal.freq * 1.5, audio.currentTime + animal.duration * 0.3);
             osc.frequency.setValueAtTime(animal.freq * 1.2, audio.currentTime + animal.duration * 0.5);
-            
             osc.start(audio.currentTime);
             osc.stop(audio.currentTime + animal.duration);
         }
@@ -652,103 +336,168 @@
                 gain.gain.setValueAtTime(0.3, audio.currentTime + i * 0.2);
                 gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + i * 0.2 + 0.15);
             }
-            
             osc.frequency.setValueAtTime(animal.freq, audio.currentTime);
             osc.frequency.setValueAtTime(animal.freq * 0.9, audio.currentTime + 0.2);
-            
             osc.start(audio.currentTime);
             osc.stop(audio.currentTime + 0.35);
         }
 
-        // 切换模式
-        function setMode(mode) {
-            currentMode = mode;
+        const PLAYERS = {
+            bark: playBark,
+            meow: playMeow,
+            moo: playMoo,
+            oink: playOink,
+            croak: playCroak,
+            roar: playRoar,
+            crow: playCrow,
+            quack: playQuack
+        };
 
-            document.getElementById('freePlayBtn').classList.toggle('active', mode === 'free');
-            document.getElementById('guessBtn').classList.toggle('active', mode === 'guess');
-            document.getElementById('freePlayMode').classList.toggle('hidden', mode !== 'free');
-            document.getElementById('guessMode').classList.toggle('hidden', mode !== 'guess');
-
-            if (mode === 'guess') {
-                // 进入猜一猜模式，播放提示语音
-                voiceManager.speak('听声音，找出对应的动物');
-                startNewGuess();
-            }
+        function playAnimalSound(emoji) {
+            const animal = ANIMALS[emoji];
+            if (!animal) return;
+            const audio = getAudioContext();
+            if (audio.state === 'suspended') audio.resume();
+            const osc = audio.createOscillator();
+            const gain = audio.createGain();
+            osc.connect(gain);
+            gain.connect(audio.destination);
+            PLAYERS[animal.pattern](audio, osc, gain, animal);
         }
 
-        // 开始新的猜一猜
-        function startNewGuess() {
-            const animalKeys = Object.keys(animals);
-            currentGuessAnimal = animalKeys[Math.floor(Math.random() * animalKeys.length)];
-            
-            // 选择4个选项（包含正确答案）
-            let options = [currentGuessAnimal];
-            while (options.length < 4) {
-                const randomAnimal = animalKeys[Math.floor(Math.random() * animalKeys.length)];
-                if (!options.includes(randomAnimal)) {
-                    options.push(randomAnimal);
+        /**
+         * 动物叫声：自由听 + 听音猜动物。答对会读出动物名字。
+         */
+        class AnimalSoundsGame {
+            constructor() {
+                this.gameId = 'animal-sounds';
+                this.CELEBRATE_EVERY = 5;
+                this.score = 0;
+                this.misses = 0;
+                this.currentGuess = null;
+                this.isBusy = false;
+                this.init();
+            }
+
+            init() {
+                KidsUI.Touch.guard();
+                KidsUI.Header.render({
+                    title: '动物叫声',
+                    accent: '#2a9d8f',
+                    showReplay: false
+                });
+                this.renderFreeMode();
+                this.bindEvents();
+            }
+
+            bindEvents() {
+                document.getElementById('freeBtn').addEventListener('click', () => this.setMode('free'));
+                document.getElementById('guessBtn').addEventListener('click', () => this.setMode('guess'));
+                document.getElementById('playSoundBtn').addEventListener('click', () => {
+                    if (this.currentGuess) playAnimalSound(this.currentGuess);
+                });
+            }
+
+            setMode(mode) {
+                if (this.roundTimer) {
+                    clearTimeout(this.roundTimer);
+                    this.roundTimer = null;
                 }
+                KidsUI.SFX.tap();
+                document.getElementById('freeBtn').classList.toggle('active', mode === 'free');
+                document.getElementById('guessBtn').classList.toggle('active', mode === 'guess');
+                document.getElementById('freePlayMode').hidden = mode !== 'free';
+                document.getElementById('guessMode').hidden = mode !== 'guess';
+                if (mode === 'guess') this.startNewGuess();
             }
-            
-            // 随机打乱
-            options.sort(() => Math.random() - 0.5);
-            
-            // 渲染选项
-            const optionsHtml = options.map(emoji => `
-                <button class="option-btn" onclick="checkGuess('${emoji}')" hx-trigger="click">
-                    ${emoji}
-                </button>
-            `).join('');
-            
-            document.getElementById('guessOptions').innerHTML = optionsHtml;
-        }
 
-        // 播放猜测的声音
-        function playGuessSound() {
-            if (currentGuessAnimal) {
-                playSound(currentGuessAnimal);
+            renderFreeMode() {
+                const grid = document.getElementById('freePlayMode');
+                Object.entries(ANIMALS).forEach(([emoji, animal]) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'animal-btn';
+                    btn.innerHTML = `<span class="emoji">${emoji}</span><span class="name">${animal.name}</span>`;
+                    btn.addEventListener('click', () => {
+                        playAnimalSound(emoji);
+                        KidsUI.TTS.speak(animal.name);
+                    });
+                    grid.appendChild(btn);
+                });
             }
-        }
 
-        // 检查猜测
-        function checkGuess(selectedEmoji) {
-            const buttons = document.querySelectorAll('.option-btn');
-            buttons.forEach(btn => {
-                if (btn.textContent.trim() === selectedEmoji) {
-                    if (selectedEmoji === currentGuessAnimal) {
-                        btn.classList.add('correct');
-                        score++;
-                        document.getElementById('scoreValue').textContent = score;
+            startNewGuess() {
+                this.isBusy = false;
+                const keys = Object.keys(ANIMALS);
+                this.currentGuess = keys[Math.floor(Math.random() * keys.length)];
 
-                        // 语音反馈：答对了
-                        const encouragement = encouragements.correct[
-                            Math.floor(Math.random() * encouragements.correct.length)
-                        ];
-                        voiceManager.speak(encouragement);
+                const options = [this.currentGuess];
+                while (options.length < 4) {
+                    const key = keys[Math.floor(Math.random() * keys.length)];
+                    if (!options.includes(key)) options.push(key);
+                }
+                options.sort(() => Math.random() - 0.5);
 
-                        // 1秒后开始新一轮
+                const area = document.getElementById('guessOptions');
+                area.innerHTML = '';
+                options.forEach((emoji) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'option-btn';
+                    btn.textContent = emoji;
+                    btn.addEventListener('click', () => this.checkGuess(emoji, btn));
+                    area.appendChild(btn);
+                });
+
+                playAnimalSound(this.currentGuess);
+                KidsUI.TTS.speak('猜猜是哪个动物');
+            }
+
+            checkGuess(emoji, btn) {
+                if (this.isBusy) return;
+                const animal = ANIMALS[this.currentGuess];
+
+                if (emoji === this.currentGuess) {
+                    this.isBusy = true;
+                    this.score += 1;
+                    document.getElementById('score').textContent = this.score;
+                    KidsUI.SFX.correct();
+                    KidsUI.haptic('good');
+                    KidsUI.TTS.speak(animal.name);
+                    btn.classList.add('correct');
+
+                    if (this.score % this.CELEBRATE_EVERY === 0) {
+                        const stars = KidsUI.Progress.starsFor(this.score / (this.score + this.misses));
+                        KidsUI.Progress.record(this.gameId, { best: this.score, stars });
                         setTimeout(() => {
-                            startNewGuess();
-                        }, 1000);
+                            KidsUI.Celebrate.show({
+                                title: '小耳朵真灵！',
+                                sub: `已经猜对 ${this.score} 次`,
+                                stars,
+                                primaryLabel: '继续猜',
+                                onPrimary: () => this.startNewGuess(),
+                                announce: '太厉害了！'
+                            });
+                        }, 900);
                     } else {
-                        btn.classList.add('wrong');
-
-                        // 语音反馈：再试一次
-                        const retry = encouragements.retry[
-                            Math.floor(Math.random() * encouragements.retry.length)
-                        ];
-                        voiceManager.speak(retry);
-
-                        // 再给一次机会
-                        setTimeout(() => {
-                            btn.classList.remove('wrong');
-                        }, 500);
+                        this.roundTimer = setTimeout(() => {
+                            this.roundTimer = null;
+                            this.startNewGuess();
+                        }, 1500);
                     }
+                } else {
+                    this.misses += 1;
+                    KidsUI.SFX.wrong();
+                    KidsUI.haptic('bad');
+                    btn.classList.add('wrong');
+                    setTimeout(() => btn.classList.remove('wrong'), 500);
                 }
-            });
+            }
         }
-    </script>
 
-    <script src="/pwa.js" defer></script>
+        window.addEventListener('DOMContentLoaded', () => {
+            new AnimalSoundsGame();
+        });
+    </script>
 </body>
 </html>

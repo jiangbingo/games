@@ -19,6 +19,8 @@
   var AUTOSAVE_DELAY_MS = 700;
   var LS_CURRENT = "coloringStudio.current";
   var LS_GALLERY = "coloringStudio.gallery";
+  var LS_RECENTS = "coloringStudio.recents";
+  var RECENT_LIMIT = 6;
 
   var PALETTE = [
     "#e53935", "#ff7043", "#ffca28", "#8bc34a",
@@ -30,6 +32,7 @@
   var CS = null;
   var dom = {};
   var gallery = [];
+  var recents = [];
   var quotaWarned = false;
   var openToken = 0;
 
@@ -181,6 +184,7 @@
       return;
     }
     pushUndo();
+    KidsUI.SFX.correct();
     coloring.ctxP.putImageData(data, 0, 0);
     coloring.hasPainted = true;
     scheduleAutosave();
@@ -207,6 +211,7 @@
 
   function doUndo() {
     if (!coloring.undo.length) return;
+    KidsUI.SFX.tap();
     coloring.redo.push(coloring.paint.toDataURL("image/png"));
     restorePaint(coloring.undo.pop());
     updateHistoryButtons();
@@ -215,6 +220,7 @@
 
   function doRedo() {
     if (!coloring.redo.length) return;
+    KidsUI.SFX.tap();
     coloring.undo.push(coloring.paint.toDataURL("image/png"));
     restorePaint(coloring.redo.pop());
     updateHistoryButtons();
@@ -228,6 +234,7 @@
 
   function clearPaint() {
     pushUndo();
+    KidsUI.SFX.tap();
     coloring.ctxP.clearRect(0, 0, coloring.paint.width, coloring.paint.height);
     CS.toast("已清空（可撤销）");
     scheduleAutosave();
@@ -341,6 +348,7 @@
     }
     persistGallery();
     renderGallery();
+    KidsUI.SFX.celebrate();
     CS.toast("已存入「我的作品」✨");
   }
 
@@ -406,6 +414,7 @@
       coloring.drawing = false;
       doFill(p.x, p.y);
     } else {
+      KidsUI.SFX.tap();
       pushUndo();
       coloring.hasPainted = true;
       drawSegment(p.x, p.y, p.x, p.y);
@@ -439,6 +448,7 @@
     dom.colorTopbar = document.getElementById("colorTopbar");
     dom.colorToolbar = document.querySelector(".color-toolbar");
     dom.paletteBox = document.getElementById("palette");
+    dom.recentBox = document.getElementById("recentColors");
     dom.undoBtn = document.getElementById("undoBtn");
     dom.redoBtn = document.getElementById("redoBtn");
     dom.clearBtn = document.getElementById("clearBtn");
@@ -471,6 +481,53 @@
     });
   }
 
+  function loadRecents() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(LS_RECENTS));
+      return Array.isArray(raw)
+        ? raw.filter(function (h) { return /^#[0-9a-f]{6}$/i.test(h); }).slice(0, RECENT_LIMIT)
+        : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function persistRecents() {
+    try { localStorage.setItem(LS_RECENTS, JSON.stringify(recents)); } catch (e) { /* 忽略 */ }
+  }
+
+  function renderRecents() {
+    dom.recentBox.innerHTML = "";
+    if (!recents.length) {
+      dom.recentBox.hidden = true;
+      return;
+    }
+    dom.recentBox.hidden = false;
+    dom.recentBox.appendChild(CS.el("span", "recent-label", "最近："));
+    recents.forEach(function (hex) {
+      var b = CS.el("button", "swatch" + (hex === coloring.color ? " active" : ""));
+      b.dataset.color = hex;
+      b.style.background = hex;
+      b.setAttribute("aria-label", "颜色 " + hex);
+      dom.recentBox.appendChild(b);
+    });
+  }
+
+  function useColor(hex) {
+    coloring.color = hex;
+    KidsUI.SFX.tap();
+    document.querySelectorAll("#palette .swatch, #recentColors .swatch").forEach(function (x) {
+      x.classList.toggle("active", x.dataset.color === hex);
+    });
+    var next = [hex].concat(recents.filter(function (h) { return h !== hex; })).slice(0, RECENT_LIMIT);
+    var changed = next.length !== recents.length || next.some(function (h, i) { return h !== recents[i]; });
+    recents = next;
+    if (changed) {
+      persistRecents();
+      renderRecents();
+    }
+  }
+
   function wireColoring() {
     dom.colorStage.addEventListener("pointerdown", onPointerDown);
     dom.colorStage.addEventListener("pointermove", onPointerMove);
@@ -488,8 +545,12 @@
     dom.paletteBox.addEventListener("click", function (e) {
       var b = e.target.closest("[data-color]");
       if (!b) return;
-      coloring.color = b.dataset.color;
-      document.querySelectorAll("#palette .swatch").forEach(function (x) { x.classList.toggle("active", x === b); });
+      useColor(b.dataset.color);
+    });
+    dom.recentBox.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-color]");
+      if (!b) return;
+      useColor(b.dataset.color);
     });
     document.querySelectorAll(".brush-btn").forEach(function (b) {
       b.addEventListener("click", function () {
@@ -522,6 +583,8 @@
     CS = shared;
     cacheDom();
     renderPalette();
+    recents = loadRecents();
+    renderRecents();
     wireColoring();
     loadGallery();
     renderGallery();

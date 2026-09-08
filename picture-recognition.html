@@ -4,95 +4,87 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="/manifest.webmanifest">
-  <meta name="theme-color" content="#667eea">
+  <meta name="theme-color" content="#e63946">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="看图识物">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <title>看图识物</title>
-  <script src="https://unpkg.com/htmx.org"></script>
+  <link rel="stylesheet" href="/css/kids.css">
   <style>
+    :root {
+      --game-accent: #e63946;
+    }
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: var(--kui-paper);
+      background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+      background-size: 26px 26px;
       min-height: 100vh;
+      color: var(--kui-ink);
       display: flex;
       justify-content: center;
-      align-items: center;
-      padding: 20px;
+      padding: 14px;
+      touch-action: manipulation;
     }
     .game {
-      background: white;
-      border-radius: 30px;
-      padding: 30px;
+      background: var(--kui-card);
+      border: 2px solid var(--kui-line);
+      border-radius: var(--kui-radius-lg);
+      box-shadow: var(--kui-shadow);
       max-width: 500px;
       width: 100%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-      margin-bottom: 20px;
-      font-size: 28px;
+      padding: 20px;
+      margin-top: 8px;
     }
     .categories {
       display: flex;
       gap: 10px;
-      margin-bottom: 25px;
+      margin-bottom: 18px;
     }
     .cat-btn {
       flex: 1;
-      padding: 12px;
-      border: none;
-      border-radius: 15px;
-      font-size: 16px;
-      font-weight: bold;
+      padding: 12px 6px;
+      border: 2px solid var(--kui-line);
+      border-radius: var(--kui-radius-md);
+      font-size: 1rem;
+      font-weight: 800;
       cursor: pointer;
-      transition: all 0.3s;
+      background: var(--kui-paper);
+      color: var(--kui-ink);
+      box-shadow: var(--kui-shadow);
+      transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s;
     }
+    .cat-btn:active { transform: translateY(2px); box-shadow: none; }
     .cat-btn.active {
-      transform: scale(1.05);
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      color: #fff;
+      border-color: rgba(47, 42, 37, 0.2);
     }
-    .cat-btn[data-cat="animals"] { background: #FF6B6B; color: white; }
-    .cat-btn[data-cat="fruits"] { background: #4ECDC4; color: white; }
-    .cat-btn[data-cat="vehicles"] { background: #45B7D1; color: white; }
-    
+    .cat-btn[data-cat="animals"].active { background: #e63946; }
+    .cat-btn[data-cat="fruits"].active { background: #3fa574; }
+    .cat-btn[data-cat="vehicles"].active { background: #4f8ff7; }
+
     .score-board {
       display: flex;
       justify-content: center;
-      gap: 30px;
-      margin-bottom: 25px;
-      font-size: 20px;
+      gap: 12px;
+      margin-bottom: 14px;
     }
-    .score-item {
-      text-align: center;
-    }
-    .score-label {
-      color: #666;
-      font-size: 14px;
-    }
-    .score-value {
-      font-weight: bold;
-      font-size: 32px;
-    }
-    .score-value.correct { color: #4CAF50; }
-    .score-value.wrong { color: #FF5722; }
-    
+
     .target-area {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 18px;
     }
     .target-emoji {
-      font-size: 120px;
-      line-height: 1;
-      margin-bottom: 15px;
+      font-size: clamp(84px, 24vw, 120px);
+      line-height: 1.1;
+      margin-bottom: 8px;
       animation: bounce 2s infinite;
     }
     @keyframes bounce {
@@ -100,215 +92,227 @@
       50% { transform: translateY(-10px); }
     }
     .target-name {
-      font-size: 32px;
-      font-weight: bold;
-      color: #333;
+      font-size: clamp(1.5rem, 6vw, 2rem);
+      font-weight: 900;
     }
-    
+
     .options {
-      display: flex;
-      gap: 15px;
-      justify-content: center;
-      margin-bottom: 25px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
     }
     .option-btn {
-      width: 100px;
-      height: 100px;
-      font-size: 60px;
-      border: 4px solid #ddd;
-      border-radius: 20px;
-      background: white;
+      aspect-ratio: 1;
+      min-height: 96px;
+      font-size: clamp(44px, 13vw, 64px);
+      border: 3px solid var(--kui-line);
+      border-radius: var(--kui-radius-md);
+      background: var(--kui-paper);
       cursor: pointer;
-      transition: all 0.2s;
+      box-shadow: var(--kui-shadow);
+      transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s, border-color 0.2s;
     }
-    .option-btn:hover {
-      transform: scale(1.1);
-      border-color: #667eea;
-    }
-    .option-btn:active {
-      transform: scale(0.95);
-    }
+    .option-btn:active { transform: translateY(2px); box-shadow: none; }
     .option-btn.correct {
-      background: #4CAF50;
-      border-color: #4CAF50;
-      animation: pop 0.3s;
+      background: #eaf7f0;
+      border-color: var(--kui-good);
+      animation: pop 0.35s var(--kui-bounce);
     }
     .option-btn.wrong {
-      background: #FF5722;
-      border-color: #FF5722;
-      animation: shake 0.3s;
+      opacity: 0.45;
+      border-color: var(--kui-bad);
+      border-style: dashed;
+      pointer-events: none;
+      animation: shake 0.35s ease;
     }
     @keyframes pop {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.2); }
+      0% { transform: scale(0.9); }
+      50% { transform: scale(1.12); }
+      100% { transform: scale(1); }
     }
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-10px); }
-      75% { transform: translateX(10px); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
     }
-    
+
     .feedback {
       text-align: center;
-      font-size: 48px;
-      min-height: 60px;
+      font-size: 1.4rem;
+      font-weight: 900;
+      min-height: 2em;
+      color: var(--kui-ink-soft);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .target-emoji, .option-btn, .cat-btn { animation: none; transition: none; }
     }
   </style>
 </head>
 <body>
   <div class="game">
-    <h1>🎯 看图识物</h1>
-    
     <div class="categories">
-      <button class="cat-btn active" data-cat="animals" 
-              hx-trigger="click" hx-on="click: startGame('animals')">
-        🐾 动物
-      </button>
-      <button class="cat-btn" data-cat="fruits"
-              hx-trigger="click" hx-on="click: startGame('fruits')">
-        🍎 水果
-      </button>
-      <button class="cat-btn" data-cat="vehicles"
-              hx-trigger="click" hx-on="click: startGame('vehicles')">
-        🚗 交通
-      </button>
+      <button class="cat-btn active" data-cat="animals" type="button">🐾 动物</button>
+      <button class="cat-btn" data-cat="fruits" type="button">🍎 水果</button>
+      <button class="cat-btn" data-cat="vehicles" type="button">🚗 交通</button>
     </div>
-    
+
     <div class="score-board">
-      <div class="score-item">
-        <div class="score-label">正确</div>
-        <div class="score-value correct" id="correct">0</div>
-      </div>
-      <div class="score-item">
-        <div class="score-label">错误</div>
-        <div class="score-value wrong" id="wrong">0</div>
-      </div>
+      <span class="kui-chip">✅ 答对 <b id="correct">0</b></span>
+      <span class="kui-chip">🤔 试错 <b id="wrong">0</b></span>
     </div>
-    
+
     <div class="target-area">
       <div class="target-emoji" id="target-emoji">🐶</div>
       <div class="target-name" id="target-name">小狗</div>
     </div>
-    
-    <div class="options" id="options">
-      <button class="option-btn" hx-trigger="click" hx-on="click: check(this)">🐱</button>
-      <button class="option-btn" hx-trigger="click" hx-on="click: check(this)">🐶</button>
-      <button class="option-btn" hx-trigger="click" hx-on="click: check(this)">🐰</button>
-    </div>
-    
-    <div class="feedback" id="feedback"></div>
+
+    <div class="options" id="options"></div>
+
+    <div class="feedback" id="feedback" aria-live="polite">点一个一样的！</div>
   </div>
 
+  <script src="/js/kids-ui.js"></script>
+  <script src="/pwa.js" defer></script>
   <script>
     // 游戏数据
     const data = {
       animals: [
-        {emoji: '🐶', name: '小狗'},
-        {emoji: '🐱', name: '小猫'},
-        {emoji: '🐰', name: '兔子'},
-        {emoji: '🦊', name: '狐狸'},
-        {emoji: '🐻', name: '熊'},
-        {emoji: '🐼', name: '熊猫'}
+        { emoji: '🐶', name: '小狗' },
+        { emoji: '🐱', name: '小猫' },
+        { emoji: '🐰', name: '兔子' },
+        { emoji: '🦊', name: '狐狸' },
+        { emoji: '🐻', name: '小熊' },
+        { emoji: '🐼', name: '熊猫' }
       ],
       fruits: [
-        {emoji: '🍎', name: '苹果'},
-        {emoji: '🍊', name: '橘子'},
-        {emoji: '🍋', name: '柠檬'},
-        {emoji: '🍇', name: '葡萄'},
-        {emoji: '🍓', name: '草莓'},
-        {emoji: '🍑', name: '桃子'}
+        { emoji: '🍎', name: '苹果' },
+        { emoji: '🍊', name: '橘子' },
+        { emoji: '🍋', name: '柠檬' },
+        { emoji: '🍇', name: '葡萄' },
+        { emoji: '🍓', name: '草莓' },
+        { emoji: '🍑', name: '桃子' }
       ],
       vehicles: [
-        {emoji: '🚗', name: '汽车'},
-        {emoji: '🚌', name: '公交车'},
-        {emoji: '🚓', name: '警车'},
-        {emoji: '🚑', name: '救护车'},
-        {emoji: '🚒', name: '消防车'},
-        {emoji: '🚕', name: '出租车'}
+        { emoji: '🚗', name: '汽车' },
+        { emoji: '🚌', name: '公交车' },
+        { emoji: '🚓', name: '警车' },
+        { emoji: '🚑', name: '救护车' },
+        { emoji: '🚒', name: '消防车' },
+        { emoji: '🚕', name: '出租车' }
       ]
     };
 
+    const CELEBRATE_EVERY = 10;
+    const gameId = 'picture-recognition';
+
     let currentCategory = 'animals';
     let currentTarget = null;
-    let score = {correct: 0, wrong: 0};
+    let score = { correct: 0, wrong: 0 };
+    let cycleCorrect = 0;
+    let cycleWrong = 0;
     let canClick = true;
 
-    // 初始化游戏
     function startGame(category) {
       currentCategory = category;
-      
-      // 更新按钮状态
-      document.querySelectorAll('.cat-btn').forEach(btn => {
+      score = { correct: 0, wrong: 0 };
+      cycleCorrect = 0;
+      cycleWrong = 0;
+      updateScore();
+      document.querySelectorAll('.cat-btn').forEach((btn) => {
         btn.classList.toggle('active', btn.dataset.cat === category);
       });
-      
+      KidsUI.SFX.tap();
       nextRound();
     }
 
-    // 下一轮
     function nextRound() {
       canClick = true;
-      document.getElementById('feedback').textContent = '';
-      
+      const fb = document.getElementById('feedback');
+      fb.textContent = '点一个一样的！';
+
       const items = data[currentCategory];
-      
-      // 随机选择目标
       currentTarget = items[Math.floor(Math.random() * items.length)];
-      
-      // 显示目标
+
       document.getElementById('target-emoji').textContent = currentTarget.emoji;
       document.getElementById('target-name').textContent = currentTarget.name;
-      
-      // 生成选项（1个正确 + 2个错误）
+
       const options = [currentTarget];
-      const otherItems = items.filter(item => item !== currentTarget);
-      
-      // 随机选2个错误选项
-      for (let i = 0; i < 2 && otherItems.length > 0; i++) {
-        const idx = Math.floor(Math.random() * otherItems.length);
-        options.push(otherItems.splice(idx, 1)[0]);
+      const others = items.filter((item) => item !== currentTarget);
+      while (options.length < 3 && others.length) {
+        const idx = Math.floor(Math.random() * others.length);
+        options.push(others.splice(idx, 1)[0]);
       }
-      
-      // 打乱顺序
       options.sort(() => Math.random() - 0.5);
-      
-      // 显示选项
+
       const optionsDiv = document.getElementById('options');
-      optionsDiv.innerHTML = options.map(item => 
-        `<button class="option-btn" hx-trigger="click" hx-on="click: check(this)" data-emoji="${item.emoji}">${item.emoji}</button>`
-      ).join('');
+      optionsDiv.innerHTML = options
+        .map((item) => `<button class="option-btn" type="button" data-emoji="${item.emoji}">${item.emoji}</button>`)
+        .join('');
+      optionsDiv.querySelectorAll('.option-btn').forEach((btn) => {
+        btn.addEventListener('click', () => check(btn));
+      });
     }
 
-    // 检查答案
+    // 答错：该选项划掉，留在本题重试（幼儿友好）
     function check(btn) {
       if (!canClick) return;
-      canClick = false;
-      
-      const isCorrect = btn.dataset.emoji === currentTarget.emoji;
-      
-      if (isCorrect) {
+
+      if (btn.dataset.emoji === currentTarget.emoji) {
+        canClick = false;
         btn.classList.add('correct');
         score.correct++;
-        document.getElementById('correct').textContent = score.correct;
-        document.getElementById('feedback').textContent = '✅';
-        
-        // 1秒后下一轮
-        setTimeout(nextRound, 1000);
+        cycleCorrect++;
+        KidsUI.SFX.correct();
+        KidsUI.haptic('good');
+        KidsUI.TTS.speak(currentTarget.name);
+        document.getElementById('feedback').textContent = `对啦！这是${currentTarget.name}`;
+        updateScore();
+
+        if (cycleCorrect >= CELEBRATE_EVERY) {
+          cycleCorrect = 0;
+          cycleWrong = 0;
+          const stars = KidsUI.Progress.starsFor(score.correct / (score.correct + score.wrong));
+          KidsUI.Progress.record(gameId, { stars, best: score.correct });
+          KidsUI.Celebrate.show({
+            title: '真厉害！',
+            sub: `已经答对 ${score.correct} 题`,
+            stars,
+            primaryLabel: '继续玩',
+            onPrimary: () => nextRound()
+          });
+          return;
+        }
+        setTimeout(nextRound, 1200);
       } else {
-        btn.classList.add('wrong');
         score.wrong++;
-        document.getElementById('wrong').textContent = score.wrong;
-        document.getElementById('feedback').textContent = '🤔';
-        
-        // 1.5秒后下一轮
-        setTimeout(nextRound, 1500);
+        cycleWrong++;
+        btn.classList.add('wrong');
+        KidsUI.SFX.wrong();
+        KidsUI.haptic('bad');
+        document.getElementById('feedback').textContent = '🤔 再找一个一样的';
+        updateScore();
       }
     }
 
-    // 启动游戏
-    startGame('animals');
-  </script>
+    function updateScore() {
+      document.getElementById('correct').textContent = score.correct;
+      document.getElementById('wrong').textContent = score.wrong;
+    }
 
-    <script src="/pwa.js" defer></script>
+    window.addEventListener('DOMContentLoaded', () => {
+      KidsUI.Touch.guard();
+      KidsUI.Header.render({
+        title: '看图识物',
+        accent: '#e63946',
+        onReplay: () => startGame(currentCategory)
+      });
+      document.querySelectorAll('.cat-btn').forEach((btn) => {
+        btn.addEventListener('click', () => startGame(btn.dataset.cat));
+      });
+      nextRound();
+    });
+  </script>
 </body>
 </html>

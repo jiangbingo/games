@@ -2,57 +2,58 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#457b9d">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="🎨 涂鸦板">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="涂鸦板">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
-    <title>🎨 涂鸦板</title>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <title>涂鸦板 - 儿童逻辑思维游戏</title>
+    <link rel="stylesheet" href="/css/kids.css">
     <style>
+        :root {
+            --game-accent: #457b9d;
+        }
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            user-select: none;
-            -webkit-user-select: none;
         }
 
         body {
             overflow: hidden;
             touch-action: none;
-            background: #f5f5f5;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--kui-paper);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         #canvas {
             display: block;
-            background: white;
+            background: #fff;
             touch-action: none;
         }
 
-        /* 工具栏 */
         .toolbar {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 12px 16px 24px;
+            background: var(--kui-card);
+            border-top: 2px solid var(--kui-line);
+            padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
             display: flex;
             align-items: center;
-            justify-content: space-around;
-            gap: 12px;
-            box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.1);
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
             z-index: 100;
         }
 
-        /* 工具组 */
         .tool-group {
             display: flex;
             align-items: center;
@@ -60,246 +61,184 @@
         }
 
         .tool-label {
-            font-size: 12px;
-            color: #666;
-            font-weight: 500;
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: var(--kui-ink-soft);
         }
 
-        /* 颜色按钮 */
         .color-btn {
-            width: 44px;
-            height: 44px;
+            width: 42px;
+            height: 42px;
             border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            border: 3px solid #fff;
+            box-shadow: 0 2px 0 rgba(47, 42, 37, 0.25);
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            touch-action: manipulation;
         }
 
-        .color-btn:hover {
-            transform: scale(1.1);
+        .color-btn:active {
+            transform: scale(0.92);
         }
 
         .color-btn.active {
-            border-color: #333;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            outline: 3px solid var(--kui-ink);
+            outline-offset: 2px;
         }
 
-        /* 画笔大小按钮 */
         .size-btn {
-            width: 44px;
-            height: 44px;
+            width: 42px;
+            height: 42px;
             border-radius: 12px;
-            background: white;
-            border: 2px solid #e0e0e0;
+            background: var(--kui-paper);
+            border: 2px solid var(--kui-line);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .size-btn:hover {
-            border-color: #999;
+            touch-action: manipulation;
         }
 
         .size-btn.active {
-            background: #4CAF50;
-            border-color: #4CAF50;
+            background: var(--game-accent);
+            border-color: var(--game-accent);
         }
 
         .size-btn .dot {
-            background: #333;
+            background: var(--kui-ink);
             border-radius: 50%;
         }
 
         .size-btn.active .dot {
-            background: white;
+            background: #fff;
         }
 
         .size-small .dot { width: 8px; height: 8px; }
         .size-medium .dot { width: 14px; height: 14px; }
         .size-large .dot { width: 20px; height: 20px; }
 
-        /* 动作按钮 */
         .action-btn {
-            height: 44px;
-            padding: 0 20px;
-            border-radius: 22px;
-            background: white;
-            border: 2px solid #e0e0e0;
-            font-size: 16px;
-            font-weight: 600;
+            height: 42px;
+            padding: 0 16px;
+            border-radius: 21px;
+            background: var(--kui-paper);
+            border: 2px solid var(--kui-line);
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--kui-ink);
             cursor: pointer;
             display: flex;
             align-items: center;
             gap: 6px;
-            transition: all 0.2s;
-        }
-
-        .action-btn:hover {
-            transform: scale(1.05);
+            touch-action: manipulation;
         }
 
         .action-btn:active {
             transform: scale(0.95);
         }
 
-        .btn-clear {
-            color: #f44336;
-            border-color: #ffcdd2;
-            background: #ffebee;
+        .btn-clear.armed {
+            background: #fdeae7;
+            border-color: var(--kui-bad);
+            color: var(--kui-bad);
         }
 
-        .btn-clear:hover {
-            background: #ffcdd2;
-        }
-
-        .btn-save {
-            color: #4CAF50;
-            border-color: #c8e6c9;
-            background: #e8f5e9;
-        }
-
-        .btn-save:hover {
-            background: #c8e6c9;
-        }
-
-        /* 提示消息 */
         .toast {
             position: fixed;
-            top: 50%;
+            top: 40%;
             left: 50%;
             transform: translate(-50%, -50%) scale(0);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 16px 32px;
-            border-radius: 24px;
-            font-size: 18px;
-            font-weight: 500;
+            background: rgba(47, 42, 37, 0.85);
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 20px;
+            font-size: 1.05rem;
+            font-weight: 700;
             z-index: 1000;
-            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            pointer-events: none;
+            transition: transform 0.3s var(--kui-bounce);
         }
 
         .toast.show {
             transform: translate(-50%, -50%) scale(1);
         }
-
-        /* 防误触区域指示（可选，调试用）
-        .safe-zone {
-            position: fixed;
-            bottom: 100px;
-            left: 0;
-            right: 0;
-            height: 20px;
-            background: rgba(255, 0, 0, 0.1);
-            pointer-events: none;
-        }
-        */
     </style>
 </head>
 <body>
     <canvas id="canvas"></canvas>
 
-    <!-- 工具栏 -->
     <div class="toolbar" id="toolbar">
-        <!-- 颜色选择 -->
-        <div class="tool-group">
+        <div class="tool-group" id="colorGroup">
             <span class="tool-label">颜色</span>
-            <button class="color-btn active" data-color="#FF5252" style="background: #FF5252;" 
-                    hx-trigger="touchstart" hx-post="#color-red" onclick="setColor('#FF5252', this)"></button>
-            <button class="color-btn" data-color="#FF9800" style="background: #FF9800;" 
-                    hx-trigger="touchstart" hx-post="#color-orange" onclick="setColor('#FF9800', this)"></button>
-            <button class="color-btn" data-color="#FFEB3B" style="background: #FFEB3B;" 
-                    hx-trigger="touchstart" hx-post="#color-yellow" onclick="setColor('#FFEB3B', this)"></button>
-            <button class="color-btn" data-color="#4CAF50" style="background: #4CAF50;" 
-                    hx-trigger="touchstart" hx-post="#color-green" onclick="setColor('#4CAF50', this)"></button>
-            <button class="color-btn" data-color="#2196F3" style="background: #2196F3;" 
-                    hx-trigger="touchstart" hx-post="#color-blue" onclick="setColor('#2196F3', this)"></button>
-            <button class="color-btn" data-color="#9C27B0" style="background: #9C27B0;" 
-                    hx-trigger="touchstart" hx-post="#color-purple" onclick="setColor('#9C27B0', this)"></button>
+            <button type="button" class="color-btn active" data-color="#FF5252" style="background:#FF5252" aria-label="红色"></button>
+            <button type="button" class="color-btn" data-color="#FF9800" style="background:#FF9800" aria-label="橙色"></button>
+            <button type="button" class="color-btn" data-color="#FFEB3B" style="background:#FFEB3B" aria-label="黄色"></button>
+            <button type="button" class="color-btn" data-color="#4CAF50" style="background:#4CAF50" aria-label="绿色"></button>
+            <button type="button" class="color-btn" data-color="#2196F3" style="background:#2196F3" aria-label="蓝色"></button>
+            <button type="button" class="color-btn" data-color="#9C27B0" style="background:#9C27B0" aria-label="紫色"></button>
         </div>
 
-        <!-- 画笔大小 -->
-        <div class="tool-group">
+        <div class="tool-group" id="sizeGroup">
             <span class="tool-label">大小</span>
-            <button class="size-btn size-small active" data-size="4" 
-                    hx-trigger="touchstart" hx-post="#size-small" onclick="setSize(4, this)">
-                <div class="dot"></div>
-            </button>
-            <button class="size-btn size-medium" data-size="10" 
-                    hx-trigger="touchstart" hx-post="#size-medium" onclick="setSize(10, this)">
-                <div class="dot"></div>
-            </button>
-            <button class="size-btn size-large" data-size="18" 
-                    hx-trigger="touchstart" hx-post="#size-large" onclick="setSize(18, this)">
-                <div class="dot"></div>
-            </button>
+            <button type="button" class="size-btn size-small active" data-size="4" aria-label="细笔"><div class="dot"></div></button>
+            <button type="button" class="size-btn size-medium" data-size="10" aria-label="中笔"><div class="dot"></div></button>
+            <button type="button" class="size-btn size-large" data-size="18" aria-label="粗笔"><div class="dot"></div></button>
         </div>
 
-        <!-- 动作按钮 -->
         <div class="tool-group">
-            <button class="action-btn btn-clear" hx-trigger="touchstart" hx-post="#clear" onclick="clearCanvas()">
-                🗑️ 清空
-            </button>
-            <button class="action-btn btn-save" hx-trigger="touchstart" hx-post="#save" onclick="saveCanvas()">
-                💾 保存
-            </button>
+            <button type="button" class="action-btn" id="undoBtn">↩️ 撤销</button>
+            <button type="button" class="action-btn btn-clear" id="clearBtn">🗑️ 清空</button>
+            <button type="button" class="action-btn" id="saveBtn">💾 保存</button>
         </div>
     </div>
 
-    <!-- 提示消息 -->
     <div class="toast" id="toast"></div>
 
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
     <script>
-        // ========== 画布初始化 ==========
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
-        const toolbar = document.getElementById('toolbar');
         const toast = document.getElementById('toast');
 
-        // 绘图状态
+        const TOOLBAR_HEIGHT = 120;
+        const UNDO_LIMIT = 10;
+        const CLEAR_ARM_MS = 3000;
+
         let isDrawing = false;
         let lastX = 0;
         let lastY = 0;
         let currentColor = '#FF5252';
         let currentSize = 4;
-        const TOOLBAR_HEIGHT = 100; // 工具栏高度（含底部安全区）
+        let undoStack = [];
+        let clearArmed = false;
+        let clearTimer = null;
 
-        // 调整画布大小
         function resizeCanvas() {
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
-            
-            // 保存当前内容
             tempCanvas.width = canvas.width;
             tempCanvas.height = canvas.height;
             tempCtx.drawImage(canvas, 0, 0);
-            
-            // 调整大小
+
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            
-            // 恢复内容
             ctx.drawImage(tempCanvas, 0, 0);
-            
-            // 重设绘图属性
+            undoStack = [];
+
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             ctx.strokeStyle = currentColor;
             ctx.lineWidth = currentSize;
         }
 
-        // ========== 绘图功能 ==========
         function startDrawing(x, y) {
-            // 防误触：底部工具栏区域不绘图
             if (y > canvas.height - TOOLBAR_HEIGHT) return;
-            
+
+            pushUndo();
             isDrawing = true;
             lastX = x;
             lastY = y;
-            
-            // 绘制点（单击时）
+
             ctx.beginPath();
             ctx.arc(x, y, currentSize / 2, 0, Math.PI * 2);
             ctx.fillStyle = currentColor;
@@ -308,20 +247,18 @@
 
         function draw(x, y) {
             if (!isDrawing) return;
-            
-            // 防误触：进入工具栏区域停止绘图
             if (y > canvas.height - TOOLBAR_HEIGHT) {
                 isDrawing = false;
                 return;
             }
-            
+
             ctx.beginPath();
             ctx.moveTo(lastX, lastY);
             ctx.lineTo(x, y);
             ctx.strokeStyle = currentColor;
             ctx.lineWidth = currentSize;
             ctx.stroke();
-            
+
             lastX = x;
             lastY = y;
         }
@@ -330,8 +267,6 @@
             isDrawing = false;
         }
 
-        // ========== 事件处理 ==========
-        // 触控事件
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
             const touch = e.touches[0];
@@ -349,13 +284,13 @@
         canvas.addEventListener('touchend', stopDrawing);
         canvas.addEventListener('touchcancel', stopDrawing);
 
-        // 鼠标事件（兼容桌面）
         canvas.addEventListener('mousedown', (e) => {
             const rect = canvas.getBoundingClientRect();
             startDrawing(e.clientX - rect.left, e.clientY - rect.top);
         });
 
         canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
             const rect = canvas.getBoundingClientRect();
             draw(e.clientX - rect.left, e.clientY - rect.top);
         });
@@ -363,60 +298,108 @@
         canvas.addEventListener('mouseup', stopDrawing);
         canvas.addEventListener('mouseleave', stopDrawing);
 
-        // ========== 工具函数 ==========
-        // 设置颜色
-        function setColor(color, btn) {
-            currentColor = color;
-            ctx.strokeStyle = color;
-            
-            // 更新UI
-            document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+        function bindToolbar() {
+            document.querySelectorAll('.color-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    currentColor = btn.dataset.color;
+                    ctx.strokeStyle = currentColor;
+                    document.querySelectorAll('.color-btn').forEach((b) => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    KidsUI.SFX.tap();
+                });
+            });
+
+            document.querySelectorAll('.size-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    currentSize = Number(btn.dataset.size);
+                    ctx.lineWidth = currentSize;
+                    document.querySelectorAll('.size-btn').forEach((b) => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    KidsUI.SFX.tap();
+                });
+            });
+
+            document.getElementById('undoBtn').addEventListener('click', undo);
+            document.getElementById('clearBtn').addEventListener('click', onClearTap);
+            document.getElementById('saveBtn').addEventListener('click', saveCanvas);
         }
 
-        // 设置画笔大小
-        function setSize(size, btn) {
-            currentSize = size;
-            ctx.lineWidth = size;
-            
-            // 更新UI
-            document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+        function pushUndo() {
+            undoStack.push(canvas.toDataURL('image/png'));
+            if (undoStack.length > UNDO_LIMIT) undoStack.shift();
         }
 
-        // 清空画布
-        function clearCanvas() {
+        function undo() {
+            const prev = undoStack.pop();
+            if (!prev) {
+                showToast('↩️ 没有可撤销的了');
+                return;
+            }
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+            };
+            img.src = prev;
+            KidsUI.SFX.tap();
+        }
+
+        // 两步确认：先点一下进入待确认，3 秒内再点才真清空，防小朋友误触
+        function onClearTap() {
+            const btn = document.getElementById('clearBtn');
+            if (!clearArmed) {
+                clearArmed = true;
+                btn.textContent = '⚠️ 再点一下清空';
+                btn.classList.add('armed');
+                KidsUI.SFX.tap();
+                clearTimer = setTimeout(() => {
+                    clearArmed = false;
+                    btn.textContent = '🗑️ 清空';
+                    btn.classList.remove('armed');
+                }, CLEAR_ARM_MS);
+                return;
+            }
+
+            clearTimeout(clearTimer);
+            clearArmed = false;
+            btn.textContent = '🗑️ 清空';
+            btn.classList.remove('armed');
+            undoStack = [];
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            KidsUI.SFX.tap();
             showToast('🗑️ 已清空');
         }
 
-        // 保存画布
         function saveCanvas() {
             const link = document.createElement('a');
             link.download = `涂鸦_${new Date().toLocaleString('zh-CN').replace(/[/:]/g, '-')}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
+            KidsUI.SFX.tap();
             showToast('💾 已保存');
         }
 
-        // 显示提示
+        let toastTimer = null;
+
         function showToast(message) {
             toast.textContent = message;
             toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 1500);
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), 1500);
         }
 
-        // ========== 初始化 ==========
         window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-        
-        // 阻止双击缩放
-        document.addEventListener('dblclick', (e) => e.preventDefault());
-        
-        // 阻止双指缩放
-        document.addEventListener('gesturestart', (e) => e.preventDefault());
-    </script>
 
-    <script src="/pwa.js" defer></script>
+        document.addEventListener('DOMContentLoaded', () => {
+            KidsUI.Touch.guard();
+            KidsUI.Header.render({
+                title: '涂鸦板',
+                accent: '#457b9d',
+                showReplay: false
+            });
+            bindToolbar();
+            resizeCanvas();
+        });
+    </script>
 </body>
 </html>

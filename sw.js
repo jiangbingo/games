@@ -1,9 +1,10 @@
 /* 游戏中心 Service Worker —— 由 kids-maze-world/client/public/sw.js 改编
  * （BACKLOG T3-0b，架构决策 D1 方案 A：整站一个 PWA，一次安装覆盖全部本地游戏）。
  *
- * 预缓存范围 = 主页 + 13 个本地游戏页 + 涂色画工坊 js + 共享 js/storage.js + 图标。
- * 迷宫（kids-maze-world.pages.dev）为外部域名，跨域不可由本源 SW 预缓存，
- * 其离线能力由迷宫自己的 PWA 负责。
+ * 预缓存范围 = 主页 + 13 个本地游戏页 + 共享底座（css/kids.css、js/kids-ui.js）
+ * + 涂色画工坊 js + 经典游戏字体/图标 + 迷宫（/maze/，同域合并部署）。
+ * 迷宫预缓存条目（哈希资源名）由 tools/build-cf-pages.mjs 在构建时注入
+ * PRECACHE 数组中的 MAZE_ENTRIES 占位注释行，仓库内的 sw.js 不含具体条目。
  *
  * 缓存名含 __BUILD_VERSION__，每次部署由 tools/inject-sw-version.mjs 注入真实版本
  * （与迷宫 vite 构建注入同语义），activate 时整代更换、删除旧缓存——
@@ -18,6 +19,8 @@ const PRECACHE = [
   "/favicon.ico",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
+  "/css/kids.css",
+  "/js/kids-ui.js",
   "/js/storage.js",
   "/pwa.js",
   "/color-matching.html",

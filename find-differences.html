@@ -2,16 +2,20 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#4f8ff7">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="找不同小侦探 - 儿童逻辑思维游戏">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="找不同小侦探">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <title>找不同小侦探 - 儿童逻辑思维游戏</title>
+    <link rel="stylesheet" href="/css/kids.css">
     <style>
+        :root {
+            --game-accent: #4f8ff7;
+        }
         * {
             margin: 0;
             padding: 0;
@@ -19,107 +23,95 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--kui-paper);
+            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-size: 26px 26px;
             min-height: 100vh;
             overflow-x: hidden;
+            color: var(--kui-ink);
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
             user-select: none;
+            -webkit-user-select: none;
         }
 
         #app {
             max-width: 900px;
             margin: 0 auto;
-            padding: 20px;
-            min-height: 100vh;
+            padding: 14px 14px 30px;
         }
 
         .game-container {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            min-height: calc(100vh - 40px);
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-lg);
+            box-shadow: var(--kui-shadow);
+            padding: 18px;
         }
 
-        .game-header {
+        .level-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 3px solid #f0f0f0;
-        }
-
-        .game-title {
-            display: flex;
-            align-items: center;
+            margin-bottom: 14px;
             gap: 10px;
-            font-size: clamp(20px, 5vw, 28px);
-            color: #667eea;
-            font-weight: bold;
         }
-
-        .game-icon {
-            font-size: clamp(30px, 7vw, 40px);
-        }
-
         .level-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: var(--game-accent);
+            color: #fff;
             padding: 8px 16px;
-            border-radius: 20px;
-            font-size: clamp(14px, 3vw, 16px);
-            font-weight: bold;
+            border-radius: 999px;
+            font-size: 0.95rem;
+            font-weight: 800;
+            box-shadow: var(--kui-shadow);
         }
-
-        .game-area {
-            text-align: center;
-            padding: 20px;
+        .theme-name {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--kui-ink-soft);
         }
 
         .scene-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
-            position: relative;
+            gap: 14px;
+            margin-bottom: 18px;
         }
 
         .scene-panel {
-            background: #f8f9fa;
-            border: 3px solid #e0e0e0;
-            border-radius: 15px;
-            padding: 20px;
+            background: var(--kui-paper);
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            padding: 12px;
             position: relative;
-            min-height: 300px;
+            min-height: 280px;
         }
 
         .scene-panel.left {
-            border-color: #667eea;
+            border-color: var(--game-accent);
         }
 
         .scene-panel.right {
-            border-color: #764ba2;
+            border-color: #c86bfa;
             cursor: pointer;
         }
 
         .scene-emoji {
-            font-size: clamp(40px, 8vw, 60px);
+            font-size: clamp(30px, 7vw, 54px);
             display: inline-block;
-            margin: 5px;
-            transition: transform 0.2s ease;
+            margin: 6px;
+            transition: transform 0.15s var(--kui-bounce);
         }
 
         .scene-emoji:hover {
-            transform: scale(1.1);
+            transform: scale(1.12);
         }
 
         .difference-marker {
             position: absolute;
-            width: clamp(40px, 8vw, 60px);
-            height: clamp(40px, 8vw, 60px);
+            width: clamp(42px, 9vw, 64px);
+            height: clamp(42px, 9vw, 64px);
             border: 4px solid #e74c3c;
             border-radius: 50%;
             pointer-events: none;
@@ -132,131 +124,74 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        .stats-area {
+        .shake {
+            animation: shake 0.4s ease;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        .control-row {
             display: flex;
-            justify-content: space-around;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 3px solid #f0f0f0;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-label {
-            font-size: clamp(14px, 3vw, 16px);
-            color: #666;
-            margin-bottom: 5px;
-        }
-
-        .stat-value {
-            font-size: clamp(24px, 5vw, 32px);
-            font-weight: bold;
-            color: #333;
-        }
-
-        .stat-value.found {
-            color: #28a745;
-        }
-
-        .stat-value.hints {
-            color: #ffc107;
+            justify-content: center;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
         }
 
         .hint-btn {
-            background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
-            font-size: clamp(14px, 3vw, 16px);
-            font-weight: bold;
+            background: #ffd166;
+            color: var(--kui-ink);
+            border: 2px solid rgba(47, 42, 37, 0.2);
+            padding: 12px 26px;
+            border-radius: 999px;
+            font-size: 1rem;
+            font-weight: 800;
             cursor: pointer;
-            transition: all 0.3s ease;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s;
             touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
         }
+        .hint-btn:active { transform: translateY(2px); box-shadow: none; }
+        .hint-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-        .hint-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
+        .skip-btn {
+            background: var(--kui-card);
+            color: var(--kui-ink);
+            border: 2px dashed var(--kui-line);
+            padding: 12px 26px;
+            border-radius: 999px;
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            touch-action: manipulation;
         }
+        .skip-btn:active { transform: translateY(2px); }
 
-        .hint-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .action-buttons {
+        .stats-area {
             display: flex;
-            gap: 15px;
             justify-content: center;
-            margin-top: 30px;
+            gap: 14px;
+            flex-wrap: wrap;
         }
 
-        .action-btn {
-            padding: 12px 30px;
-            font-size: clamp(14px, 3vw, 16px);
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-            font-weight: bold;
-        }
-
-        .btn-replay {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .btn-replay:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-home {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-home:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
-        }
-
-        .celebration {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1000;
-        }
-
-        .confetti {
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            border-radius: 2px;
-            animation: confettiFall 3s ease-out forwards;
-        }
-
-        @keyframes confettiFall {
-            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
-            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        .scene-hint-note {
+            text-align: center;
+            color: var(--kui-ink-soft);
+            font-size: 0.88rem;
+            font-weight: 700;
+            margin-bottom: 10px;
         }
 
         .hint-highlight {
             position: absolute;
-            width: clamp(45px, 9vw, 65px);
-            height: clamp(45px, 9vw, 65px);
+            width: clamp(46px, 9.5vw, 66px);
+            height: clamp(46px, 9.5vw, 66px);
             border: 3px dashed #ffc107;
-            border-radius: 10px;
+            border-radius: 12px;
             pointer-events: none;
             animation: hintPulse 1s ease-in-out 3;
         }
@@ -269,66 +204,48 @@
         @media (max-width: 768px) {
             .scene-container {
                 grid-template-columns: 1fr;
-                gap: 15px;
+                gap: 12px;
             }
-
-            .scene-emoji {
-                font-size: clamp(30px, 6vw, 50px);
-            }
-
-            .stats-area {
-                flex-direction: column;
-                gap: 15px;
-            }
+            .scene-panel { min-height: 200px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .scene-emoji, .hint-btn, .skip-btn { transition: none; }
         }
     </style>
 </head>
 <body>
     <div id="app">
         <div class="game-container">
-            <div class="game-header">
-                <div class="game-title">
-                    <span class="game-icon">🔍👀</span>
-                    <span>找不同小侦探</span>
-                </div>
-                <div class="level-badge" id="level-badge">Level 1/5</div>
+            <div class="level-row">
+                <span class="theme-name" id="theme-name">🐄 农场</span>
+                <div class="level-badge" id="level-badge">第 1/5 关</div>
             </div>
 
-            <div class="game-area">
-                <div class="scene-container">
-                    <div class="scene-panel left" id="left-scene">
-                    </div>
-                    <div class="scene-panel right" id="right-scene">
-                    </div>
-                </div>
+            <p class="scene-hint-note">👀 右边这幅图有 <b id="diff-total">3</b> 处不一样，点一点找出来！</p>
 
-                <button class="hint-btn" id="hint-btn">💡 使用提示 (<span id="hint-count">3</span>)</button>
+            <div class="scene-container">
+                <div class="scene-panel left" id="left-scene" aria-label="参照图"></div>
+                <div class="scene-panel right" id="right-scene" aria-label="找不同"></div>
+            </div>
 
-                <div class="stats-area">
-                    <div class="stat-item">
-                        <div class="stat-label">🔍 找到</div>
-                        <div class="stat-value found" id="found-count">0/3</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">🏆 得分</div>
-                        <div class="stat-value" id="score">0</div>
-                    </div>
-                </div>
+            <div class="control-row">
+                <button class="hint-btn" id="hint-btn" type="button">💡 提示 (<span id="hint-count">3</span>)</button>
+                <button class="skip-btn" id="skip-btn" type="button">🔄 跳过这关</button>
+            </div>
 
-                <div class="action-buttons">
-                    <button class="action-btn btn-replay" id="replay-btn">🔄 下一关</button>
-                    <button class="action-btn btn-home" id="home-btn">🏠 主菜单</button>
-                </div>
+            <div class="stats-area">
+                <span class="kui-chip">🔍 找到 <b id="found-count">0/3</b></span>
+                <span class="kui-chip">🏆 得分 <b id="score">0</b></span>
             </div>
         </div>
     </div>
 
-    <div class="celebration" id="celebration"></div>
-
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
     <script>
         /**
-         * 找不同小侦探游戏
-         * 训练观察力和细节识别
+         * 找不同小侦探：右图有 N 处改动，全部找出过关。
+         * 主题池每关 16 个元素、5 组差异，关卡按需截取，保证差异数真实可达。
          */
         class FindDifferencesGame {
             constructor() {
@@ -336,186 +253,167 @@
                 this.maxLevels = 5;
                 this.score = 0;
                 this.foundCount = 0;
+                this.mistakes = 0;
                 this.totalDifferences = 3;
                 this.hintsRemaining = 3;
+                this.hintsUsed = 0;
                 this.foundPositions = [];
                 this.differences = [];
                 this.canClick = true;
+                this.gameId = 'find-differences';
 
                 this.sceneThemes = {
                     farm: {
-                        name: '农场',
-                        baseElements: ['🐶', '🐱', '🐰', '🌸', '🌻', '🏠', '🚜', '🌻'],
+                        name: '🐄 农场',
+                        baseElements: ['🐶', '🐱', '🐰', '🐔', '🌸', '🌻', '🏠', '🚜', '🍎', '🥕', '🐄', '🌾', '🐷', '🪣', '🐑', '🧺'],
                         differences: [
                             { from: '🐶', to: '🐺', hint: '小动物不一样' },
-                            { from: '🌸', to: '🌼', hint: '花朵颜色不一样' }
+                            { from: '🌸', to: '🌼', hint: '花朵不一样' },
+                            { from: '🐔', to: '🦆', hint: '家禽不一样' },
+                            { from: '🍎', to: '🍅', hint: '果实不一样' },
+                            { from: '🐑', to: '🐐', hint: '动物不一样' }
                         ]
                     },
                     ocean: {
-                        name: '海洋',
-                        baseElements: ['🐟', '🐠', '🐡', '🌊', '🏝️', '🦀', '⭐', '🌙'],
+                        name: '🌊 海洋',
+                        baseElements: ['🐟', '🐠', '🐡', '🌊', '🏝️', '🦀', '⭐', '🌙', '🐙', '🐚', '🧜', '🪸', '⚓', '🦐', '🐢', '🫧'],
                         differences: [
                             { from: '🐟', to: '🐬', hint: '大鱼不一样' },
-                            { from: '⭐', to: '💫', hint: '星星不一样' }
+                            { from: '⭐', to: '💫', hint: '星星不一样' },
+                            { from: '🐡', to: '🦈', hint: '鱼不一样' },
+                            { from: '🐙', to: '🦑', hint: '触手动物不一样' },
+                            { from: '🌙', to: '☀️', hint: '天上不一样' }
                         ]
                     },
                     park: {
-                        name: '公园',
-                        baseElements: ['🌳', '🌳', '🌻', '⚽', '🏀', '🎨', '🧒', '🏸'],
+                        name: '🌳 公园',
+                        baseElements: ['🌳', '🌻', '⚽', '🏀', '🎨', '🧒', '🏸', '🎠', '⛲', '🦜', '🌷', '🛝', '🍦', '🚲', '🪁', '🌈'],
                         differences: [
                             { from: '⚽', to: '🏈', hint: '球不一样' },
-                            { from: '🌳', to: '🌴', hint: '树不一样' }
+                            { from: '🌳', to: '🌴', hint: '树不一样' },
+                            { from: '🏀', to: '⚾', hint: '球不一样' },
+                            { from: '🦜', to: '🦆', hint: '动物不一样' },
+                            { from: '🍦', to: '🍭', hint: '甜品不一样' }
                         ]
                     },
                     space: {
-                        name: '太空',
-                        baseElements: ['🚀', '🛸', '🌍', '🌙', '⭐', '💫', '☄️', '👨🚀'],
+                        name: '🚀 太空',
+                        baseElements: ['🚀', '🛸', '🌍', '🌙', '⭐', '💫', '☄️', '👨‍🚀', '🪐', '🛰️', '🌌', '🔭', '🧑‍🚀', '🌠', '👽', '🛡️'],
                         differences: [
-                            { from: '🚀', to: '🛩', hint: '飞船不一样' },
-                            { from: '⭐', to: '✨', hint: '星星不一样' }
+                            { from: '🚀', to: '🛩️', hint: '飞船不一样' },
+                            { from: '⭐', to: '✨', hint: '星星不一样' },
+                            { from: '🌙', to: '🌞', hint: '天上不一样' },
+                            { from: '🛸', to: '🚁', hint: '飞行器不一样' },
+                            { from: '👽', to: '👾', hint: '外星人不一样' }
                         ]
                     },
                     garden: {
-                        name: '花园',
-                        baseElements: ['🌸', '🌻', '🌷', '🌺', '🦋', '🐝', '🌿', '🍀'],
+                        name: '🌷 花园',
+                        baseElements: ['🌸', '🌻', '🌷', '🌺', '🦋', '🐝', '🌿', '🍀', '🍄', '🌼', '🍓', '🐌', '🌱', '🐞', '🎋', '🕸️'],
                         differences: [
-                            { from: '🌸', to: '🌹', hint: '花不一样' },
-                            { from: '🐝', to: '🐞', hint: '昆虫不一样' }
+                            { from: '🌸', to: '🏵️', hint: '花不一样' },
+                            { from: '🐝', to: '🐛', hint: '小虫子不一样' },
+                            { from: '🍓', to: '🍎', hint: '果实不一样' },
+                            { from: '🐌', to: '🪲', hint: '虫子不一样' },
+                            { from: '🌻', to: '🎃', hint: '植物不一样' }
                         ]
                     }
                 };
 
                 this.levelConfig = [
-                    { level: 1, theme: 'farm', elementCount: 8, differenceCount: 3, difficulty: 1 },
-                    { level: 2, theme: 'ocean', elementCount: 10, differenceCount: 3, difficulty: 1 },
-                    { level: 3, theme: 'park', elementCount: 12, differenceCount: 4, difficulty: 2 },
-                    { level: 4, theme: 'space', elementCount: 14, differenceCount: 4, difficulty: 2 },
-                    { level: 5, theme: 'garden', elementCount: 16, differenceCount: 5, difficulty: 3 }
+                    { level: 1, theme: 'farm', elementCount: 8, differenceCount: 3 },
+                    { level: 2, theme: 'ocean', elementCount: 10, differenceCount: 3 },
+                    { level: 3, theme: 'park', elementCount: 12, differenceCount: 4 },
+                    { level: 4, theme: 'space', elementCount: 14, differenceCount: 4 },
+                    { level: 5, theme: 'garden', elementCount: 16, differenceCount: 5 }
                 ];
-
-                this.audioContext = null;
 
                 this.init();
             }
 
-            /**
-             * 初始化游戏
-             */
             init() {
+                KidsUI.Touch.guard();
+                KidsUI.Header.render({
+                    title: '找不同小侦探',
+                    accent: '#4f8ff7',
+                    onReplay: () => this.startLevel(this.currentLevel)
+                });
                 this.bindEvents();
                 this.startLevel(1);
             }
 
-            /**
-             * 绑定事件
-             */
             bindEvents() {
-                document.getElementById('replay-btn').addEventListener('click', () => {
-                    if (this.currentLevel < this.maxLevels) {
-                        this.startLevel(this.currentLevel + 1);
-                    } else {
-                        this.startLevel(1);
-                    }
+                document.getElementById('skip-btn').addEventListener('click', () => {
+                    KidsUI.SFX.tap();
+                    this.nextLevel();
                 });
-
-                document.getElementById('home-btn').addEventListener('click', () => {
-                    window.location.href = 'index.html';
-                });
-
                 document.getElementById('hint-btn').addEventListener('click', () => {
                     this.useHint();
                 });
-
-                const rightScene = document.getElementById('right-scene');
-                rightScene.addEventListener('click', (e) => {
+                document.getElementById('right-scene').addEventListener('click', (e) => {
                     this.handleClick(e);
                 });
             }
 
-            /**
-             * 开始关卡
-             */
             startLevel(level) {
                 this.currentLevel = level;
                 this.foundCount = 0;
+                this.mistakes = 0;
                 this.hintsRemaining = 3;
+                this.hintsUsed = 0;
                 this.foundPositions = [];
                 this.canClick = true;
 
-                document.getElementById('level-badge').textContent = `Level ${level}/${this.maxLevels}`;
+                const config = this.levelConfig[level - 1];
+                document.getElementById('level-badge').textContent = `第 ${level}/${this.maxLevels} 关`;
+                document.getElementById('theme-name').textContent = this.sceneThemes[config.theme].name;
                 document.getElementById('hint-count').textContent = this.hintsRemaining;
                 document.getElementById('hint-btn').disabled = false;
+                document.getElementById('right-scene').querySelectorAll('.difference-marker, .hint-highlight').forEach((el) => el.remove());
 
                 this.generateLevel(level);
                 this.renderScenes();
                 this.updateStats();
+                KidsUI.Progress.record(this.gameId, { best: level - 1 });
             }
 
-            /**
-             * 生成关卡
-             */
             generateLevel(level) {
                 const config = this.levelConfig[level - 1];
-                if (!config) return;
-
                 const theme = this.sceneThemes[config.theme];
                 this.totalDifferences = config.differenceCount;
 
-                // 生成基础场景
-                let baseElements = [...theme.baseElements]
+                const baseElements = [...theme.baseElements]
                     .sort(() => Math.random() - 0.5)
                     .slice(0, config.elementCount);
 
-                // 添加差异
-                const differences = [...theme.differences]
+                const picked = [...theme.differences]
                     .sort(() => Math.random() - 0.5)
                     .slice(0, config.differenceCount);
 
-                const availablePositions = [];
-                for (let i = 0; i < config.elementCount; i++) {
-                    availablePositions.push(i);
-                }
-
-                this.differences = [];
-                differences.forEach((diff) => {
-                    const randomIndex = Math.floor(Math.random() * availablePositions.length);
-                    const position = availablePositions.splice(randomIndex, 1)[0];
-                    this.differences.push({
-                        ...diff,
-                        position: position,
-                        originalElement: baseElements[position]
-                    });
+                const available = Array.from({ length: config.elementCount }, (_, i) => i);
+                this.differences = picked.map((diff) => {
+                    const randomIndex = Math.floor(Math.random() * available.length);
+                    const position = available.splice(randomIndex, 1)[0];
+                    return { ...diff, position };
                 });
 
-                // 创建左右场景
                 this.leftScene = [...baseElements];
-                this.rightScene = [...baseElements];
-
-                // 在右图中应用差异
-                this.differences.forEach(diff => {
-                    this.rightScene[diff.position] = diff.to;
+                this.rightScene = baseElements.map((el, idx) => {
+                    const diff = this.differences.find((d) => d.position === idx);
+                    return diff ? diff.to : el;
                 });
             }
 
-            /**
-             * 渲染场景
-             */
             renderScenes() {
-                const leftContainer = document.getElementById('left-scene');
-                const rightContainer = document.getElementById('right-scene');
-
-                leftContainer.innerHTML = this.leftScene.map((emoji, index) => 
-                    `<span class="scene-emoji" data-index="${index}">${emoji}</span>`
-                ).join('');
-
-                rightContainer.innerHTML = this.rightScene.map((emoji, index) => 
-                    `<span class="scene-emoji" data-index="${index}">${emoji}</span>`
-                ).join('');
+                document.getElementById('left-scene').innerHTML = this.leftScene
+                    .map((emoji, index) => `<span class="scene-emoji" data-index="${index}">${emoji}</span>`)
+                    .join('');
+                document.getElementById('right-scene').innerHTML = this.rightScene
+                    .map((emoji, index) => `<span class="scene-emoji" data-index="${index}">${emoji}</span>`)
+                    .join('');
+                document.getElementById('diff-total').textContent = this.totalDifferences;
             }
 
-            /**
-             * 处理点击
-             */
             handleClick(e) {
                 if (!this.canClick) return;
 
@@ -523,272 +421,106 @@
                 if (!target.classList.contains('scene-emoji')) return;
 
                 const index = parseInt(target.dataset.index);
+                // 已找出的差异位再次点击不记失误（幼儿常连点同一处）
+                if (this.foundPositions.includes(index)) return;
+                const difference = this.differences.find((diff) => diff.position === index);
 
-                // 检查是否是差异
-                const difference = this.differences.find(diff => diff.position === index);
-
-                if (difference && !this.foundPositions.includes(index)) {
-                    // 找到差异
+                if (difference) {
                     this.foundPositions.push(index);
                     this.foundCount++;
-
                     this.markDifference(target);
-                    this.playSuccessSound();
+                    KidsUI.SFX.correct();
+                    KidsUI.haptic('good');
 
                     this.score += 10;
                     this.updateStats();
 
-                    // 检查是否完成
                     if (this.foundCount >= this.totalDifferences) {
                         this.canClick = false;
-                        this.showCelebration();
+                        this.completeLevel();
                     }
                 } else {
-                    // 点击错误位置
-                    this.playErrorSound();
+                    this.mistakes++;
+                    KidsUI.SFX.wrong();
+                    KidsUI.haptic('bad');
                     this.shakeElement(target);
                 }
             }
 
-            /**
-             * 标记差异
-             */
             markDifference(element) {
                 const marker = document.createElement('div');
                 marker.className = 'difference-marker';
-
                 const rect = element.getBoundingClientRect();
                 const containerRect = document.getElementById('right-scene').getBoundingClientRect();
-
-                const left = rect.left - containerRect.left;
-                const top = rect.top - containerRect.top;
-
-                marker.style.left = left + 'px';
-                marker.style.top = top + 'px';
-
+                marker.style.left = rect.left - containerRect.left + 'px';
+                marker.style.top = rect.top - containerRect.top + 'px';
                 document.getElementById('right-scene').appendChild(marker);
             }
 
-            /**
-             * 使用提示
-             */
             useHint() {
-                if (this.hintsRemaining <= 0) return;
+                if (this.hintsRemaining <= 0 || !this.canClick) return;
 
-                const unfoundDifferences = this.differences.filter(
-                    diff => !this.foundPositions.includes(diff.position)
-                );
+                const unfound = this.differences.filter((diff) => !this.foundPositions.includes(diff.position));
+                if (unfound.length === 0) return;
 
-                if (unfoundDifferences.length === 0) return;
+                const hint = unfound[0];
+                const targetElement = document.querySelector(`#right-scene .scene-emoji[data-index="${hint.position}"]`);
+                if (!targetElement) return;
 
-                const hint = unfoundDifferences[0];
-                const targetElement = document.querySelector(
-                    `#right-scene .scene-emoji[data-index="${hint.position}"]`
-                );
+                const highlight = document.createElement('div');
+                highlight.className = 'hint-highlight';
+                const rect = targetElement.getBoundingClientRect();
+                const containerRect = document.getElementById('right-scene').getBoundingClientRect();
+                highlight.style.left = rect.left - containerRect.left - 5 + 'px';
+                highlight.style.top = rect.top - containerRect.top - 5 + 'px';
+                document.getElementById('right-scene').appendChild(highlight);
+                setTimeout(() => highlight.remove(), 3000);
 
-                if (targetElement) {
-                    const highlight = document.createElement('div');
-                    highlight.className = 'hint-highlight';
-
-                    const rect = targetElement.getBoundingClientRect();
-                    const containerRect = document.getElementById('right-scene').getBoundingClientRect();
-
-                    highlight.style.left = (rect.left - containerRect.left - 5) + 'px';
-                    highlight.style.top = (rect.top - containerRect.top - 5) + 'px';
-
-                    document.getElementById('right-scene').appendChild(highlight);
-
-                    // 3秒后移除
-                    setTimeout(() => {
-                        highlight.remove();
-                    }, 3000);
-
-                    this.hintsRemaining--;
-                    document.getElementById('hint-count').textContent = this.hintsRemaining;
-
-                    if (this.hintsRemaining <= 0) {
-                        document.getElementById('hint-btn').disabled = true;
-                    }
-
-                    this.playHintSound();
-                }
+                this.hintsRemaining--;
+                this.hintsUsed++;
+                document.getElementById('hint-count').textContent = this.hintsRemaining;
+                if (this.hintsRemaining <= 0) document.getElementById('hint-btn').disabled = true;
+                KidsUI.SFX.tap();
             }
 
-            /**
-             * 晃动元素
-             */
             shakeElement(element) {
-                element.style.animation = 'none';
-                element.offsetHeight;
-                element.style.animation = 'shake 0.5s ease';
+                element.classList.remove('shake');
+                void element.offsetWidth;
+                element.classList.add('shake');
             }
 
-            /**
-             * 更新统计
-             */
             updateStats() {
-                document.getElementById('found-count').textContent = 
-                    `${this.foundCount}/${this.totalDifferences}`;
+                document.getElementById('found-count').textContent = `${this.foundCount}/${this.totalDifferences}`;
                 document.getElementById('score').textContent = this.score;
             }
 
-            /**
-             * 显示庆祝动画
-             */
-            showCelebration() {
-                const celebration = document.getElementById('celebration');
-                celebration.innerHTML = '';
+            completeLevel() {
+                const accuracy = this.foundCount / (this.foundCount + this.mistakes);
+                let stars = KidsUI.Progress.starsFor(accuracy);
+                if (this.hintsUsed >= 2) stars = Math.min(stars, 2);
+                if (this.hintsUsed >= 3) stars = Math.min(stars, 1);
 
-                const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'];
-                for (let i = 0; i < 50; i++) {
-                    const confetti = document.createElement('div');
-                    confetti.className = 'confetti';
-                    confetti.style.left = Math.random() * 100 + '%';
-                    confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                    confetti.style.animationDelay = Math.random() * 2 + 's';
-                    celebration.appendChild(confetti);
-                }
-
-                setTimeout(() => {
-                    celebration.innerHTML = '';
-                }, 3000);
-
-                this.playCelebrationSound();
-
-                // 更新按钮文本
-                setTimeout(() => {
-                    const replayBtn = document.getElementById('replay-btn');
-                    if (this.currentLevel < this.maxLevels) {
-                        replayBtn.textContent = '🔄 下一关';
-                    } else {
-                        replayBtn.textContent = '🔄 重新开始';
-                    }
-                }, 2000);
+                KidsUI.Progress.record(this.gameId, { stars, best: this.currentLevel });
+                const isLast = this.currentLevel >= this.maxLevels;
+                KidsUI.Celebrate.show({
+                    title: isLast ? '全部过关！🏆' : '找到啦！',
+                    sub: `第 ${this.currentLevel} 关 · 得分 ${this.score}`,
+                    stars,
+                    primaryLabel: isLast ? '再玩一轮' : '下一关 →',
+                    onPrimary: () => this.nextLevel(),
+                    announce: isLast ? '太厉害了，全部关都过啦！' : '太棒了！'
+                });
             }
 
-            /**
-             * 播放成功音效
-             */
-            playSuccessSound() {
-                try {
-                    const ctx = this.getAudioContext();
-                    const oscillator = ctx.createOscillator();
-                    const gainNode = ctx.createGain();
-
-                    oscillator.connect(gainNode);
-                    gainNode.connect(ctx.destination);
-
-                    oscillator.frequency.setValueAtTime(523.25, ctx.currentTime);
-                    oscillator.frequency.exponentialRampToValueAtTime(659.25, ctx.currentTime + 0.1);
-                    oscillator.frequency.exponentialRampToValueAtTime(783.99, ctx.currentTime + 0.2);
-
-                    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-
-                    oscillator.start(ctx.currentTime);
-                    oscillator.stop(ctx.currentTime + 0.3);
-                } catch (error) {
-                    console.error('播放音效失败:', error);
-                }
-            }
-
-            /**
-             * 播放错误音效
-             */
-            playErrorSound() {
-                try {
-                    const ctx = this.getAudioContext();
-                    const oscillator = ctx.createOscillator();
-                    const gainNode = ctx.createGain();
-
-                    oscillator.connect(gainNode);
-                    gainNode.connect(ctx.destination);
-
-                    oscillator.frequency.setValueAtTime(392, ctx.currentTime);
-                    oscillator.frequency.exponentialRampToValueAtTime(261.63, ctx.currentTime + 0.2);
-
-                    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-
-                    oscillator.start(ctx.currentTime);
-                    oscillator.stop(ctx.currentTime + 0.2);
-                } catch (error) {
-                    console.error('播放音效失败:', error);
-                }
-            }
-
-            /**
-             * 播放提示音效
-             */
-            playHintSound() {
-                try {
-                    const ctx = this.getAudioContext();
-                    const oscillator = ctx.createOscillator();
-                    const gainNode = ctx.createGain();
-
-                    oscillator.connect(gainNode);
-                    gainNode.connect(ctx.destination);
-
-                    oscillator.type = 'sine';
-                    oscillator.frequency.value = 440;
-
-                    gainNode.gain.setValueAtTime(0.2, ctx.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-
-                    oscillator.start(ctx.currentTime);
-                    oscillator.stop(ctx.currentTime + 0.5);
-                } catch (error) {
-                    console.error('播放音效失败:', error);
-                }
-            }
-
-            /**
-             * 播放庆祝音效
-             */
-            playCelebrationSound() {
-                try {
-                    const ctx = this.getAudioContext();
-                    const notes = [523.25, 659.25, 783.99, 1046.50];
-
-                    notes.forEach((freq, index) => {
-                        const oscillator = ctx.createOscillator();
-                        const gainNode = ctx.createGain();
-
-                        oscillator.connect(gainNode);
-                        gainNode.connect(ctx.destination);
-
-                        oscillator.type = 'sine';
-                        oscillator.frequency.value = freq;
-
-                        const startTime = ctx.currentTime + index * 0.15;
-                        gainNode.gain.setValueAtTime(0.2, startTime);
-                        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.2);
-
-                        oscillator.start(startTime);
-                        oscillator.stop(startTime + 0.2);
-                    });
-                } catch (error) {
-                    console.error('播放音效失败:', error);
-                }
-            }
-
-            /**
-             * 获取音频上下文
-             */
-            getAudioContext() {
-                if (!this.audioContext) {
-                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                return this.audioContext;
+            nextLevel() {
+                this.score = 0;
+                this.startLevel(this.currentLevel < this.maxLevels ? this.currentLevel + 1 : 1);
             }
         }
 
-        // 启动游戏
         window.addEventListener('DOMContentLoaded', () => {
             new FindDifferencesGame();
         });
     </script>
-
-    <script src="/pwa.js" defer></script>
 </body>
 </html>

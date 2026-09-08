@@ -1,0 +1,222 @@
+/* KidsUI —— 蜡笔纸艺设计系统（逻辑游戏合集共享层）
+ * 游戏页在自己的 <style> 之前引入本文件；每页用 --game-accent 覆写强调色。
+ * 令牌前缀 kui-，避免与各游戏内联样式冲突。
+ */
+:root {
+  --kui-paper: #faf5ec;
+  --kui-paper-deep: #f1e8d6;
+  --kui-card: #fffdf8;
+  --kui-ink: #2f2a25;
+  --kui-ink-soft: #6f6559;
+  --kui-line: rgba(47, 42, 37, 0.16);
+  --game-accent: #ff6b4a;
+  --kui-good: #3fa574;
+  --kui-bad: #e5533d;
+  --kui-star: #ffb703;
+  --kui-shadow: 0 3px 0 rgba(47, 42, 37, 0.16);
+  --kui-radius-lg: 22px;
+  --kui-radius-md: 14px;
+  --kui-radius-sm: 10px;
+  --kui-tap: 48px;
+  --kui-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── 游戏顶栏 ── */
+.kui-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(8px + env(safe-area-inset-top, 0px)) 14px 8px;
+  background: var(--kui-paper);
+  border-bottom: 2px solid var(--kui-line);
+}
+body.kui-has-header {
+  padding-top: calc(66px + env(safe-area-inset-top, 0px));
+}
+.kui-title {
+  flex: 1;
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--kui-ink);
+  text-align: center;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.kui-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ── 按钮（纸卡厚影，按压下沉） ── */
+.kui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--kui-tap);
+  min-height: var(--kui-tap);
+  padding: 0 14px;
+  border: 2px solid var(--kui-line);
+  border-radius: 999px;
+  background: var(--kui-card);
+  color: var(--kui-ink);
+  font-family: inherit;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: var(--kui-shadow);
+  transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.kui-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 rgba(47, 42, 37, 0);
+}
+.kui-btn:focus-visible {
+  outline: 3px solid var(--game-accent);
+  outline-offset: 2px;
+}
+.kui-btn.kui-primary {
+  background: var(--game-accent);
+  color: #fff;
+  border-color: rgba(47, 42, 37, 0.22);
+}
+.kui-btn.kui-big {
+  min-height: 56px;
+  padding: 0 28px;
+  font-size: 1.15rem;
+}
+.kui-btn.kui-ghost {
+  box-shadow: none;
+  border-style: dashed;
+  background: transparent;
+}
+
+/* ── 统计胶囊 ── */
+.kui-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 2px solid var(--kui-line);
+  border-radius: 999px;
+  background: var(--kui-card);
+  box-shadow: var(--kui-shadow);
+  color: var(--kui-ink);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+/* ── 结算庆祝层 ── */
+.kui-celebrate {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(47, 42, 37, 0.35);
+  opacity: 0;
+  transition: opacity 0.2s;
+  overflow: hidden;
+}
+.kui-celebrate.in {
+  opacity: 1;
+}
+.kui-celebrate-card {
+  position: relative;
+  z-index: 2;
+  width: min(86vw, 360px);
+  padding: 30px 26px 26px;
+  border: 2px solid var(--kui-line);
+  border-radius: var(--kui-radius-lg);
+  background: var(--kui-card);
+  box-shadow: 0 10px 0 rgba(47, 42, 37, 0.18);
+  text-align: center;
+  transform: scale(0.7);
+  transition: transform 0.25s var(--kui-bounce);
+}
+.kui-celebrate.in .kui-celebrate-card {
+  transform: scale(1);
+}
+.kui-stars {
+  font-size: 2.6rem;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  margin-bottom: 8px;
+}
+.kui-star {
+  display: inline-block;
+  color: #d9cfbe;
+  transform: scale(0);
+}
+.kui-star.on {
+  color: var(--kui-star);
+  text-shadow: 0 2px 0 rgba(47, 42, 37, 0.15);
+  animation: kuiStarPop 0.5s var(--kui-bounce) forwards;
+}
+@keyframes kuiStarPop {
+  to {
+    transform: scale(1);
+  }
+}
+.kui-celebrate-title {
+  margin: 4px 0;
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: var(--kui-ink);
+}
+.kui-celebrate-sub {
+  margin: 0 0 18px;
+  font-size: 1rem;
+  color: var(--kui-ink-soft);
+}
+.kui-btnrow {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.kui-confetti {
+  position: absolute;
+  top: -14px;
+  width: 10px;
+  height: 16px;
+  border-radius: 3px;
+  z-index: 1;
+  animation: kuiConfettiFall linear forwards;
+}
+@keyframes kuiConfettiFall {
+  to {
+    transform: translateY(105vh) rotate(720deg);
+    opacity: 0.9;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kui-confetti {
+    display: none;
+  }
+  .kui-star.on {
+    animation: none;
+    transform: scale(1);
+  }
+  .kui-celebrate-card,
+  .kui-btn {
+    animation: none;
+    transition: none;
+  }
+}

@@ -2,380 +2,286 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#e5533d">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="颜色认知游戏">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="颜色配对">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>颜色认知游戏</title>
+    <title>颜色配对 - 儿童逻辑思维游戏</title>
+    <link rel="stylesheet" href="/css/kids.css">
     <style>
+        :root {
+            --game-accent: #e5533d;
+        }
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--kui-paper);
+            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-size: 26px 26px;
+            min-height: 100vh;
+            overflow-x: hidden;
+            color: var(--kui-ink);
+            touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
             user-select: none;
+            -webkit-user-select: none;
         }
-        
-        html, body {
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-        
-        .game-container {
-            width: 100%;
-            height: 100%;
+
+        #app {
+            max-width: 560px;
+            margin: 0 auto;
+            padding: 14px 14px 30px;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: space-around;
-            padding: 20px;
+            justify-content: center;
         }
-        
-        .header {
-            text-align: center;
-            color: white;
+
+        .game-container {
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-lg);
+            box-shadow: var(--kui-shadow);
+            padding: 22px 18px;
         }
-        
-        .title {
-            font-size: 36px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            margin-bottom: 15px;
-        }
-        
-        .score-board {
-            font-size: 28px;
-            background: rgba(255,255,255,0.2);
-            padding: 10px 30px;
-            border-radius: 20px;
-        }
-        
-        .star { color: #FFD700; }
-        
+
         .target-area {
             text-align: center;
+            margin-bottom: 24px;
         }
-        
+
         .target-label {
-            font-size: 36px;
-            color: white;
-            margin-bottom: 20px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+            font-size: clamp(17px, 4.5vw, 21px);
+            font-weight: 800;
+            margin-bottom: 16px;
         }
-        
-        .target-color-name {
-            font-size: 48px;
-            font-weight: bold;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            animation: colorPulse 1s ease-in-out infinite;
+
+        .target-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
         }
-        
-        @keyframes colorPulse {
+
+        .target-swatch {
+            width: clamp(72px, 20vw, 96px);
+            height: clamp(72px, 20vw, 96px);
+            border-radius: 50%;
+            border: 4px solid #fff;
+            box-shadow: 0 4px 0 rgba(47, 42, 37, 0.18), 0 0 0 3px var(--kui-line);
+            animation: swatchPulse 1.6s ease-in-out infinite;
+        }
+
+        @keyframes swatchPulse {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            50% { transform: scale(1.06); }
         }
-        
+
+        .target-name {
+            font-size: clamp(30px, 9vw, 44px);
+            font-weight: 900;
+            color: var(--game-accent);
+        }
+
         .options-area {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 25px;
-            padding: 30px;
+            gap: 18px;
+            justify-items: center;
+            margin-bottom: 20px;
         }
-        
+
         .color-btn {
-            width: 130px;
-            height: 130px;
-            border: 6px solid white;
-            border-radius: 30px;
+            width: clamp(110px, 30vw, 150px);
+            height: clamp(110px, 30vw, 150px);
+            border: 5px solid #fff;
+            border-radius: 26px;
+            box-shadow: 0 5px 0 rgba(47, 42, 37, 0.2);
             cursor: pointer;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            transition: transform 0.1s, box-shadow 0.1s;
             touch-action: manipulation;
+            transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s;
         }
-        
+
+        .color-btn:hover {
+            transform: translateY(-4px);
+        }
+
         .color-btn:active {
-            transform: scale(0.9);
+            transform: scale(0.92);
+            box-shadow: 0 2px 0 rgba(47, 42, 37, 0.2);
         }
-        
+
         .color-btn.correct {
-            animation: correctFlash 0.5s ease;
-            box-shadow: 0 0 30px rgba(255,255,255,0.8);
+            animation: correctPop 0.5s ease;
+            box-shadow: 0 0 0 5px var(--kui-good), 0 5px 0 rgba(47, 42, 37, 0.2);
         }
-        
-        @keyframes correctFlash {
+
+        @keyframes correctPop {
             0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.15); }
+            50% { transform: scale(1.14); }
         }
-        
+
         .color-btn.wrong {
-            animation: wrongShake 0.5s ease;
+            animation: shake 0.4s ease;
         }
-        
-        @keyframes wrongShake {
+
+        @keyframes shake {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-15px); }
-            75% { transform: translateX(15px); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
         }
-        
-        .feedback {
-            font-size: 52px;
-            font-weight: bold;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            opacity: 0;
+
+        .stats-area {
+            display: flex;
+            justify-content: center;
         }
-        
-        .feedback.show {
-            opacity: 1;
-            animation: feedbackPop 0.5s ease;
-        }
-        
-        @keyframes feedbackPop {
-            0% { transform: scale(0.5); opacity: 0; }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        
-        .parent-control {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            width: 40px;
-            height: 40px;
-            background: rgba(255,255,255,0.1);
-            border: none;
-            border-radius: 50%;
-            font-size: 12px;
-            color: rgba(255,255,255,0.3);
-            cursor: pointer;
-        }
-        
-        .celebration {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 50;
-        }
-        
-        .bubble {
-            position: absolute;
-            border-radius: 50%;
-            animation: bubbleRise 3s ease-out forwards;
-        }
-        
-        @keyframes bubbleRise {
-            0% { transform: translateY(100vh) scale(0); opacity: 0.8; }
-            100% { transform: translateY(-100px) scale(1); opacity: 0; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .target-swatch, .color-btn { animation: none; transition: none; }
+            .color-btn.correct, .color-btn.wrong { animation-duration: 0.01s; }
         }
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <div class="header">
-            <div class="title">找颜色</div>
-            <div class="score-board">
-                <span class="star">⭐</span> <span id="score">0</span>
+    <div id="app">
+        <div class="game-container">
+            <div class="target-area">
+                <div class="target-label">🎨 找到这个颜色：</div>
+                <div class="target-row">
+                    <div class="target-swatch" id="targetSwatch"></div>
+                    <div class="target-name" id="targetName">红色</div>
+                </div>
+            </div>
+
+            <div class="options-area" id="optionsArea" aria-label="颜色选项"></div>
+
+            <div class="stats-area">
+                <span class="kui-chip">⭐ 找到 <b id="score">0</b> 次</span>
             </div>
         </div>
-        
-        <div class="target-area">
-            <div class="target-label">找到这个颜色：</div>
-            <div class="target-color-name" id="targetColorName">红色</div>
-        </div>
-        
-        <div class="feedback" id="feedback"></div>
-        
-        <div class="options-area" id="optionsArea"></div>
     </div>
-    
-    <button class="parent-control" ontouchstart="initGame()">🔄</button>
-    
-    <div class="celebration" id="celebration"></div>
 
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
     <script>
-        // ==================== 颜色定义 ====================
-        const COLORS = [
-            { name: '红色', hex: '#FF4757', light: '#FF6B7A' },
-            { name: '黄色', hex: '#FFA502', light: '#FFB732' },
-            { name: '蓝色', hex: '#3742FA', light: '#5352ED' },
-            { name: '绿色', hex: '#2ED573', light: '#7BED9F' },
-            { name: '橙色', hex: '#FF6B35', light: '#FF7F50' },
-            { name: '紫色', hex: '#A55EEA', light: '#BE7ADB' },
-            { name: '粉色', hex: '#FF69B4', light: '#FF85C1' },
-            { name: '黑色', hex: '#2C3E50', light: '#34495E' }
-        ];
-        
-        // ==================== 游戏状态 ====================
-        let gameState = {
-            score: 0,
-            targetColor: null,
-            isAnimating: false
-        };
-        
-        // ==================== 音效 ====================
-        function playSound(type) {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                
-                const config = {
-                    correct: { freq: 659.25, duration: 0.15, type: 'sine' },
-                    wrong: { freq: 196.00, duration: 0.2, type: 'square' },
-                    celebrate: { freq: 783.99, duration: 0.2, type: 'sine' }
-                };
-                
-                const c = config[type] || config.correct;
-                oscillator.type = c.type;
-                oscillator.frequency.setValueAtTime(c.freq, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + c.duration);
-                
-                oscillator.start(audioCtx.currentTime);
-                oscillator.stop(audioCtx.currentTime + c.duration);
-            } catch(e) {}
-        }
-        
-        // ==================== 游戏核心 ====================
-        function initGame() {
-            gameState.score = 0;
-            updateScore();
-            newRound();
-        }
-        
-        function newRound() {
-            if (gameState.isAnimating) return;
-            
-            // 随机选择4个颜色
-            const shuffled = [...COLORS].sort(() => Math.random() - 0.5);
-            const selectedColors = shuffled.slice(0, 4);
-            
-            // 随机选择目标
-            gameState.targetColor = selectedColors[Math.floor(Math.random() * selectedColors.length)];
-            
-            // 显示目标
-            document.getElementById('targetColorName').textContent = gameState.targetColor.name;
-            
-            // 创建选项
-            const optionsArea = document.getElementById('optionsArea');
-            optionsArea.innerHTML = '';
-            
-            const shuffledOptions = [...selectedColors].sort(() => Math.random() - 0.5);
-            
-            shuffledOptions.forEach(color => {
-                const btn = document.createElement('button');
-                btn.className = 'color-btn';
-                btn.style.background = `linear-gradient(135deg, ${color.hex} 0%, ${color.light} 100%)`;
-                btn.setAttribute('data-color', color.name);
-                
-                btn.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    checkAnswer(color.name, btn);
-                }, { passive: false });
-                
-                optionsArea.appendChild(btn);
-            });
-        }
-        
-        function checkAnswer(selected, btnElement) {
-            if (gameState.isAnimating) return;
-            gameState.isAnimating = true;
-            
-            const isCorrect = selected === gameState.targetColor.name;
-            const feedback = document.getElementById('feedback');
-            
-            if (isCorrect) {
-                btnElement.classList.add('correct');
-                feedback.textContent = '对了！🎉';
-                feedback.classList.add('show');
-                playSound('correct');
-                
-                gameState.score++;
-                updateScore();
-                
-                if (gameState.score % 5 === 0) {
-                    celebrate();
+        /**
+         * 颜色配对：目标同时给出「色块 + 名称」并朗读，不识字也能玩。
+         */
+        class ColorMatchingGame {
+            constructor() {
+                this.gameId = 'color-matching';
+                this.CELEBRATE_EVERY = 5;
+                this.score = 0;
+                this.misses = 0;
+                this.target = null;
+                this.isBusy = false;
+
+                this.COLORS = [
+                    { name: '红色', hex: '#FF4757', light: '#FF6B7A' },
+                    { name: '黄色', hex: '#FFA502', light: '#FFB732' },
+                    { name: '蓝色', hex: '#3742FA', light: '#5352ED' },
+                    { name: '绿色', hex: '#2ED573', light: '#7BED9F' },
+                    { name: '橙色', hex: '#FF6B35', light: '#FF7F50' },
+                    { name: '紫色', hex: '#A55EEA', light: '#BE7ADB' },
+                    { name: '粉色', hex: '#FF69B4', light: '#FF85C1' },
+                    { name: '黑色', hex: '#2C3E50', light: '#34495E' }
+                ];
+
+                this.init();
+            }
+
+            init() {
+                KidsUI.Touch.guard();
+                KidsUI.Header.render({
+                    title: '颜色配对',
+                    accent: '#e5533d',
+                    onReplay: () => this.reset()
+                });
+                this.newRound();
+            }
+
+            reset() {
+                this.score = 0;
+                this.misses = 0;
+                this.updateScore();
+                this.newRound();
+            }
+
+            newRound() {
+                this.isBusy = false;
+                const selected = [...this.COLORS].sort(() => Math.random() - 0.5).slice(0, 4);
+                this.target = selected[Math.floor(Math.random() * selected.length)];
+
+                const swatch = document.getElementById('targetSwatch');
+                swatch.style.background = `linear-gradient(135deg, ${this.target.hex} 0%, ${this.target.light} 100%)`;
+                document.getElementById('targetName').textContent = this.target.name;
+                KidsUI.TTS.speak(this.target.name);
+
+                const area = document.getElementById('optionsArea');
+                area.innerHTML = '';
+                [...selected].sort(() => Math.random() - 0.5).forEach((color) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'color-btn';
+                    btn.style.background = `linear-gradient(135deg, ${color.hex} 0%, ${color.light} 100%)`;
+                    btn.addEventListener('click', () => this.pick(color, btn));
+                    area.appendChild(btn);
+                });
+            }
+
+            pick(color, btn) {
+                if (this.isBusy) return;
+
+                if (color.name === this.target.name) {
+                    this.isBusy = true;
+                    this.score += 1;
+                    this.updateScore();
+                    KidsUI.SFX.correct();
+                    KidsUI.haptic('good');
+                    btn.classList.add('correct');
+
+                    if (this.score % this.CELEBRATE_EVERY === 0) {
+                        const stars = KidsUI.Progress.starsFor(this.score / (this.score + this.misses));
+                        KidsUI.Progress.record(this.gameId, { best: this.score, stars });
+                        setTimeout(() => {
+                            KidsUI.Celebrate.show({
+                                title: '真棒！',
+                                sub: `已经找到 ${this.score} 次`,
+                                stars,
+                                primaryLabel: '继续找',
+                                onPrimary: () => this.newRound(),
+                                announce: '太厉害了！'
+                            });
+                        }, 600);
+                    } else {
+                        setTimeout(() => this.newRound(), 900);
+                    }
+                } else {
+                    this.misses += 1;
+                    KidsUI.SFX.wrong();
+                    KidsUI.haptic('bad');
+                    btn.classList.add('wrong');
+                    setTimeout(() => btn.classList.remove('wrong'), 500);
                 }
-                
-                setTimeout(() => {
-                    feedback.classList.remove('show');
-                    btnElement.classList.remove('correct');
-                    gameState.isAnimating = false;
-                    newRound();
-                }, 1200);
-                
-            } else {
-                btnElement.classList.add('wrong');
-                feedback.textContent = '再试试！💪';
-                feedback.classList.add('show');
-                playSound('wrong');
-                
-                setTimeout(() => {
-                    feedback.classList.remove('show');
-                    btnElement.classList.remove('wrong');
-                    gameState.isAnimating = false;
-                }, 800);
+            }
+
+            updateScore() {
+                document.getElementById('score').textContent = this.score;
             }
         }
-        
-        function updateScore() {
-            document.getElementById('score').textContent = gameState.score;
-        }
-        
-        function celebrate() {
-            playSound('celebrate');
-            const container = document.getElementById('celebration');
-            
-            COLORS.forEach((color, i) => {
-                for (let j = 0; j < 5; j++) {
-                    const bubble = document.createElement('div');
-                    bubble.className = 'bubble';
-                    bubble.style.background = color.hex;
-                    bubble.style.width = (30 + Math.random() * 30) + 'px';
-                    bubble.style.height = bubble.style.width;
-                    bubble.style.left = Math.random() * 100 + '%';
-                    bubble.style.animationDelay = (i * 0.2 + Math.random() * 0.3) + 's';
-                    container.appendChild(bubble);
-                    
-                    setTimeout(() => bubble.remove(), 3500);
-                }
-            });
-        }
-        
-        // ==================== 启动 ====================
-        document.addEventListener('DOMContentLoaded', initGame);
-        
-        // 防止双击缩放
-        document.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) e.preventDefault();
-        }, { passive: false });
-        
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', (e) => {
-            const now = Date.now();
-            if (now - lastTouchEnd <= 300) e.preventDefault();
-            lastTouchEnd = now;
-        }, { passive: false });
-    </script>
 
-    <script src="/pwa.js" defer></script>
+        window.addEventListener('DOMContentLoaded', () => {
+            new ColorMatchingGame();
+        });
+    </script>
 </body>
 </html>

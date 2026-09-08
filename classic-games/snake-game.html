@@ -2,15 +2,16 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#5fd068">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="贪吃蛇">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <title>🐍 贪吃蛇 - 经典游戏</title>
+    <link rel="stylesheet" href="/css/kids.css">
     <style>
         /* 主题变量：由 setSkin() 切换（森林/锦鲤），全站颜色从这里取 */
         :root {
@@ -291,15 +292,13 @@
     </style>
 </head>
 <body>
-    <h1>🐍 贪吃蛇</h1>
-    
     <div id="gameContainer">
-        <div id="highScore">High Score: 0</div>
-        <div id="score">Score: 0</div>
+        <div id="highScore">最高分：0</div>
+        <div id="score">得分：0</div>
         <div class="mode-info">
-            <span id="speedInfo">Speed: Medium</span> | 
-            <span id="sizeInfo">Size: Medium</span> | 
-            <span id="modeInfo">Mode: Classic</span>
+            <span id="speedInfo">速度：中</span> |
+            <span id="sizeInfo">棋盘：中</span> |
+            <span id="modeInfo">模式：经典</span>
         </div>
         
         <canvas id="gameCanvas" width="400" height="400"></canvas>
@@ -319,6 +318,7 @@
         <div id="controls">
             <div class="control-row">
                 <button id="startBtn">开始</button>
+                <button id="pauseBtn">暂停</button>
                 <button id="resetBtn">重置</button>
             </div>
 
@@ -361,31 +361,30 @@
     </div>
     
     <div class="instructions">
-        <h2>Controls:</h2>
-        <p><strong>PC/Mac</strong>: Press START to play</p>
-        <p><kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> or <kbd>W</kbd> <kbd>S</kbd> <kbd>A</kbd> <kbd>D</kbd></p>
-        
-        <h3>Game Modes:</h3>
-        <p><strong>Classic</strong> - 游戏结束条件：撞墙或自己</p>
-        <p><strong>No Walls</strong> - 穿墙模式，撞墙不死亡</p>
-        <p><strong>Obstacles</strong> - 随机生成障碍，难度增加</p>
-        <p><strong>Endless</strong> - 无尽模式，不会死亡</p>
-        
-        <h3>Skins:</h3>
+        <h2>操作说明</h2>
+        <p><strong>电脑</strong>：点「开始」后按方向键或 <kbd>W</kbd> <kbd>S</kbd> <kbd>A</kbd> <kbd>D</kbd></p>
+        <p><strong>手机</strong>：画布上手指跟随，或点方向按钮</p>
+
+        <h3>游戏模式</h3>
+        <p><strong>经典</strong> - 撞墙或撞到自己就结束</p>
+        <p><strong>穿墙</strong> - 撞墙穿过去，不会死</p>
+        <p><strong>障碍</strong> - 随机生成障碍物，难度增加</p>
+        <p><strong>无尽</strong> - 不会死亡，看你能长多长</p>
+
+        <h3>皮肤</h3>
         <p><strong>森林</strong> - 深色丛林绿，经典夜景</p>
-        <p><strong>锦鲤</strong> - 暖白庭院，锦鲤橙鳞（T3-3 锦鲤禅庭参考）</p>
-        
-        <h3>Speed Levels:</h3>
-        <p><strong>Slow</strong> - 适合新手，移动速度慢</p>
-        <p><strong>Medium</strong> - 标准速度</p>
-        <p><strong>Fast</strong> - 挑战高玩，移动速度快</p>
-        
-        <h3>Canvas Sizes:</h3>
-        <p><strong>Small</strong> - 300x300（手机端）</p>
-        <p><strong>Medium</strong> - 400x400（标准）</p>
-        <p><strong>Large</strong> - 600x600（大屏）</p>
+        <p><strong>锦鲤</strong> - 暖白庭院，锦鲤橙鳞</p>
+
+        <h3>速度档位</h3>
+        <p><strong>慢</strong> - 适合新手</p>
+        <p><strong>中</strong> - 标准速度</p>
+        <p><strong>快</strong> - 挑战高玩</p>
+
+        <h3>棋盘大小</h3>
+        <p><strong>小</strong> 300×300（手机端）· <strong>中</strong> 400×400（标准）· <strong>大</strong> 600×600（大屏）</p>
     </div>
-    
+
+    <script src="/js/kids-ui.js"></script>
     <script>
         // Configuration
         const config = {
@@ -443,6 +442,7 @@
         let score = 0;
         let highScore = parseInt(localStorage.getItem('snakeHighScore')) || 0;
         let gameRunning = false;
+        let paused = false;
         let animationId;
         let lastTime = 0;
         let gameLoopId;
@@ -463,8 +463,12 @@
         /* 手指跟随状态（T2-1 范式：主导轴位移消费，阈值 0.62 格） */
         let followState = null;
         
+        const SPEED_LABELS = { slow: '慢', medium: '中', fast: '快' };
+        const SIZE_LABELS = { small: '小', medium: '中', large: '大' };
+        const MODE_LABELS = { classic: '经典', wall: '穿墙', obstacles: '障碍', endless: '无尽' };
+
         // Initialize high score display
-        document.getElementById('highScore').textContent = 'High Score: ' + highScore;
+        document.getElementById('highScore').textContent = '最高分：' + highScore;
         
         // Helper functions
         function getGridSize() {
@@ -492,6 +496,10 @@
             }
             document.querySelectorAll('[id^="skin"]').forEach(btn => btn.classList.remove('active'));
             document.getElementById('skin' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+            /* theme-color 与顶栏强调色跟随皮肤，状态栏/返回钮颜色一致 */
+            document.querySelector('meta[name="theme-color"]').setAttribute('content', vars['--accent']);
+            const header = document.querySelector('.kui-header');
+            if (header) header.style.setProperty('--game-accent', vars['--accent']);
             draw();
         }
 
@@ -565,18 +573,18 @@
         }
 
         function drawOverlay() {
-            if (!gameOverFlag) return;
+            if (!gameOverFlag && !paused) return;
             const skin = skins[currentSkin];
             ctx.fillStyle = skin.overlay;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = '#ffffff';
             ctx.textAlign = 'center';
             ctx.font = 'bold 24px \'Courier New\', monospace';
-            ctx.fillText('游戏结束', canvas.width / 2, canvas.height / 2 - 18);
+            ctx.fillText(gameOverFlag ? '游戏结束' : '已暂停', canvas.width / 2, canvas.height / 2 - 18);
             ctx.font = 'bold 18px \'Courier New\', monospace';
             ctx.fillText('得分：' + score, canvas.width / 2, canvas.height / 2 + 12);
             ctx.font = '14px \'Courier New\', monospace';
-            ctx.fillText('点按画布或「开始」再来一局', canvas.width / 2, canvas.height / 2 + 42);
+            ctx.fillText(gameOverFlag ? '点按画布或「开始」再来一局' : '点按画布或「暂停」继续', canvas.width / 2, canvas.height / 2 + 42);
             ctx.textAlign = 'start';
         }
         
@@ -611,7 +619,7 @@
             drawOverlay();
             
             // Update score display
-            document.getElementById('score').textContent = 'Score: ' + score;
+            document.getElementById('score').textContent = '得分：' + score;
         }
         
         function update() {
@@ -669,6 +677,7 @@
                 score += 10;
                 snake.push({...head}); // Grow snake
                 spawnEatEffects(head.x, head.y);
+                KidsUI.SFX.correct();
                 generateFood();
             }
             
@@ -681,10 +690,10 @@
             if (score > highScore) {
                 highScore = score;
                 localStorage.setItem('snakeHighScore', highScore);
-                document.getElementById('highScore').textContent = 'High Score: ' + highScore;
+                document.getElementById('highScore').textContent = '最高分：' + highScore;
             }
         }
-        
+
         function generateFood() {
             const tileCount = getGridSize();
             
@@ -798,6 +807,9 @@
             // Reset and start
             gameRunning = true;
             gameOverFlag = false;
+            paused = false;
+            syncPauseBtn();
+            KidsUI.SFX.tap();
             ripples = [];
             floaters = [];
             score = 0;
@@ -828,6 +840,8 @@
             // Reset state
             gameRunning = false;
             gameOverFlag = false;
+            paused = false;
+            syncPauseBtn();
             ripples = [];
             floaters = [];
             score = 0;
@@ -842,18 +856,54 @@
         function gameOver() {
             gameRunning = false;
             gameOverFlag = true;
+            paused = false;
+            syncPauseBtn();
             cancelAnimationFrame(gameLoopId);
-            
+
             // Update high score if needed
             if (score > highScore) {
                 highScore = score;
                 localStorage.setItem('snakeHighScore', highScore);
-                document.getElementById('highScore').textContent = 'High Score: ' + highScore;
+                document.getElementById('highScore').textContent = '最高分：' + highScore;
             }
-            
+
+            KidsUI.SFX.wrong();
+            KidsUI.haptic('bad');
+
             /* 画布内结算（替代 alert）：点按画布或「开始」按钮再来一局 */
             draw();
         }
+
+        function pauseGame() {
+            if (!gameRunning) return;
+            gameRunning = false;
+            paused = true;
+            cancelAnimationFrame(gameLoopId);
+            syncPauseBtn();
+            KidsUI.SFX.tap();
+            draw();
+        }
+
+        function resumeGame() {
+            if (!paused) return;
+            paused = false;
+            gameRunning = true;
+            syncPauseBtn();
+            KidsUI.SFX.tap();
+            lastTime = performance.now();
+            gameLoopId = requestAnimationFrame(gameLoop);
+            draw();
+        }
+
+        function syncPauseBtn() {
+            document.getElementById('pauseBtn').textContent = paused ? '继续' : '暂停';
+            document.getElementById('pauseBtn').disabled = !gameRunning && !paused;
+        }
+
+        /* 切后台/切应用自动暂停，避免回来时蛇已撞墙 */
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) pauseGame();
+        });
         
         function setSpeed(speed) {
             currentSpeed = speed;
@@ -864,8 +914,7 @@
             });
             document.getElementById('speed' + speed.charAt(0).toUpperCase() + speed.slice(1)).classList.add('active');
             
-            // Update info
-            document.getElementById('speedInfo').textContent = 'Speed: ' + speed.charAt(0).toUpperCase() + speed.slice(1);
+            document.getElementById('speedInfo').textContent = '速度：' + SPEED_LABELS[speed];
             /* 游戏中换档只改基准速度，不重开、不清分（速度爬升每 tick 读 effectiveInterval） */
         }
         
@@ -878,8 +927,7 @@
             });
             document.getElementById('size' + size.charAt(0).toUpperCase() + size.slice(1)).classList.add('active');
             
-            // Update info
-            document.getElementById('sizeInfo').textContent = 'Size: ' + size.charAt(0).toUpperCase() + size.slice(1);
+            document.getElementById('sizeInfo').textContent = '棋盘：' + SIZE_LABELS[size];
             
             // Resize canvas
             updateCanvasSize();
@@ -894,8 +942,7 @@
             });
             document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
             
-            // Update info
-            document.getElementById('modeInfo').textContent = 'Mode: ' + mode.charAt(0).toUpperCase() + mode.slice(1);
+            document.getElementById('modeInfo').textContent = '模式：' + MODE_LABELS[mode];
             
             // If in obstacle mode, generate obstacles
             if (mode === 'obstacles') {
@@ -989,10 +1036,9 @@
         function handleFollowEnd(e) {
             e.preventDefault();
             followState = null;
-            /* 结算态/未开局：点按画布直接开一局（触屏主路径） */
-            if (!gameRunning) {
-                startGame();
-            }
+            /* 暂停→继续；结算态/未开局→开新局（触屏主路径） */
+            if (paused) resumeGame();
+            else if (!gameRunning) startGame();
         }
         
         // Keyboard controls（桌面保留）
@@ -1019,6 +1065,12 @@
             startGame();
         });
         
+        document.getElementById('pauseBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            if (paused) resumeGame();
+            else pauseGame();
+        });
+
         document.getElementById('resetBtn').addEventListener('click', function(e) {
             e.preventDefault();
             resetGame();
@@ -1050,11 +1102,19 @@
         canvas.addEventListener('touchmove', handleFollowMove, {passive: false});
         canvas.addEventListener('touchend', handleFollowEnd, {passive: false});
         canvas.addEventListener('click', () => {
-            if (!gameRunning) startGame();
+            if (paused) resumeGame();
+            else if (!gameRunning) startGame();
         });
-        
-        // 初始化：应用已存皮肤，首次绘制，不自动开局
+
+        // 初始化：顶栏 + 已存皮肤，首次绘制，不自动开局
+        KidsUI.Touch.guard();
+        KidsUI.Header.render({
+            title: '贪吃蛇',
+            accent: '#3fa34d',
+            showReplay: false
+        });
         applySkin(currentSkin);
+        syncPauseBtn();
         draw();
     </script>
 

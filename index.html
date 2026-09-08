@@ -2,175 +2,264 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#faf5ec">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="🎮 游戏中心 - Jiangbin Games">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="游戏中心">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <title>🎮 游戏中心 - Jiangbin Games</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23667eea'/%3E%3Ctext x='16' y='22' font-size='20' text-anchor='middle' fill='white'%3E🎮%3C/text%3E%3C/svg%3E">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ff6b4a'/%3E%3Ctext x='16' y='22' font-size='20' text-anchor='middle'%3E🎮%3C/text%3E%3C/svg%3E">
+    <link rel="stylesheet" href="/css/kids.css">
     <style>
+        :root {
+            --game-accent: #ff6b4a;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            color: var(--kui-ink);
+            background: var(--kui-paper);
+            /* 纸面颗粒：两层极淡的径向点纹 */
+            background-image:
+                radial-gradient(rgba(47, 42, 37, 0.035) 1px, transparent 1.4px),
+                radial-gradient(rgba(47, 42, 37, 0.025) 1px, transparent 1.4px);
+            background-size: 26px 26px, 34px 34px;
+            background-position: 0 0, 13px 17px;
             min-height: 100vh;
-            padding: 20px;
+            padding: 24px 18px calc(40px + env(safe-area-inset-bottom, 0px));
         }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 40px;
-        }
-        
+
+        .container { max-width: 1080px; margin: 0 auto; }
+
+        /* ── 页头：大标题 + 蜡笔下划线 ── */
+        .header { text-align: center; margin-bottom: 30px; }
         .header h1 {
-            font-size: 3rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            font-size: clamp(2rem, 6vw, 3.2rem);
+            font-weight: 900;
+            letter-spacing: 0.02em;
         }
-        
+        .header .crayon-line {
+            width: min(240px, 60%);
+            height: 10px;
+            margin: 8px auto 12px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, #ff6b4a, #ffd166, #3fa574, #4f8ff7, #c86bfa);
+            opacity: 0.85;
+        }
         .header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--kui-ink-soft);
         }
-        
+
+        /* ── 统计：星数放大，形成尺度对比 ── */
         .stats {
             display: flex;
             justify-content: center;
-            gap: 30px;
-            margin: 30px 0;
+            align-items: stretch;
+            gap: 14px;
+            margin: 24px 0 36px;
             flex-wrap: wrap;
         }
-        
         .stat-item {
-            background: rgba(255,255,255,0.2);
-            padding: 15px 25px;
-            border-radius: 10px;
-            color: white;
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            box-shadow: var(--kui-shadow);
+            padding: 12px 22px;
             text-align: center;
-            backdrop-filter: blur(10px);
         }
-        
+        .stat-item.hero {
+            background: #fff6df;
+            border-color: rgba(255, 183, 3, 0.4);
+            transform: scale(1.08);
+        }
         .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
+            font-size: 1.7rem;
+            font-weight: 900;
             display: block;
+            line-height: 1.2;
         }
-        
-        .stat-label {
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-        
-        .section {
-            margin-bottom: 40px;
-        }
-        
+        .stat-item.hero .stat-number { font-size: 2.3rem; color: #e09f00; }
+        .stat-label { font-size: 0.85rem; font-weight: 700; color: var(--kui-ink-soft); }
+
+        /* ── 分区标题 ── */
+        .section { margin-bottom: 36px; }
         .section-title {
-            color: white;
-            font-size: 1.8rem;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.45rem;
+            font-weight: 900;
+            margin-bottom: 18px;
         }
-        
+        .section-title::after {
+            content: "";
+            flex: 1;
+            height: 6px;
+            border-radius: 999px;
+            background: var(--section-color, rgba(47, 42, 37, 0.08));
+        }
+        .section.kids { --section-color: rgba(255, 107, 74, 0.3); }
+        .section.classic { --section-color: rgba(79, 143, 247, 0.28); }
+
+        /* ── 卡片 ── */
         .games-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 18px;
         }
-        
         .game-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            display: block;
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-lg);
+            box-shadow: var(--kui-shadow);
+            padding: 20px 20px 18px;
             text-decoration: none;
             color: inherit;
-            display: block;
+            transition: transform 0.18s var(--kui-bounce), box-shadow 0.18s;
         }
-        
         .game-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            transform: translateY(-4px) rotate(-0.4deg);
+            box-shadow: 0 8px 0 rgba(47, 42, 37, 0.16);
         }
-        
+        .game-card:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(47, 42, 37, 0.16); }
+        .game-card:focus-visible { outline: 3px solid var(--card-accent, var(--game-accent)); outline-offset: 3px; }
+
         .game-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            display: block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 62px;
+            height: 62px;
+            font-size: 2rem;
+            border-radius: 18px;
+            background: color-mix(in srgb, var(--card-accent, var(--game-accent)) 16%, white);
+            border: 2px solid color-mix(in srgb, var(--card-accent, var(--game-accent)) 40%, white);
+            margin-bottom: 12px;
         }
-        
         .game-title {
-            font-size: 1.4rem;
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #333;
+            font-size: 1.25rem;
+            font-weight: 900;
+            margin-bottom: 6px;
         }
-        
         .game-desc {
-            color: #666;
-            font-size: 0.95rem;
-            line-height: 1.5;
-            margin-bottom: 15px;
+            font-size: 0.92rem;
+            line-height: 1.55;
+            color: var(--kui-ink-soft);
+            margin-bottom: 14px;
+            min-height: 2.8em;
         }
-        
-        .game-meta {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        
+        .game-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
         .tag {
-            background: #f0f0f0;
             padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            color: #666;
+            border-radius: 999px;
+            background: var(--kui-paper-deep);
+            border: 1.5px solid var(--kui-line);
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--kui-ink-soft);
         }
-        
+
+        /* 进度徽章（JS 按 localStorage 注入） */
+        .card-badge {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #fff6df;
+            border: 2px solid rgba(255, 183, 3, 0.45);
+            font-size: 0.82rem;
+            font-weight: 900;
+            color: #b07d00;
+        }
+        .card-badge.continue {
+            background: color-mix(in srgb, var(--card-accent, var(--game-accent)) 14%, white);
+            border-color: color-mix(in srgb, var(--card-accent, var(--game-accent)) 45%, white);
+            color: var(--kui-ink);
+        }
+
         .footer {
             text-align: center;
-            color: white;
-            margin-top: 50px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.3);
-            opacity: 0.8;
+            color: var(--kui-ink-soft);
+            margin-top: 44px;
+            padding-top: 18px;
+            border-top: 2px dashed var(--kui-line);
+            font-size: 0.92rem;
+            font-weight: 600;
         }
-        
+        .footer a { color: var(--kui-ink); font-weight: 800; text-decoration: none; }
+        .footer a:hover { color: var(--game-accent); }
+
+        /* 单页游戏容器：游戏在当前页内打开，不跳转离开主页 */
+        .game-shell {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: #fff;
+        }
+        .game-shell.is-open { display: block; }
+        .game-frame { width: 100%; height: 100%; border: 0; display: block; }
+        .game-close {
+            position: fixed;
+            top: max(12px, env(safe-area-inset-top));
+            right: max(12px, env(safe-area-inset-right));
+            z-index: 1001;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            background: rgba(30, 30, 45, 0.65);
+            color: #fff;
+            font-size: 26px;
+            line-height: 1;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+            transition: transform 0.2s, background 0.2s;
+        }
+        .game-close:hover { background: rgba(30, 30, 45, 0.85); transform: scale(1.08); }
+        .game-close:active { transform: scale(0.95); }
+
         @media (max-width: 768px) {
-            .header h1 { font-size: 2rem; }
+            body { padding-top: 18px; }
             .games-grid { grid-template-columns: 1fr; }
-            .stats { flex-direction: column; align-items: center; }
+            .stats { gap: 10px; }
+            .stat-item { padding: 10px 16px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .game-card, .stat-item { transition: none; }
+            .game-card:hover { transform: none; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
+        <!-- 页头 -->
         <div class="header">
             <h1>🎮 Jiangbin 游戏中心</h1>
-            <p>儿童逻辑游戏 + 经典游戏合集</p>
-            
+            <div class="crayon-line" aria-hidden="true"></div>
+            <p>儿童逻辑游戏 + 经典游戏合集，全部离线可玩</p>
+
             <div class="stats">
                 <div class="stat-item">
-                    <span class="stat-number">14</span>
+                    <span class="stat-number" id="stat-games">14</span>
                     <span class="stat-label">游戏总数</span>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-number">189+</span>
-                    <span class="stat-label">关卡数量</span>
+                <div class="stat-item hero">
+                    <span class="stat-number" id="stat-stars">⭐ 0</span>
+                    <span class="stat-label">已点亮星星</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-number">3-6岁</span>
@@ -178,12 +267,12 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- 儿童逻辑游戏 -->
-        <div class="section">
+        <div class="section kids">
             <h2 class="section-title">🧒 儿童逻辑游戏</h2>
             <div class="games-grid">
-                <a href="color-matching.html" class="game-card">
+                <a href="color-matching.html" class="game-card" data-game="color-matching" style="--card-accent:#e5533d">
                     <span class="game-icon">🎨</span>
                     <h3 class="game-title">颜色配对</h3>
                     <p class="game-desc">认识6种基本颜色，找到相同的颜色配对</p>
@@ -192,58 +281,58 @@
                         <span class="tag">3-4岁</span>
                     </div>
                 </a>
-                
-                <a href="shape-puzzle.html" class="game-card">
+
+                <a href="shape-puzzle.html" class="game-card" data-game="shape-puzzle" style="--card-accent:#f2994a">
                     <span class="game-icon">⭐</span>
                     <h3 class="game-title">形状拼图</h3>
-                    <p class="game-desc">完成可爱的动物拼图，认识各种形状</p>
+                    <p class="game-desc">把形状碎片拼回完整图案</p>
                     <div class="game-meta">
                         <span class="tag">逻辑思维</span>
                         <span class="tag">4-5岁</span>
                     </div>
                 </a>
-                
-                <a href="memory-cards.html" class="game-card">
+
+                <a href="memory-cards.html" class="game-card" data-game="memory-cards" style="--card-accent:#9b5de5">
                     <span class="game-icon">🧠</span>
                     <h3 class="game-title">记忆翻牌</h3>
-                    <p class="game-desc">锻炼记忆力，4x3卡片配对游戏</p>
+                    <p class="game-desc">翻开卡片，找出相同的一对</p>
                     <div class="game-meta">
                         <span class="tag">记忆力</span>
                         <span class="tag">4-6岁</span>
                     </div>
                 </a>
-                
-                <a href="animal-sounds.html" class="game-card">
-                    <span class="game-icon">🎵</span>
+
+                <a href="animal-sounds.html" class="game-card" data-game="animal-sounds" style="--card-accent:#2a9d8f">
+                    <span class="game-icon">🐮</span>
                     <h3 class="game-title">动物叫声</h3>
-                    <p class="game-desc">听声音猜动物，认识各种动物</p>
+                    <p class="game-desc">听声音猜动物，认识各种小动物</p>
                     <div class="game-meta">
                         <span class="tag">音乐声音</span>
                         <span class="tag">3-4岁</span>
                     </div>
                 </a>
-                
-                <a href="drawing-board.html" class="game-card">
-                    <span class="game-icon">🎨</span>
+
+                <a href="drawing-board.html" class="game-card" data-game="drawing-board" style="--card-accent:#457b9d">
+                    <span class="game-icon">✏️</span>
                     <h3 class="game-title">涂鸦板</h3>
-                    <p class="game-desc">Canvas自由绘画，发挥创意</p>
+                    <p class="game-desc">自由画画，发挥创意</p>
                     <div class="game-meta">
                         <span class="tag">创意绘画</span>
                         <span class="tag">3-6岁</span>
                     </div>
                 </a>
-                
-                <a href="find-differences.html" class="game-card">
+
+                <a href="find-differences.html" class="game-card" data-game="find-differences" style="--card-accent:#4f8ff7">
                     <span class="game-icon">🔍</span>
                     <h3 class="game-title">找不同</h3>
-                    <p class="game-desc">观察两幅图，找出不同之处</p>
+                    <p class="game-desc">观察两幅图，找出藏着的不同</p>
                     <div class="game-meta">
                         <span class="tag">观察力</span>
                         <span class="tag">4-6岁</span>
                     </div>
                 </a>
-                
-                <a href="picture-recognition.html" class="game-card">
+
+                <a href="picture-recognition.html" class="game-card" data-game="picture-recognition" style="--card-accent:#e63946">
                     <span class="game-icon">🖼️</span>
                     <h3 class="game-title">看图识物</h3>
                     <p class="game-desc">认识动物、水果、交通工具</p>
@@ -252,51 +341,51 @@
                         <span class="tag">3-4岁</span>
                     </div>
                 </a>
-                
-                <a href="shape-matching.html" class="game-card">
-                    <span class="game-icon">🔵</span>
+
+                <a href="shape-matching.html" class="game-card" data-game="shape-matching" style="--card-accent:#43aa8b">
+                    <span class="game-icon">🔷</span>
                     <h3 class="game-title">形状配对</h3>
-                    <p class="game-desc">匹配相同的形状，培养逻辑思维</p>
+                    <p class="game-desc">找到和它一样的形状</p>
                     <div class="game-meta">
                         <span class="tag">逻辑思维</span>
                         <span class="tag">3-5岁</span>
                     </div>
                 </a>
-                
-                <a href="number-counting.html" class="game-card">
+
+                <a href="number-counting.html" class="game-card" data-game="number-counting" style="--card-accent:#3fa574">
                     <span class="game-icon">🔢</span>
                     <h3 class="game-title">数字认知</h3>
-                    <p class="game-desc">学习数数，认识1-10数字</p>
+                    <p class="game-desc">数一数，认识1-10的数字</p>
                     <div class="game-meta">
                         <span class="tag">认知启蒙</span>
                         <span class="tag">3-5岁</span>
                     </div>
                 </a>
-                
-                <a href="pattern-match.html" class="game-card">
-                    <span class="game-icon">🔷</span>
+
+                <a href="pattern-match.html" class="game-card" data-game="pattern-match" style="--card-accent:#ff9f1c">
+                    <span class="game-icon">🔶</span>
                     <h3 class="game-title">模式匹配</h3>
-                    <p class="game-desc">发现规律，完成模式序列</p>
+                    <p class="game-desc">发现规律，补上问号那一格</p>
                     <div class="game-meta">
                         <span class="tag">逻辑思维</span>
                         <span class="tag">4-6岁</span>
                     </div>
                 </a>
 
-                <a href="coloring-studio.html" class="game-card">
-                    <span class="game-icon">🖍</span>
+                <a href="coloring-studio.html" class="game-card" data-game="coloring-studio" style="--card-accent:#ff6b4a">
+                    <span class="game-icon">🖍️</span>
                     <h3 class="game-title">涂色画工坊</h3>
-                    <p class="game-desc">把彩色图片变成线稿，批量打印或在屏幕上涂色</p>
+                    <p class="game-desc">把彩色图片变成线稿，打印或涂色</p>
                     <div class="game-meta">
                         <span class="tag">创意绘画</span>
                         <span class="tag">3-6岁</span>
                     </div>
                 </a>
 
-                <a href="/maze/" class="game-card">
+                <a href="/maze/" class="game-card" data-game="maze" style="--card-accent:#5c8b83">
                     <span class="game-icon">🧭</span>
                     <h3 class="game-title">迷宫小小探险家</h3>
-                    <p class="game-desc">森林邮局主题3D迷宫，120个关卡，赢取贴纸奖励</p>
+                    <p class="game-desc">森林邮局主题3D迷宫，120个关卡</p>
                     <div class="game-meta">
                         <span class="tag">3D迷宫</span>
                         <span class="tag">4-6岁</span>
@@ -304,25 +393,25 @@
                 </a>
             </div>
         </div>
-        
+
         <!-- 经典游戏 -->
-        <div class="section">
+        <div class="section classic">
             <h2 class="section-title">🎯 经典游戏</h2>
             <div class="games-grid">
-                <a href="classic-games/snake-game.html" class="game-card">
+                <a href="classic-games/snake-game.html" class="game-card" data-game="snake" style="--card-accent:#3fa34d">
                     <span class="game-icon">🐍</span>
                     <h3 class="game-title">贪吃蛇</h3>
-                    <p class="game-desc">经典贪吃蛇游戏，4种模式，3种速度</p>
+                    <p class="game-desc">经典贪吃蛇，4种模式3种速度</p>
                     <div class="game-meta">
                         <span class="tag">经典游戏</span>
                         <span class="tag">全年龄</span>
                     </div>
                 </a>
-                
-                <a href="classic-games/tetris-ink.html" class="game-card">
+
+                <a href="classic-games/tetris-ink.html" class="game-card" data-game="tetris-ink" style="--card-accent:#8d6e63">
                     <span class="game-icon">🧱</span>
                     <h3 class="game-title">水墨方块</h3>
-                    <p class="game-desc">中国风水墨俄罗斯方块，传统美学</p>
+                    <p class="game-desc">中国风水墨俄罗斯方块</p>
                     <div class="game-meta">
                         <span class="tag">经典游戏</span>
                         <span class="tag">全年龄</span>
@@ -330,17 +419,143 @@
                 </a>
             </div>
         </div>
-        
-        <!-- Footer -->
+
+        <!-- 页脚 -->
         <div class="footer">
             <p>Made with ❤️ by Jiangbin Games</p>
-            <p style="margin-top: 10px; font-size: 0.9rem;">
-                <a href="https://github.com/jiangbingo/games" style="color: white; text-decoration: none;">GitHub</a> • 
-                <a href="https://www.cloudflare.com" style="color: white; text-decoration: none;">Powered by Cloudflare Pages</a>
+            <p style="margin-top: 10px;">
+                <a href="https://github.com/jiangbingo/games">GitHub</a> ·
+                <a href="https://www.cloudflare.com">Cloudflare Pages</a>
             </p>
         </div>
     </div>
 
+    <!-- 游戏在当前页内打开（iframe），不跳转 -->
+    <div id="game-shell" class="game-shell" role="dialog" aria-modal="true" aria-label="游戏窗口">
+        <iframe id="game-frame" class="game-frame" title="游戏画面"></iframe>
+        <button id="game-close" class="game-close" type="button" aria-label="关闭游戏，返回游戏中心">✕</button>
+    </div>
+
+    <script src="/js/kids-ui.js"></script>
     <script src="/pwa.js" defer></script>
+    <script>
+        (function () {
+            /* ── 进度徽章：星数 / 继续玩 ── */
+            var specialBest = {
+                snake: { key: "snakeHighScore", unit: "分" },
+                "tetris-ink": { key: "tetris_ink_best", unit: "分" }
+            };
+            function badgeFor(card) {
+                var game = card.getAttribute("data-game");
+                if (!game) return;
+                var p = KidsUI.Progress.get(game);
+                var meta = specialBest[game];
+                var best = meta ? parseInt(localStorage.getItem(meta.key), 10) : (p && p.best);
+                if (p && p.stars > 0) {
+                    var b = document.createElement("span");
+                    b.className = "card-badge";
+                    b.textContent = "⭐".repeat(p.stars);
+                    b.title = "已点亮 " + p.stars + " 星";
+                    card.appendChild(b);
+                } else if (meta && best > 0) {
+                    var s = document.createElement("span");
+                    s.className = "card-badge";
+                    s.textContent = "🏆 " + best + meta.unit;
+                    card.appendChild(s);
+                }
+                if (p && p.lastPlayed && !(p.stars > 0)) {
+                    var c = document.createElement("span");
+                    c.className = "card-badge continue";
+                    c.textContent = "▶ 继续玩";
+                    card.appendChild(c);
+                }
+            }
+            var cards = document.querySelectorAll(".game-card");
+            for (var i = 0; i < cards.length; i++) badgeFor(cards[i]);
+            document.getElementById("stat-stars").textContent = "⭐ " + KidsUI.Progress.starsTotal();
+
+            /* ── 游戏壳：iframe 打开 + 历史记录集成 ── */
+            var shell = document.getElementById("game-shell");
+            var frame = document.getElementById("game-frame");
+            var closeButton = document.getElementById("game-close");
+            var isOpen = false;
+
+            function openGame(url) {
+                /* iframe 导航必须用 location.replace：src 赋值会产生联合历史记录，
+                   污染栈后返回键的跨条目遍历不触发 popstate */
+                frame.contentWindow.location.replace(new URL(url, location.href).href);
+                shell.classList.add("is-open");
+                document.body.style.overflow = "hidden";
+                isOpen = true;
+                if (history.state && history.state.game) {
+                    history.replaceState({ game: url }, "", location.href);
+                } else {
+                    history.pushState({ game: url }, "", location.href);
+                }
+                closeButton.focus({ preventScroll: true });
+            }
+
+            function hideShell() {
+                if (!isOpen) return;
+                isOpen = false;
+                shell.classList.remove("is-open");
+                document.body.style.overflow = "";
+                try {
+                    frame.contentWindow.location.replace("about:blank");
+                } catch (error) {
+                    frame.src = "about:blank";
+                }
+            }
+
+            document.querySelectorAll(".game-card").forEach(function (card) {
+                card.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    openGame(card.getAttribute("href"));
+                });
+            });
+
+            closeButton.addEventListener("click", hideShell);
+            document.addEventListener("keydown", function (event) {
+                if (event.key === "Escape") hideShell();
+            });
+
+            window.addEventListener("popstate", function (event) {
+                if (event.state && event.state.game) {
+                    openGame(event.state.game);
+                } else {
+                    hideShell();
+                }
+            });
+
+            /* 同源游戏文档：捕获阶段拦下「返回首页」按钮（#home-btn）；
+               若文档仍被 JS 导航到主页，则直接收起容器兜底 */
+            frame.addEventListener("load", function () {
+                if (!isOpen) return;
+                var win = frame.contentWindow;
+                var path;
+                try {
+                    path = win.location.pathname;
+                } catch (error) {
+                    return;
+                }
+                if (path === "/" || path.slice(-11) === "/index.html") {
+                    hideShell();
+                    return;
+                }
+                try {
+                    win.document.addEventListener("click", function (event) {
+                        var target = event.target;
+                        var homeButton = target && target.closest && target.closest("#home-btn");
+                        if (!homeButton) return;
+                        event.stopPropagation();
+                        event.preventDefault();
+                        hideShell();
+                    }, true);
+                } catch (error) {
+                    /* 文档不可访问时忽略 */
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
