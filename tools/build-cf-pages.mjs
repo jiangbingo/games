@@ -54,7 +54,7 @@ const mazeSw = join(mazeDest, "sw.js");
 if (existsSync(mazeSw)) rmSync(mazeSw);
 console.log("✅ 迷宫 dist/public → dist/maze/（sw.js 已删除）");
 
-// 13 个入口页 + 3 个历史测试页（与 Vercel 现状对齐，见 BACKLOG T4-1a）
+// 13 个入口页（历史测试页 ai-api-test / animal-sounds-voice-demo / test_category 已下线，仅留在仓库）
 const pages = [
   "index.html",
   "color-matching.html",
@@ -68,9 +68,6 @@ const pages = [
   "number-counting.html",
   "pattern-match.html",
   "coloring-studio.html",
-  "ai-api-test.html",
-  "animal-sounds-voice-demo.html",
-  "test_category.html",
 ];
 for (const p of pages) copy(p);
 
@@ -109,7 +106,7 @@ if (existsSync(mazeAssetsDir)) {
     "  \"/maze/manifest.webmanifest\",",
     "  \"/maze/icons/maze-explorer-192.png\",",
     "  \"/maze/icons/maze-explorer-512.png\",",
-    "  \"/maze/assets/maze-leaf-compass-logo.png\",",
+    "  \"/maze/assets/maze-leaf-compass-logo.webp\",",
     "  \"/maze/assets/forest-ambience-cc0.mp3\",",
     ...lines,
   ].join("\n");

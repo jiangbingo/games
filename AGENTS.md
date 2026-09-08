@@ -76,3 +76,41 @@ pnpm format         # Prettier
 
 - **Root**: Vercel (`vercel --prod`), static files only
 - **kids-maze-world**: Cloudflare Pages (Root dir: `kids-maze-world`, Build: `pnpm build`, Output: `dist/public`)
+
+## Parallel Development Protocol（并行开发协议）
+
+多个 agent/session 并行开发时使用 **git worktree 隔离**。主 worktree（仓库根目录）始终停留在 `main` 分支，只做三件事：merge、BACKLOG.md 登记、部署。开发全部在 `.worktrees/` 下的任务 worktree 中进行（目录已被 gitignore）。
+
+### 每个任务的开局流程
+
+1. 先在 BACKLOG.md 认领任务（条目旁标记 `（进行中 @<session标识>）`），在主 worktree commit——防止两个 session 做同一任务。
+2. 创建 worktree：
+   ```bash
+   git worktree add .worktrees/<task-id> -b feat/<task-id>
+   cd .worktrees/<task-id>
+   pnpm install   # pnpm 内容寻址存储，安装很快
+   ```
+3. 在 worktree 内开发、提交。绝不改动主 worktree 的文件。
+
+### 分支命名
+
+- `feat/<task-id-or-name>`，如 `feat/t6-4-a11y`、`feat/t4-1-bank`。
+- merge 后删分支；已存在的长期分支（如 `feat/ipad-pwa-baseline`）继续原工作流。
+
+### Merge 回主协议
+
+1. 任务 worktree 内：`git fetch origin && git rebase origin/main`——冲突在自己 worktree 里解决，绝不把冲突带回主目录。
+2. 回主 worktree：`git fetch && git merge --no-ff feat/<task-id>`。
+3. `git push origin main`，然后 `git worktree remove .worktrees/<task-id>` 并删分支。
+
+### BACKLOG.md 并发写入规则
+
+- 只追加/修改自己任务的条目，绝不重排别人的条目。
+- 认领标记 `（进行中 @…）` 与完成状态只在**主 worktree** 写——任务 worktree 不改 BACKLOG.md（避免冲突）。
+- rebase 时若 BACKLOG.md 冲突，按「保留双方条目」方式解决。
+
+### 部署锁
+
+- 只有**主 worktree** 能执行 `make deploy-cf` / `make deploy-vercel`。部署严格串行——同一时间只有一个 session 部署。
+- 部署前必须 `git pull`，确保所有已完成任务都包含在内。
+- 部署期间版本号注入会临时修改 `sw.js`，任何人不得在主 worktree 动文件，直到部署结束。

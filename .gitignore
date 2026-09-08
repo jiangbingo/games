@@ -2,6 +2,9 @@
 dist/
 build/
 
+# Parallel worktrees
+.worktrees/
+
 # Node modules (if added later)
 node_modules/
 

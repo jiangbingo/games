@@ -131,6 +131,24 @@
 - 验收（Playwright + 系统 Chrome，8/8）：SW 激活接管、预缓存 24/24、在线 tetris 渲染、**离线首页 13 卡片、离线 tetris/snake/color-matching 直链全可玩**、控制台零错误
 - 回滚：Vercel（games-six-omega.vercel.app）保持在线未动，vercel.json 保留；页脚 "Powered by Cloudflare Pages"
 
+### 迷宫合并根站 + 涂色画工坊（✅ 2026-09-07 完成）
+
+**迷宫合并（ff4acaf）**
+- 方案：迷宫构建产物（`vite build --base=/maze/`）拷贝到根站 `dist/maze/`，单域名单 SW
+- 改动：
+  - 迷宫侧：`themePresentation.ts`（12× assetUrl）、`SoundManager.ts`、`GameCanvas.tsx` 加 `import.meta.env.BASE_URL` 前缀；`manifest.webmanifest` 绝对路径改相对；`package.json` 新增 `build:embedded` 脚本
+  - 根站侧：`index.html` 迷宫卡片 href → `/maze/`；`_redirects` 加 `/maze /maze/ 301`；`sw.js` 加 `__MAZE_ENTRIES__` 占位 + `/maze/*` 导航回退；`build-cf-pages.mjs` 加迷宫构建+拷贝+删除迷宫 sw.js+PRECACHE 动态注入
+- 验收（Playwright 10/10 + curl 2/2）：SW 激活、预缓存 64/64（24 根站+40 迷宫）、在线/离线迷宫 React 挂载+Canvas 渲染、离线 tetris/snake/color-matching 可玩、控制台零错误
+- tsc --noEmit 零错误，vitest 17/17 通过
+
+**sw.js 导航回退修复（3df3173）**
+- 问题：`/maze/*` 路径导航回退代码引用未定义的 `url` 变量 → ReferenceError
+- 修复：在 `networkFirst` catch 块开头补 `const url = new URL(request.url);`
+
+**涂色画工坊（b0ca0ee）**
+- 新增 `coloring-studio.html`：批量图片转线稿、A4 批量打印、网页涂色
+- 当前游戏总数：14 个（12 儿童逻辑 + 2 经典 + 迷宫合并入口）
+
 ### 阶段 3 并行项（不阻塞，随时可做）
 
 - T1-3 双 iPad 清单 + T2-4 真机回归：改对**生产站**执行（kids-maze-world.pages.dev），结果补录本文件
@@ -147,7 +165,7 @@
 |---|---|---|
 | T4-1 | 批量 PWA 化 10 个逻辑游戏：颜色配对、形状拼图、记忆翻牌、动物叫声、涂鸦板、找不同、看图识物、形状配对、数字认知、模式匹配。D1 拍板方案 A 后收敛为「预缓存清单核对 + 每页 meta 抽查」（T3-0f 已批量覆盖，此处核对补漏）；拍板方案 B 则用脚手架逐游戏目录化 | 全部离线可玩、可安装 |
 | T4-2 | 内容增强：题库三级分级（种子/新芽/星星）、错题回顾、家长周报——机制参考 Manus「奇趣儿童乐园」设计（对话 VpNw…，代码未落盘需重建） | 每游戏至少一个增强点上线 |
-| T4-3 | 统一主页统计口径："15+"、旧 README"13 个"与实际入口数不一致 | 主页、README、CLNZ 盘点三方一致 |
+| T4-3 | 统一主页统计口径："14+"（含涂色画工坊）；README/主页/CLNZ 盘点三方一致 | 主页、README、CLNZ 盘点三方一致 |
 
 ## 阶段 5：主页全局 iPad 适配（对应指令 4，1-2 天）
 
@@ -162,7 +180,7 @@
 |---|---|---|
 | T6-1 | 日期键统一：`GameCanvas.tsx:43` UTC → 复用 `activity.ts:8` 的本地日期（配合 T0-2 单测） | HANDOFF P2 |
 | T6-2 | Babylon 动态材质复用：`scene.ts:67/92/95` 3 个实例复用或随 mesh dispose；`?demo` 长路径 + iPad 试跑 | HANDOFF P1 |
-| T6-3 | 首屏 73MB → 主题 PNG/logo 转 WebP/AVIF + hash 文件名 + 更新 `themePresentation.ts` 等引用；评估 Babylon 分包（先量化再改） | HANDOFF P1 |
+| T6-3 | 首屏 73MB → 主题 PNG/logo 转 WebP/AVIF + hash 文件名 + 更新 `themePresentation.ts` 等引用；评估 Babylon 分包（先量化再改）。**2026-09-07 启动：主题 PNG → WebP 转换进行中** | HANDOFF P1 |
 | T6-4 | 无障碍：弹层 focus trap、焦点回还、删 `maximum-scale=1`、家长控制文案"诚实化"（建议时长 vs 硬控制二选一） | 评估 P1/P3 |
 | T6-5 | `_headers` 缓存策略与 hash 文件名配套（T6-3 完成后） | HANDOFF P2 |
 
