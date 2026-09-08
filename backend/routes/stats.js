@@ -1,11 +1,17 @@
 const express = require('express');
 const { query } = require('../db');
+const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 
 // 获取用户总体统计
-router.get('/:userId', async (req, res, next) => {
+router.get('/:userId', requireAuth, async (req, res, next) => {
     try {
         const { userId } = req.params;
+
+        // IDOR check
+        if (req.authUserId !== userId) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
 
         // 获取总体进度统计
         const progressResult = await query(`
@@ -97,9 +103,14 @@ router.get('/leaderboard/:gameId', async (req, res, next) => {
 });
 
 // 记录游戏
-router.post('/record', async (req, res, next) => {
+router.post('/record', requireAuth, async (req, res, next) => {
     try {
         const { userId, gameId, level, score, completed, playTime } = req.body;
+
+        // IDOR check
+        if (req.authUserId !== userId) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
 
         // 验证输入
         if (!userId || !gameId || !level || typeof score !== 'number') {
@@ -126,9 +137,15 @@ router.post('/record', async (req, res, next) => {
 });
 
 // 获取用户游戏历史
-router.get('/history/:userId', async (req, res, next) => {
+router.get('/history/:userId', requireAuth, async (req, res, next) => {
     try {
         const { userId } = req.params;
+
+        // IDOR check
+        if (req.authUserId !== userId) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
+
         const { gameId, limit = 20, offset = 0 } = req.query;
 
         let queryText = `

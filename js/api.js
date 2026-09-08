@@ -6,6 +6,14 @@ class APIClient {
     constructor() {
         this.baseURL = window.API_BASE_URL || 'http://localhost:3000/api';
         this.timeout = 5000;
+        this.token = null;
+    }
+
+    /**
+     * 设置认证token
+     */
+    setToken(token) {
+        this.token = token;
     }
 
     /**
@@ -19,6 +27,10 @@ class APIClient {
                 'Content-Type': 'application/json',
             },
         };
+
+        if (this.token) {
+            options.headers['Authorization'] = `Bearer ${this.token}`;
+        }
 
         if (data && (method === 'POST' || method === 'PUT')) {
             options.body = JSON.stringify(data);
@@ -85,7 +97,6 @@ class APIClient {
      * 用户API
      */
     users = {
-        getAll: () => this.get('/users'),
         getById: (userId) => this.get(`/users/${userId}`),
         create: (data) => this.post('/users', data),
         update: (userId, data) => this.put(`/users/${userId}`, data),
@@ -150,6 +161,39 @@ class CloudStorage {
         this.progressStorage = this.localStorage.progressStorage;
         this.useCloud = false;
         this.cloudChecked = false;
+        this.tokenKey = 'kids_cloud_tokens';
+    }
+
+    /**
+     * 获取本地保存的用户token映射
+     */
+    getTokens() {
+        try {
+            return JSON.parse(localStorage.getItem(this.tokenKey)) || {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    /**
+     * 保存用户token
+     */
+    saveToken(userId, token) {
+        try {
+            const tokens = this.getTokens();
+            tokens[userId] = token;
+            localStorage.setItem(this.tokenKey, JSON.stringify(tokens));
+        } catch (error) {
+            console.error('Failed to save token:', error);
+        }
+    }
+
+    /**
+     * 为API请求附加用户token
+     */
+    useToken(userId) {
+        const tokens = this.getTokens();
+        this.api.setToken(tokens[userId] || null);
     }
 
     async checkCloudAvailability() {
@@ -186,6 +230,9 @@ class CloudStorage {
         try {
             if (this.useCloud) {
                 const result = await this.api.users.create({ username, settings });
+                if (result.data && result.data.user_id && result.data.token) {
+                    this.saveToken(result.data.user_id, result.data.token);
+                }
                 return result.data;
             } else {
                 return this.localStorage.createUser(username);
@@ -202,6 +249,7 @@ class CloudStorage {
     async getUser(userId) {
         try {
             if (this.useCloud) {
+                this.useToken(userId);
                 const result = await this.api.users.getById(userId);
                 return result.data;
             } else {
@@ -219,6 +267,7 @@ class CloudStorage {
     async saveProgress(userId, gameId, progressData) {
         try {
             if (this.useCloud) {
+                this.useToken(userId);
                 const data = { userId, gameId, ...progressData };
                 await this.api.progress.createOrUpdate(data);
                 return true;
@@ -237,6 +286,7 @@ class CloudStorage {
     async getProgress(userId, gameId) {
         try {
             if (this.useCloud) {
+                this.useToken(userId);
                 const result = await this.api.progress.get(userId, gameId);
                 return result.data;
             } else {
@@ -254,6 +304,7 @@ class CloudStorage {
     async updateHighScore(userId, gameId, score) {
         try {
             if (this.useCloud) {
+                this.useToken(userId);
                 const result = await this.api.progress.updateHighScore(userId, gameId, score);
                 return result.data;
             } else {
@@ -271,6 +322,7 @@ class CloudStorage {
     async recordLevelComplete(userId, gameId, level) {
         try {
             if (this.useCloud) {
+                this.useToken(userId);
                 await this.api.progress.recordLevel(userId, gameId, level);
                 return true;
             } else {

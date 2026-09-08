@@ -1,6 +1,7 @@
 const express = require('express');
 const Joi = require('joi');
 const { query } = require('../db');
+const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 
 // 进度验证schema
@@ -13,9 +14,15 @@ const progressSchema = Joi.object({
 });
 
 // 获取用户所有游戏进度
-router.get('/:userId', async (req, res, next) => {
+router.get('/:userId', requireAuth, async (req, res, next) => {
     try {
         const { userId } = req.params;
+
+        // IDOR check
+        if (req.authUserId !== userId) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
+
         const result = await query(
             'SELECT * FROM progress WHERE user_id = $1 ORDER BY last_played DESC',
             [userId]
@@ -31,9 +38,15 @@ router.get('/:userId', async (req, res, next) => {
 });
 
 // 获取特定游戏进度
-router.get('/:userId/:gameId', async (req, res, next) => {
+router.get('/:userId/:gameId', requireAuth, async (req, res, next) => {
     try {
         const { userId, gameId } = req.params;
+
+        // IDOR check
+        if (req.authUserId !== userId) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
+
         const result = await query(
             'SELECT * FROM progress WHERE user_id = $1 AND game_id = $2',
             [userId, gameId]
@@ -62,7 +75,7 @@ router.get('/:userId/:gameId', async (req, res, next) => {
 });
 
 // 创建或更新进度
-router.post('/', async (req, res, next) => {
+router.post('/', requireAuth, async (req, res, next) => {
     try {
         // 验证输入
         const { error, value } = progressSchema.validate(req.body);
@@ -74,6 +87,11 @@ router.post('/', async (req, res, next) => {
         }
 
         const { userId, gameId, currentLevel, highScore, completedLevels } = value;
+
+        // IDOR check
+        if (req.authUserId !== userId) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
 
         // 检查是否已存在
         const existing = await query(
@@ -125,9 +143,15 @@ router.post('/', async (req, res, next) => {
 });
 
 // 更新高分
-router.put('/:userId/:gameId/highscore', async (req, res, next) => {
+router.put('/:userId/:gameId/highscore', requireAuth, async (req, res, next) => {
     try {
         const { userId, gameId } = req.params;
+
+        // IDOR check
+        if (req.authUserId !== userId) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
+
         const { score } = req.body;
 
         if (typeof score !== 'number' || score < 0) {
@@ -164,24 +188,31 @@ router.put('/:userId/:gameId/highscore', async (req, res, next) => {
 });
 
 // 记录关卡完成
-router.put('/:userId/:gameId/level/:level', async (req, res, next) => {
+router.put('/:userId/:gameId/level/:level', requireAuth, async (req, res, next) => {
     try {
         const { userId, gameId, level } = req.params;
 
+        // IDOR check
+        if (req.authUserId !== userId) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
+
+        const levelNum = parseInt(level);
+        if (!Number.isInteger(levelNum) || levelNum < 1) {
+            return res.status(400).json({ success: false, error: 'Invalid level' });
+        }
+
         const result = await query(
             `UPDATE progress 
-             SET current_level = GREATEST(current_level, $1 + 1),
-                 completed_levels = ARRAY_APPEND(
-                     CASE WHEN $2 = ANY(completed_levels) 
-                          THEN completed_levels 
-                          ELSE completed_levels || $2 
-                     END,
-                     $2
-                 ),
+                 SET current_level = GREATEST(current_level, $1 + 1),
+                 completed_levels = CASE WHEN $2 = ANY(completed_levels) 
+                                         THEN completed_levels 
+                                         ELSE completed_levels || $2 
+                                    END,
                  last_played = CURRENT_TIMESTAMP
              WHERE user_id = $3 AND game_id = $4
              RETURNING *`,
-            [parseInt(level), parseInt(level), userId, gameId]
+            [levelNum, levelNum, userId, gameId]
         );
 
         if (result.rows.length === 0) {
@@ -201,9 +232,14 @@ router.put('/:userId/:gameId/level/:level', async (req, res, next) => {
 });
 
 // 重置游戏进度
-router.delete('/:userId/:gameId', async (req, res, next) => {
+router.delete('/:userId/:gameId', requireAuth, async (req, res, next) => {
     try {
         const { userId, gameId } = req.params;
+
+        // IDOR check
+        if (req.authUserId !== userId) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
 
         await query(
             'DELETE FROM progress WHERE user_id = $1 AND game_id = $2',

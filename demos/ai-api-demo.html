@@ -231,6 +231,16 @@ const soundData = await aiGenerator.generateSoundGame('农场', '4-5岁', '中�
       })
     }
 
+    // HTML转义，防止AI生成内容注入
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+    }
+
     // 通用游戏生成函数
     async function generateGame(gameName, generator) {
       const resultsDiv = document.getElementById('results')
@@ -243,7 +253,7 @@ const soundData = await aiGenerator.generateSoundGame('农场', '4-5岁', '中�
           <div class="result">
             <h3>${gameName}生成成功！</h3>
             <p><strong>来源:</strong> ${data.fallback ? '模拟数据（降级）' : 'API 生成'}</p>
-            <pre class="code-block">${JSON.stringify(data, null, 2)}</pre>
+            <pre class="code-block">${escapeHtml(JSON.stringify(data, null, 2))}</pre>
           </div>
         `
 
@@ -257,7 +267,7 @@ const soundData = await aiGenerator.generateSoundGame('农场', '4-5岁', '中�
         resultsDiv.innerHTML = `
           <div class="result error">
             <h3>${gameName}生成失败</h3>
-            <p>${error.message}</p>
+            <p>${escapeHtml(error.message)}</p>
           </div>
         `
       }
@@ -280,7 +290,7 @@ const soundData = await aiGenerator.generateSoundGame('农场', '4-5岁', '中�
                 justify-content: center;
                 font-size: 36px;
                 box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-              ">${emoji}</div>
+              ">${escapeHtml(emoji)}</div>
             `).join('')}
           </div>
         </div>

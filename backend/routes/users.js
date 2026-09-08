@@ -1,6 +1,8 @@
 const express = require('express');
+const crypto = require('crypto');
 const Joi = require('joi');
 const { query } = require('../db');
+const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 
 // 用户验证schema
@@ -9,25 +11,16 @@ const userSchema = Joi.object({
     settings: Joi.object().optional()
 });
 
-// 获取所有用户
-router.get('/', async (req, res, next) => {
-    try {
-        const result = await query(
-            'SELECT user_id, username, created_at, last_login, settings FROM users ORDER BY created_at DESC'
-        );
-        res.json({
-            success: true,
-            data: result.rows
-        });
-    } catch (error) {
-        next(error);
-    }
-});
-
 // 获取单个用户
-router.get('/:userId', async (req, res, next) => {
+router.get('/:userId', requireAuth, async (req, res, next) => {
     try {
         const { userId } = req.params;
+
+        // IDOR check
+        if (req.authUserId !== userId) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
+
         const result = await query(
             'SELECT user_id, username, created_at, last_login, settings FROM users WHERE user_id = $1',
             [userId]
@@ -63,6 +56,7 @@ router.post('/', async (req, res, next) => {
 
         const { username, settings } = value;
         const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const token = crypto.randomUUID();
 
         // 检查用户名是否已存在
         const existingUser = await query(
@@ -79,8 +73,8 @@ router.post('/', async (req, res, next) => {
 
         // 创建用户
         const result = await query(
-            'INSERT INTO users (user_id, username, settings) VALUES ($1, $2, $3) RETURNING *',
-            [userId, username, JSON.stringify(settings || {})]
+            'INSERT INTO users (user_id, username, settings, token) VALUES ($1, $2, $3, $4) RETURNING *',
+            [userId, username, JSON.stringify(settings || {}), token]
         );
 
         res.status(201).json({
@@ -93,9 +87,15 @@ router.post('/', async (req, res, next) => {
 });
 
 // 更新用户
-router.put('/:userId', async (req, res, next) => {
+router.put('/:userId', requireAuth, async (req, res, next) => {
     try {
         const { userId } = req.params;
+
+        // IDOR check: token must belong to this user
+        if (req.authUserId !== userId) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
+
         const { username, settings } = req.body;
 
         // 验证用户是否存在
@@ -127,9 +127,14 @@ router.put('/:userId', async (req, res, next) => {
 });
 
 // 删除用户
-router.delete('/:userId', async (req, res, next) => {
+router.delete('/:userId', requireAuth, async (req, res, next) => {
     try {
         const { userId } = req.params;
+
+        // IDOR check
+        if (req.authUserId !== userId) {
+            return res.status(403).json({ success: false, error: 'Forbidden' });
+        }
 
         // 删除用户（级联删除相关数据）
         const result = await query(
