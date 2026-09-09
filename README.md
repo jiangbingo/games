@@ -1,40 +1,48 @@
-# 儿童逻辑思维游戏 🎮
+# Bingo 游戏中心 🎮
 
 > 适合3-6岁儿童的趣味逻辑思维网页游戏集，完美适配iPhone/iPad等移动设备
 
-![Version](https://img.shields.io/badge/version-v4.1-blue)
+![Version](https://img.shields.io/badge/version-v5.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android%20%7C%20Web-lightgrey)
 
 ## ✨ 核心特性
 
-- **🎮 13个游戏**：覆盖3-6岁全年龄段
+- **🎮 14个游戏**：覆盖3-6岁全年龄段
+- **🧠 6大能力维度**：逻辑思维、观察记忆、美术绘画、认知启蒙、空间探索、经典游戏
 - **📊 189+关卡**：丰富的游戏内容
 - **👤 用户系统**：多用户支持，独立进度保存
 - **💾 双模式存储**：本地+云端
 - **📱 完美适配**：响应式设计，触摸优化
-- **🚀 Cloudflare Pages 部署**：一键部署（games-hub-nsd.pages.dev）
+- **🚀 Cloudflare Pages 部署**：[bingo-games-hub.pages.dev](https://bingo-games-hub.pages.dev)
 
 ## 🎮 游戏列表
 
-### 儿童逻辑游戏（10个）
-1. **🎨 颜色配对** - 认识6种基本颜色
-2. **⭐ 形状拼图** - 完成可爱动物拼图
-3. **🎴 记忆翻牌** - 4x3卡片配对
-4. **🎵 动物叫声** - 听声音猜动物
-5. **🎨 涂鸦板** - Canvas自由绘画
-6. **🔍 找不同** - 观察力训练
-7. **🖼️ 看图识物** - 动物/水果/交通工具
-8. **🔵 形状配对** - 匹配相同形状
-9. **🔢 数字认知** - 学习1-10数字
-10. **🔷 模式匹配** - 发现规律完成序列
+### 🧠 逻辑思维
+1. **⭐ 形状拼图** - 把形状碎片拼回完整图案（4-5岁）
+2. **🔷 形状配对** - 找到和它一样的形状（3-5岁）
+3. **🔶 模式匹配** - 发现规律，补上问号那一格（4-6岁）
 
-### 经典游戏（2个）
-11. **🐍 贪吃蛇** - 4种模式，3种速度
-12. **🧱 水墨方块** - 中国风水墨俄罗斯方块
+### 👀 观察记忆
+4. **🔍 找不同** - 观察两幅图，找出藏着的不同（4-6岁）
+5. **🧠 记忆翻牌** - 翻开卡片，找出相同的一对（4-6岁）
 
-### 独立项目（1个）
-13. **🧭 迷宫小小探险家** - 3D迷宫120关（React，见 `kids-maze-world/`，线上地址 kids-maze-world.pages.dev）
+### 🎨 美术绘画
+6. **✏️ 涂鸦板** - 自由画画，发挥创意（3-6岁）
+7. **🖍️ 涂色画工坊** - 把彩色图片变成线稿，打印或涂色（3-6岁）
+
+### 🌈 认知启蒙
+8. **🎨 颜色配对** - 认识6种基本颜色（3-4岁）
+9. **🔢 数字认知** - 数一数，认识1-10的数字（3-5岁）
+10. **🖼️ 看图识物** - 认识动物、水果、交通工具（3-4岁）
+11. **🐮 动物叫声** - 听声音猜动物，认识各种小动物（3-4岁）
+
+### 🧭 空间探索
+12. **🧭 迷宫小小探险家** - 森林邮局主题3D迷宫，120个关卡（4-6岁）
+
+### 🎯 经典游戏
+13. **🐍 贪吃蛇** - 经典贪吃蛇，4种模式3种速度（全年龄）
+14. **🧱 水墨方块** - 中国风水墨俄罗斯方块（全年龄）
 
 ## 🚀 快速开始
 
@@ -59,18 +67,22 @@ make deploy-cf
 
 ```
 games/
-├── index.html              # 游戏中心入口
+├── index.html              # 游戏中心入口（6区分类）
 ├── *.html                  # 各单文件游戏
 ├── classic-games/          # 贪吃蛇、水墨方块
 ├── kids-maze-world/        # 独立React迷宫游戏（Vite构建）
-├── vercel.json             # Vercel 配置（回滚兜底）
-├── _headers                # Cloudflare Pages 响应头（sw/manifest 缓存策略）
-├── _redirects              # Cloudflare Pages 重写规则（.html 200 改写，防 308）
-├── tools/                  # 部署工具（build-cf-pages.mjs、inject-sw-version.mjs）
-├── .vercelignore           # Vercel 忽略文件
-├── js/                     # JavaScript 模块
-├── css/                    # 样式
+├── js/
+│   ├── kids-ui.js          # 共享UI库（SFX/进度/TTS/头部/庆祝/触控）
+│   ├── api.js              # API客户端
+│   └── storage.js          # 存储管理
+├── css/
+│   └── kids.css            # 共享样式（kui- 设计系统）
+├── icons/
+│   └── wechat-qrcode.webp  # 微信二维码
 ├── backend/                # 后端（可选）
+├── tools/                  # 部署工具
+├── _headers                # Cloudflare Pages 响应头
+├── _redirects              # Cloudflare Pages 重写规则
 └── docs/                   # 设计文档与历史报告
 ```
 
@@ -88,12 +100,20 @@ games/
 
 ## 📚 技术栈
 
-- **前端**: HTML5 + CSS3 + JavaScript
+- **前端**: HTML5 + CSS3 + JavaScript（自包含HTML + 共享层 kids-ui.js/kids.css）
 - **存储**: localStorage + PostgreSQL（可选）
-- **部署**: Cloudflare Pages / Vercel（回滚）/ EdgeOne
-- **交互**: htmx（部分游戏）
+- **部署**: Cloudflare Pages（主站）/ Vercel（回滚）
+- **交互**: 触摸优化、Service Worker 离线支持
 
 ## 📝 更新日志
+
+### v5.0 (2026-09-09)
+- ✅ 游戏分类重组：从2区扩展为6区（逻辑思维/观察记忆/美术绘画/认知启蒙/空间探索/经典游戏）
+- ✅ 架构重构：单体 js/games.js 拆分为自包含 HTML + 共享层（kids-ui.js/kids.css）
+- ✅ 安全修复：SQL去重、token鉴权、XSS防护
+- ✅ 新增页脚：个人主页链接 + 微信二维码
+- ✅ 品牌更新：Bingo 游戏中心
+- ✅ 部署迁移：bingo-games-hub.pages.dev
 
 ### v4.1 (2026-09-03)
 - ✅ 贪吃蛇增强：双皮肤、手指跟随、吃食动效、速度爬升
@@ -111,4 +131,10 @@ games/
 
 ---
 
-#儿童游戏 #教育 #iPad #Vercel
+## 🔗 相关链接
+
+- [个人主页](https://jiangbin-ai.pages.dev)
+- [GitHub](https://github.com/jiangbingo/games)
+- [微信二维码](https://bingo-games-hub.pages.dev/icons/wechat-qrcode.webp)
+
+#儿童游戏 #教育 #iPad #Bingo

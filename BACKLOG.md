@@ -83,7 +83,7 @@
 
 | # | 子任务 | 状态 |
 |---|---|---|
-| T3-0a | ✅ 根级 `manifest.webmanifest`（name=Jiangbin 游戏中心、zh-CN、standalone、theme `#667eea` 对齐主页渐变、192/512 any+maskable 四图标由 `tools/generate-icons.py` 生成） | 完成 |
+| T3-0a | ✅ 根级 `manifest.webmanifest`（name=Bingo 游戏中心、zh-CN、standalone、theme `#667eea` 对齐主页渐变、192/512 any+maskable 四图标由 `tools/generate-icons.py` 生成） | 完成 |
 | T3-0b | ✅ 根级 `sw.js`：迷宫版改编（同源守卫、导航 networkFirst 离线回退主页/缓存、同源静态 cacheFirst——整代换缓存保证无 hash 文件名也不陈旧；子资源失败不回退 HTML）；预缓存=主页+12 本地游戏页+`js/storage.js`+favicon+图标共 19 项。**偏差说明：迷宫在 pages.dev 外部域名，跨域不可由本源 SW 预缓存，其离线由自身 PWA 负责** | 完成 |
 | T3-0c | ✅ `tools/inject-sw-version.mjs`（注入/还原，git 短hash+时间戳36进制）+ `make deploy-root` / `set-sw-version` / `restore-sw-version`；注入→还原往返已验证不脏工作区 | 完成 |
 | T3-0d | ✅ `pwa.js`（vanilla 更新横幅）：SW 注册 + 60min 主动 update + installing→installed 提示 + `SKIP_WAITING` postMessage + controllerchange 只收横幅不刷新（与迷宫 T1-1 同语义）；index.html 引入 | 完成 |
@@ -124,7 +124,7 @@
 
 - 背景：用户指令"统一部署在 Cloudflare 平台"。方案 A（用户拍板）：根站迁移 CF Pages，迷宫保持独立 Pages 项目，导航经游戏卡片外链
 - 产物：`tools/build-cf-pages.mjs`（完整 dist/ 组装，修复历史 `make build` 只拷 css/js/index 的缺口）、`_headers`（sw/manifest must-revalidate）、`_redirects`、`make deploy-cf`（注入 sw 版本 → 组装 → `wrangler pages deploy` → 还原）
-- 线上：**games-hub-nsd.pages.dev**（`games-hub.pages.dev` 已被占用，CF 自动加了 `-nsd` 后缀）；wrangler OAuth 登录，`pnpm dlx` 瞬态执行
+- 线上：**bingo-games-hub.pages.dev**；wrangler OAuth 登录，`pnpm dlx` 瞬态执行
 - **迁移中抓到两个 CF 特有坑**（均已修复并回填 sw.js）：
   1. `/pwa.js` 不在预缓存且 CF 对缺失路径回退 index.html → MIME 类型错误 → SW 永不注册。修复：pwa.js 加入预缓存（23→24）并纳入 build 脚本
   2. CF 默认把 `/x.html` 308 到 `/x`，`cache.addAll` 跟随重定向后预缓存响应带 redirected 标记，离线导航时浏览器重放重定向、二次请求（clean URL）落入 cacheFirst 未捕获拒绝 → ERR_FAILED。修复：`_redirects` 增加 `/*.html /:splat 200` 改写消灭 308；sw.js 增加 `matchWithFallback`（原键→去扩展名键）与导航回退双键尝试（`/index.html` 或 `/`）
