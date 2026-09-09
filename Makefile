@@ -73,7 +73,7 @@ deploy-root:
 	@node tools/inject-sw-version.mjs --restore
 	@git diff --exit-code -- sw.js
 
-CF_PROJECT_NAME ?= games-hub
+CF_PROJECT_NAME ?= bingo-games-hub
 # wrangler 执行方式：默认 pnpm dlx 瞬态（免全局安装/PATH 配置）；已全局安装可 make deploy-cf WRANGLER=wrangler
 WRANGLER ?= pnpm dlx wrangler@latest
 
