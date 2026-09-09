@@ -21,6 +21,7 @@ const PRECACHE = [
   "/icons/icon-512.png",
   "/css/kids.css",
   "/js/kids-ui.js",
+  "/icons/wechat-qrcode.webp",
   "/js/storage.js",
   "/pwa.js",
   "/color-matching.html",

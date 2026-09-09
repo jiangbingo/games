@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="游戏中心">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
-    <title>🎮 游戏中心 - Jiangbin Games</title>
+    <title>🎮 Bingo 游戏中心</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ff6b4a'/%3E%3Ctext x='16' y='22' font-size='20' text-anchor='middle'%3E🎮%3C/text%3E%3C/svg%3E">
     <link rel="stylesheet" href="/css/kids.css">
     <style>
@@ -200,6 +200,23 @@
         }
         .footer a { color: var(--kui-ink); font-weight: 800; text-decoration: none; }
         .footer a:hover { color: var(--game-accent); }
+        .footer-wechat {
+            margin-top: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .footer-wechat img {
+            border: 2px solid var(--kui-line);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .footer-wechat span {
+            font-size: 0.82rem;
+            color: var(--kui-ink-soft);
+            font-weight: 600;
+        }
 
         /* 单页游戏容器：游戏在当前页内打开，不跳转离开主页 */
         .game-shell {
@@ -248,7 +265,7 @@
     <div class="container">
         <!-- 页头 -->
         <div class="header">
-            <h1>🎮 Jiangbin 游戏中心</h1>
+            <h1>🎮 Bingo 游戏中心</h1>
             <div class="crayon-line" aria-hidden="true"></div>
             <p>儿童逻辑游戏 + 经典游戏合集，全部离线可玩</p>
 
@@ -268,20 +285,10 @@
             </div>
         </div>
 
-        <!-- 儿童逻辑游戏 -->
+        <!-- 🧠 逻辑思维 -->
         <div class="section kids">
-            <h2 class="section-title">🧒 儿童逻辑游戏</h2>
+            <h2 class="section-title">🧠 逻辑思维</h2>
             <div class="games-grid">
-                <a href="color-matching.html" class="game-card" data-game="color-matching" style="--card-accent:#e5533d">
-                    <span class="game-icon">🎨</span>
-                    <h3 class="game-title">颜色配对</h3>
-                    <p class="game-desc">认识6种基本颜色，找到相同的颜色配对</p>
-                    <div class="game-meta">
-                        <span class="tag">认知启蒙</span>
-                        <span class="tag">3-4岁</span>
-                    </div>
-                </a>
-
                 <a href="shape-puzzle.html" class="game-card" data-game="shape-puzzle" style="--card-accent:#f2994a">
                     <span class="game-icon">⭐</span>
                     <h3 class="game-title">形状拼图</h3>
@@ -289,56 +296,6 @@
                     <div class="game-meta">
                         <span class="tag">逻辑思维</span>
                         <span class="tag">4-5岁</span>
-                    </div>
-                </a>
-
-                <a href="memory-cards.html" class="game-card" data-game="memory-cards" style="--card-accent:#9b5de5">
-                    <span class="game-icon">🧠</span>
-                    <h3 class="game-title">记忆翻牌</h3>
-                    <p class="game-desc">翻开卡片，找出相同的一对</p>
-                    <div class="game-meta">
-                        <span class="tag">记忆力</span>
-                        <span class="tag">4-6岁</span>
-                    </div>
-                </a>
-
-                <a href="animal-sounds.html" class="game-card" data-game="animal-sounds" style="--card-accent:#2a9d8f">
-                    <span class="game-icon">🐮</span>
-                    <h3 class="game-title">动物叫声</h3>
-                    <p class="game-desc">听声音猜动物，认识各种小动物</p>
-                    <div class="game-meta">
-                        <span class="tag">音乐声音</span>
-                        <span class="tag">3-4岁</span>
-                    </div>
-                </a>
-
-                <a href="drawing-board.html" class="game-card" data-game="drawing-board" style="--card-accent:#457b9d">
-                    <span class="game-icon">✏️</span>
-                    <h3 class="game-title">涂鸦板</h3>
-                    <p class="game-desc">自由画画，发挥创意</p>
-                    <div class="game-meta">
-                        <span class="tag">创意绘画</span>
-                        <span class="tag">3-6岁</span>
-                    </div>
-                </a>
-
-                <a href="find-differences.html" class="game-card" data-game="find-differences" style="--card-accent:#4f8ff7">
-                    <span class="game-icon">🔍</span>
-                    <h3 class="game-title">找不同</h3>
-                    <p class="game-desc">观察两幅图，找出藏着的不同</p>
-                    <div class="game-meta">
-                        <span class="tag">观察力</span>
-                        <span class="tag">4-6岁</span>
-                    </div>
-                </a>
-
-                <a href="picture-recognition.html" class="game-card" data-game="picture-recognition" style="--card-accent:#e63946">
-                    <span class="game-icon">🖼️</span>
-                    <h3 class="game-title">看图识物</h3>
-                    <p class="game-desc">认识动物、水果、交通工具</p>
-                    <div class="game-meta">
-                        <span class="tag">认知启蒙</span>
-                        <span class="tag">3-4岁</span>
                     </div>
                 </a>
 
@@ -352,6 +309,84 @@
                     </div>
                 </a>
 
+                <a href="pattern-match.html" class="game-card" data-game="pattern-match" style="--card-accent:#ff9f1c">
+                    <span class="game-icon">🔶</span>
+                    <h3 class="game-title">模式匹配</h3>
+                    <p class="game-desc">发现规律，补上问号那一格</p>
+                    <div class="game-meta">
+                        <span class="tag">逻辑思维</span>
+                        <span class="tag">4-6岁</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- 👀 观察记忆 -->
+        <div class="section kids">
+            <h2 class="section-title">👀 观察记忆</h2>
+            <div class="games-grid">
+                <a href="find-differences.html" class="game-card" data-game="find-differences" style="--card-accent:#4f8ff7">
+                    <span class="game-icon">🔍</span>
+                    <h3 class="game-title">找不同</h3>
+                    <p class="game-desc">观察两幅图，找出藏着的不同</p>
+                    <div class="game-meta">
+                        <span class="tag">观察力</span>
+                        <span class="tag">4-6岁</span>
+                    </div>
+                </a>
+
+                <a href="memory-cards.html" class="game-card" data-game="memory-cards" style="--card-accent:#9b5de5">
+                    <span class="game-icon">🧠</span>
+                    <h3 class="game-title">记忆翻牌</h3>
+                    <p class="game-desc">翻开卡片，找出相同的一对</p>
+                    <div class="game-meta">
+                        <span class="tag">记忆力</span>
+                        <span class="tag">4-6岁</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- 🎨 美术绘画 -->
+        <div class="section kids">
+            <h2 class="section-title">🎨 美术绘画</h2>
+            <div class="games-grid">
+                <a href="drawing-board.html" class="game-card" data-game="drawing-board" style="--card-accent:#457b9d">
+                    <span class="game-icon">✏️</span>
+                    <h3 class="game-title">涂鸦板</h3>
+                    <p class="game-desc">自由画画，发挥创意</p>
+                    <div class="game-meta">
+                        <span class="tag">美术绘画</span>
+                        <span class="tag">3-6岁</span>
+                    </div>
+                </a>
+
+                <a href="coloring-studio.html" class="game-card" data-game="coloring-studio" style="--card-accent:#ff6b4a">
+                    <span class="game-icon">🖍️</span>
+                    <h3 class="game-title">涂色画工坊</h3>
+                    <p class="game-desc">把彩色图片变成线稿，打印或涂色</p>
+                    <div class="game-meta">
+                        <span class="tag">美术绘画</span>
+                        <span class="tag">3-6岁</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- 🌈 认知启蒙 -->
+        <div class="section kids">
+            <h2 class="section-title">🌈 认知启蒙</h2>
+            <div class="games-grid">
+                <a href="color-matching.html" class="game-card" data-game="color-matching" style="--card-accent:#e5533d">
+                    <span class="game-icon">🎨</span>
+                    <h3 class="game-title">颜色配对</h3>
+                    <p class="game-desc">认识6种基本颜色，找到相同的颜色配对</p>
+                    <div class="game-meta">
+                        <span class="tag">认知启蒙</span>
+                        <span class="tag">3-4岁</span>
+                    </div>
+                </a>
+
                 <a href="number-counting.html" class="game-card" data-game="number-counting" style="--card-accent:#3fa574">
                     <span class="game-icon">🔢</span>
                     <h3 class="game-title">数字认知</h3>
@@ -362,32 +397,38 @@
                     </div>
                 </a>
 
-                <a href="pattern-match.html" class="game-card" data-game="pattern-match" style="--card-accent:#ff9f1c">
-                    <span class="game-icon">🔶</span>
-                    <h3 class="game-title">模式匹配</h3>
-                    <p class="game-desc">发现规律，补上问号那一格</p>
+                <a href="picture-recognition.html" class="game-card" data-game="picture-recognition" style="--card-accent:#e63946">
+                    <span class="game-icon">🖼️</span>
+                    <h3 class="game-title">看图识物</h3>
+                    <p class="game-desc">认识动物、水果、交通工具</p>
                     <div class="game-meta">
-                        <span class="tag">逻辑思维</span>
-                        <span class="tag">4-6岁</span>
+                        <span class="tag">认知启蒙</span>
+                        <span class="tag">3-4岁</span>
                     </div>
                 </a>
 
-                <a href="coloring-studio.html" class="game-card" data-game="coloring-studio" style="--card-accent:#ff6b4a">
-                    <span class="game-icon">🖍️</span>
-                    <h3 class="game-title">涂色画工坊</h3>
-                    <p class="game-desc">把彩色图片变成线稿，打印或涂色</p>
+                <a href="animal-sounds.html" class="game-card" data-game="animal-sounds" style="--card-accent:#2a9d8f">
+                    <span class="game-icon">🐮</span>
+                    <h3 class="game-title">动物叫声</h3>
+                    <p class="game-desc">听声音猜动物，认识各种小动物</p>
                     <div class="game-meta">
-                        <span class="tag">创意绘画</span>
-                        <span class="tag">3-6岁</span>
+                        <span class="tag">认知启蒙</span>
+                        <span class="tag">3-4岁</span>
                     </div>
                 </a>
+            </div>
+        </div>
 
+        <!-- 🧭 空间探索 -->
+        <div class="section kids">
+            <h2 class="section-title">🧭 空间探索</h2>
+            <div class="games-grid">
                 <a href="/maze/" class="game-card" data-game="maze" style="--card-accent:#5c8b83">
                     <span class="game-icon">🧭</span>
                     <h3 class="game-title">迷宫小小探险家</h3>
                     <p class="game-desc">森林邮局主题3D迷宫，120个关卡</p>
                     <div class="game-meta">
-                        <span class="tag">3D迷宫</span>
+                        <span class="tag">空间规划</span>
                         <span class="tag">4-6岁</span>
                     </div>
                 </a>
@@ -422,11 +463,16 @@
 
         <!-- 页脚 -->
         <div class="footer">
-            <p>Made with ❤️ by Jiangbin Games</p>
+            <p>Made with ❤️ by <a href="https://jiangbin-ai.pages.dev" target="_blank" rel="noopener">Bingo</a></p>
             <p style="margin-top: 10px;">
+                <a href="https://jiangbin-ai.pages.dev" target="_blank" rel="noopener">个人主页</a> ·
                 <a href="https://github.com/jiangbingo/games">GitHub</a> ·
                 <a href="https://www.cloudflare.com">Cloudflare Pages</a>
             </p>
+            <div class="footer-wechat">
+                <img src="/icons/wechat-qrcode.webp" alt="微信二维码" width="100" height="134" loading="lazy">
+                <span>扫码加微信</span>
+            </div>
         </div>
     </div>
 
