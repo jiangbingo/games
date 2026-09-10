@@ -77,7 +77,7 @@ router.get('/:userId', requireAuth, async (req, res, next) => {
 router.get('/leaderboard/:gameId', async (req, res, next) => {
     try {
         const { gameId } = req.params;
-        const { limit = 10 } = req.query;
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 50);
 
         const result = await query(`
             SELECT 

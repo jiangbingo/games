@@ -96,7 +96,14 @@ router.put('/:userId', requireAuth, async (req, res, next) => {
             return res.status(403).json({ success: false, error: 'Forbidden' });
         }
 
-        const { username, settings } = req.body;
+        const { error, value } = userSchema.fork('username', (s) => s.optional()).validate(req.body);
+        if (error) {
+            return res.status(400).json({
+                success: false,
+                error: error.details[0].message
+            });
+        }
+        const { username, settings } = value;
 
         // 验证用户是否存在
         const existingUser = await query(

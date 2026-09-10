@@ -8,9 +8,9 @@ const router = express.Router();
 const progressSchema = Joi.object({
     userId: Joi.string().required(),
     gameId: Joi.string().required(),
-    currentLevel: Joi.number().integer().min(1).default(1),
-    highScore: Joi.number().integer().min(0).default(0),
-    completedLevels: Joi.array().items(Joi.number().integer()).default([])
+    currentLevel: Joi.number().integer().min(1).max(100000).default(1),
+    highScore: Joi.number().integer().min(0).max(1000000000).default(0),
+    completedLevels: Joi.array().items(Joi.number().integer().min(0)).max(1000).default([])
 });
 
 // 获取用户所有游戏进度
@@ -105,7 +105,7 @@ router.post('/', requireAuth, async (req, res, next) => {
                 `UPDATE progress 
                  SET current_level = GREATEST(current_level, $1),
                      high_score = GREATEST(high_score, $2),
-                     completed_levels = progress.completed_levels || '{}'::integer[] || $3,
+                     completed_levels = (SELECT array_agg(DISTINCT x) FROM unnest(progress.completed_levels || $3::integer[]) x),
                      play_count = play_count + 1,
                      last_played = CURRENT_TIMESTAMP
                  WHERE user_id = $4 AND game_id = $5
@@ -113,7 +113,7 @@ router.post('/', requireAuth, async (req, res, next) => {
                 [
                     currentLevel,
                     highScore,
-                    JSON.stringify(completedLevels),
+                    completedLevels,
                     userId,
                     gameId
                 ]
@@ -130,7 +130,7 @@ router.post('/', requireAuth, async (req, res, next) => {
             `INSERT INTO progress (user_id, game_id, current_level, high_score, completed_levels, play_count)
              VALUES ($1, $2, $3, $4, $5, 1)
              RETURNING *`,
-            [userId, gameId, currentLevel, highScore, JSON.stringify(completedLevels)]
+            [userId, gameId, currentLevel, highScore, completedLevels]
         );
 
         res.status(201).json({
