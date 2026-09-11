@@ -39,10 +39,66 @@
       -webkit-user-select: none;
     }
 
+    .page {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .level-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin: 8px 0 10px;
+    }
+
+    .theme-name {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--kui-ink-soft);
+    }
+
+    .level-badge {
+      background: var(--game-accent);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      box-shadow: var(--kui-shadow);
+    }
+
+    .theme-bar {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .theme-btn {
+      padding: 6px 12px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border: 2px solid var(--kui-line);
+      border-radius: 999px;
+      background: var(--kui-paper);
+      color: var(--kui-ink-soft);
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .theme-btn:active { transform: translateY(2px); }
+    .theme-btn.active {
+      background: var(--game-accent);
+      color: #fff;
+      border-color: rgba(47, 42, 37, 0.2);
+    }
+
     .stats-row {
       display: flex;
       gap: 10px;
-      margin: 8px 0 14px;
+      margin: 0 0 12px;
       flex-wrap: wrap;
       justify-content: center;
     }
@@ -54,7 +110,6 @@
       box-shadow: var(--kui-shadow);
       padding: 16px;
       width: 100%;
-      max-width: 520px;
     }
 
     .grid {
@@ -139,48 +194,67 @@
   </style>
 </head>
 <body>
-  <div class="stats-row">
-    <span class="kui-chip">👣 步数 <b id="moves">0</b></span>
-    <span class="kui-chip">🎴 配对 <b id="pairs">0/6</b></span>
-  </div>
+  <div class="page">
+    <div class="level-row">
+      <span class="theme-name" id="theme-name">🥕 蔬菜</span>
+      <span class="level-badge" id="level-badge">第 1/7 关</span>
+    </div>
 
-  <div class="game-container">
-    <div class="grid" id="game-grid"></div>
+    <div class="theme-bar" id="theme-bar"></div>
+
+    <div class="stats-row">
+      <span class="kui-chip">👣 步数 <b id="moves">0</b></span>
+      <span class="kui-chip">🎴 配对 <b id="pairs">0/4</b></span>
+    </div>
+
+    <div class="game-container">
+      <div class="grid" id="game-grid"></div>
+    </div>
   </div>
 
   <script src="js/storage.js"></script>
   <script src="/js/kids-ui.js"></script>
   <script src="/pwa.js" defer></script>
   <script>
-    // Emoji 对（默认 6 对 = 12 张）
-    const DEFAULT_EMOJIS = ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼'];
-    const MIN_PAIRS = 4;
-    const MAX_PAIRS = 12;
+    // 每个主题 12 个物品，够最高关卡取材
+    const THEMES = {
+      vegetables: { name: '🥕 蔬菜', emojis: ['🥕', '🥦', '🍅', '🌽', '🥒', '🍆', '🥔', '🧅', '🥬', '🍄', '🌶️', '🍠'] },
+      animals: { name: '🐶 动物', emojis: ['🐶', '🐱', '🐰', '🦊', '🐻', '🐼', '🐷', '🐸', '🐵', '🦁', '🐮', '🐔'] },
+      kitchen: { name: '🍳 厨房', emojis: ['🍳', '🍲', '🥄', '🍴', '☕', '🍽️', '🧂', '🥛', '🍯', '🥣', '🥤', '🧊'] },
+      plants: { name: '🌸 花草', emojis: ['🌸', '🌻', '🌷', '🌹', '🌼', '🌵', '🌿', '🍀', '🌺', '🌱', '🌳', '🍁'] },
+      fruits: { name: '🍎 水果', emojis: ['🍎', '🍊', '🍋', '🍇', '🍓', '🍌', '🍉', '🍑', '🍒', '🥝', '🥭', '🍍'] }
+    };
+
+    const RANDOM_THEME = 'random';
+    // 难度递增：每关的对数（到顶后维持 10 对）
+    const LEVEL_PAIRS = [4, 5, 6, 7, 8, 9, 10];
+    const MATCH_FLIP_MS = 300;
+    const FLIP_BACK_MS = 1000;
+    const MIN_AI_PAIRS = 4;
     const gameId = 'memory-cards';
 
-    let EMOJIS = DEFAULT_EMOJIS;
-    let cards = [];
+    // 兼容旧版：AI 缓存的题目有则追加为一个可选主题（素材不够对数时自动用其他主题补足）
+    try {
+      const cached = new AIGameCache().getLatestGame('memory');
+      const aiEmojis = Array.isArray(cached && cached.emojis)
+        ? [...new Set(cached.emojis)].filter((e) => typeof e === 'string' && e.length > 0 && e.length <= 8)
+        : [];
+      if (aiEmojis.length >= MIN_AI_PAIRS) THEMES.ai = { name: '🤖 AI 题目', emojis: aiEmojis };
+    } catch (error) {
+      /* 无 AI 题目：仅用内置主题 */
+    }
+
+    const ALL_EMOJIS = Object.keys(THEMES).reduce((all, key) => all.concat(THEMES[key].emojis), []);
+
+    let themeKey = RANDOM_THEME;
+    let level = 1;
+    let activeTheme = THEMES.vegetables;
+    let levelEmojis = [];
     let flippedCards = [];
     let matchedPairs = 0;
     let moves = 0;
     let isLocked = false;
     let headerBound = false;
-
-    // 兼容旧版：AI 缓存的自定义题目（长度截到 4-12 对）
-    try {
-      const aiCache = new AIGameCache();
-      const aiGameData = aiCache.getLatestGame('memory');
-      if (aiGameData && Array.isArray(aiGameData.emojis) && aiGameData.emojis.length >= MIN_PAIRS) {
-        const validEmojis = [...new Set(aiGameData.emojis)]
-          .filter(e => typeof e === 'string' && e.length > 0 && e.length <= 8)
-          .slice(0, MAX_PAIRS);
-        if (validEmojis.length >= MIN_PAIRS) {
-          EMOJIS = validEmojis;
-        }
-      }
-    } catch (error) {
-      /* 使用默认题目 */
-    }
 
     function shuffle(array) {
       const shuffled = [...array];
@@ -189,6 +263,57 @@
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
       return shuffled;
+    }
+
+    function pairsForLevel(target) {
+      return LEVEL_PAIRS[Math.min(target, LEVEL_PAIRS.length) - 1];
+    }
+
+    function pickTheme() {
+      if (themeKey !== RANDOM_THEME) return THEMES[themeKey];
+      const keys = Object.keys(THEMES);
+      return THEMES[keys[Math.floor(Math.random() * keys.length)]];
+    }
+
+    function pickEmojis(theme, count) {
+      const own = shuffle(theme.emojis);
+      const extra = shuffle(ALL_EMOJIS.filter((e) => !theme.emojis.includes(e)));
+      return own.concat(extra).slice(0, count);
+    }
+
+    function renderThemeBar() {
+      const bar = document.getElementById('theme-bar');
+      bar.innerHTML = '';
+      [RANDOM_THEME].concat(Object.keys(THEMES)).forEach((key) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'theme-btn' + (key === themeKey ? ' active' : '');
+        btn.textContent = key === RANDOM_THEME ? '🎲 随机' : THEMES[key].name;
+        btn.addEventListener('click', () => selectTheme(key));
+        bar.appendChild(btn);
+      });
+    }
+
+    // 换主题只换物品、不重开：牌面按旧→新一一映射，已配对/已翻开与步数都保留
+    function selectTheme(key) {
+      if (key === themeKey) return;
+      themeKey = key;
+      KidsUI.SFX.tap();
+      renderThemeBar();
+
+      const theme = pickTheme();
+      const next = pickEmojis(theme, levelEmojis.length);
+      const remap = {};
+      levelEmojis.forEach((old, i) => { remap[old] = next[i]; });
+      document.querySelectorAll('.card').forEach((card) => {
+        const emoji = remap[card.dataset.emoji];
+        card.dataset.emoji = emoji;
+        card.querySelector('.card-front').textContent = emoji;
+      });
+
+      levelEmojis = next;
+      activeTheme = theme;
+      updateStats();
     }
 
     function createCard(emoji) {
@@ -218,14 +343,15 @@
       const grid = document.getElementById('game-grid');
       grid.innerHTML = '';
 
+      activeTheme = pickTheme();
+      levelEmojis = pickEmojis(activeTheme, pairsForLevel(level));
       flippedCards = [];
       matchedPairs = 0;
       moves = 0;
       isLocked = false;
       updateStats();
 
-      cards = shuffle([...EMOJIS, ...EMOJIS]);
-      cards.forEach((emoji) => grid.appendChild(createCard(emoji)));
+      shuffle(levelEmojis.concat(levelEmojis)).forEach((emoji) => grid.appendChild(createCard(emoji)));
     }
 
     function flipCard(card) {
@@ -261,39 +387,48 @@
           flippedCards = [];
           isLocked = false;
 
-          if (matchedPairs === EMOJIS.length) {
+          if (matchedPairs === levelEmojis.length) {
+            // 先落盘再等结算动画：这 450ms 里点 ↻ 会重建棋盘，奖励不能被吞掉
+            const stars = KidsUI.Progress.starsFor(levelEmojis.length / moves);
+            KidsUI.Progress.record(gameId, { stars });
             setTimeout(() => {
-              if (card1.isConnected) showWin();
+              if (card1.isConnected) showWin(stars);
             }, 450);
           }
-        }, 300);
+        }, MATCH_FLIP_MS);
       } else {
         KidsUI.SFX.wrong();
         setTimeout(() => {
+          // 面板重建后旧定时器若照常解锁，会放行第三张牌卡死配对计数
+          if (!card1.isConnected) return;
           card1.classList.remove('flipped');
           card2.classList.remove('flipped');
           flippedCards = [];
           isLocked = false;
-        }, 1000);
+        }, FLIP_BACK_MS);
       }
     }
 
     function updateStats() {
       document.getElementById('moves').textContent = moves;
-      document.getElementById('pairs').textContent = `${matchedPairs}/${EMOJIS.length}`;
+      document.getElementById('pairs').textContent = `${matchedPairs}/${levelEmojis.length}`;
+      document.getElementById('theme-name').textContent = activeTheme.name;
+      document.getElementById('level-badge').textContent = `第 ${level}/${LEVEL_PAIRS.length} 关`;
     }
 
-    // 步数越少星越多：完美 = 每步一对
-    function showWin() {
-      const stars = KidsUI.Progress.starsFor(EMOJIS.length / moves);
-      KidsUI.Progress.record(gameId, { stars, best: EMOJIS.length });
+    // 步数越少星越多：完美 = 每步一对（记分已在最后一对配对成功时落盘）
+    function showWin(stars) {
+      const isLast = level >= LEVEL_PAIRS.length;
       KidsUI.Celebrate.show({
-        title: '全部配好啦！',
-        sub: `用了 ${moves} 步 · ${EMOJIS.length} 对`,
+        title: isLast ? '全部通关！🏆' : '配对完成！',
+        sub: `第 ${level}/${LEVEL_PAIRS.length} 关 · ${activeTheme.name} · 用了 ${moves} 步`,
         stars,
-        primaryLabel: '再来一局',
-        onPrimary: () => initGame(),
-        announce: '太棒了，全部配对成功！'
+        primaryLabel: isLast ? '再玩一轮' : '下一关 →',
+        onPrimary: () => {
+          level = isLast ? 1 : level + 1;
+          initGame();
+        },
+        announce: isLast ? '太厉害了，全部关卡都完成啦！' : '太棒了，全部配对成功！'
       });
     }
 
@@ -307,6 +442,7 @@
           onReplay: initGame
         });
       }
+      renderThemeBar();
       initGame();
     });
   </script>

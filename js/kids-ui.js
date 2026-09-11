@@ -8,6 +8,7 @@
 
   var LS_PROGRESS = "kids_hub_progress";
   var LS_SOUND = "kids_hub_sound";
+  var LS_VOLUME = "kids_hub_volume";
   var STAR_HIGH = 0.9;
   var STAR_MID = 0.7;
 
@@ -19,10 +20,23 @@
     }
   }
 
+  function syncVolumeIcons() {
+    var nodes = document.querySelectorAll("[data-kui-volume]");
+    var percent = Math.round(SFX.volume * 100) + "%";
+    for (var i = 0; i < nodes.length; i++) {
+      nodes[i].value = String(Math.round(SFX.volume * 100));
+      nodes[i].setAttribute("aria-valuetext", percent);
+    }
+  }
+
   // ── 音效：AudioContext 惰性创建（所有调用都发生在用户手势里，iOS 可播放） ──
+  // volume 为主音量 0-1，与静音开关相互独立：静音只静音效、滑杆不解除静音；
+  // TTS 等内容音频只随音量（与 animal-sounds 的约定一致）。
+  var MIN_GAIN = 0.001;
   var SFX = {
     _ctx: null,
     enabled: true,
+    volume: 1,
     _ensure() {
       var AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
@@ -33,13 +47,15 @@
     _tone(freq, dur, type, vol, delay) {
       var ctx = this._ensure();
       if (!ctx) return;
+      var peak = (vol || 0.18) * this.volume;
+      if (peak < MIN_GAIN) return;
       var t0 = ctx.currentTime + (delay || 0);
       var osc = ctx.createOscillator();
       var gain = ctx.createGain();
       osc.type = type || "sine";
       osc.frequency.value = freq;
-      gain.gain.setValueAtTime(vol || 0.18, t0);
-      gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
+      gain.gain.setValueAtTime(peak, t0);
+      gain.gain.exponentialRampToValueAtTime(MIN_GAIN, t0 + dur);
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.start(t0);
@@ -73,12 +89,29 @@
         /* 隐私模式下仅本次会话生效 */
       }
       syncSoundIcons();
+    },
+    setVolume(v) {
+      var next = Number(v);
+      if (!isFinite(next)) return;
+      /* 只改响度，不动静音开关：家长按下的静音不能被滑杆的一次误触撤销 */
+      this.volume = Math.min(1, Math.max(0, next));
+      try {
+        localStorage.setItem(LS_VOLUME, String(this.volume));
+      } catch (e) {
+        /* 隐私模式下仅本次会话生效 */
+      }
+      syncVolumeIcons();
     }
   };
   try {
     SFX.enabled = localStorage.getItem(LS_SOUND) !== "off";
+    var savedVolume = localStorage.getItem(LS_VOLUME);
+    if (savedVolume) {
+      var parsedVolume = Number(savedVolume);
+      if (isFinite(parsedVolume)) SFX.volume = Math.min(1, Math.max(0, parsedVolume));
+    }
   } catch (e) {
-    /* 默认开 */
+    /* 默认开、默认满音量 */
   }
 
   function haptic(kind) {
@@ -150,11 +183,15 @@
   var TTS = {
     speak(text) {
       if (!("speechSynthesis" in window)) return;
+      /* 约定：静音开关只静音效；TTS/动物叫声等内容音频只随主音量。
+         音量 0 直接不发声（部分 iOS 忽略 utterance.volume） */
+      if (SFX.volume <= 0) return;
       try {
         window.speechSynthesis.cancel();
         var u = new SpeechSynthesisUtterance(text);
         u.lang = "zh-CN";
         u.rate = 0.95;
+        u.volume = SFX.volume;
         var zh = window.speechSynthesis
           .getVoices()
           .filter(function (v) {
@@ -196,10 +233,33 @@
       sound.setAttribute("aria-label", "音效开关");
       sound.textContent = SFX.enabled ? "🔊" : "🔇";
       sound.addEventListener("click", function () {
-        SFX.setEnabled(!SFX.enabled);
-        if (SFX.enabled) SFX.tap();
+        if (SFX.enabled) {
+          SFX.setEnabled(false);
+          return;
+        }
+        /* 音量被拖到 0 时，重新开声要先回到听得见的响度，否则「开了也没声」 */
+        if (SFX.volume === 0) SFX.setVolume(1);
+        SFX.setEnabled(true);
+        SFX.tap();
       });
       actions.appendChild(sound);
+      var volume = document.createElement("input");
+      volume.type = "range";
+      volume.className = "kui-vol";
+      volume.min = "0";
+      volume.max = "100";
+      volume.step = "5";
+      volume.value = String(Math.round(SFX.volume * 100));
+      volume.setAttribute("data-kui-volume", "");
+      volume.setAttribute("aria-label", "音量");
+      volume.addEventListener("input", function () {
+        SFX.setVolume(Number(volume.value) / 100);
+      });
+      /* 松手试听一声，家长立刻知道调到什么响度 */
+      volume.addEventListener("change", function () {
+        SFX.tap();
+      });
+      actions.appendChild(volume);
       if (opts.showReplay !== false) {
         var replay = document.createElement("button");
         replay.type = "button";
@@ -218,6 +278,7 @@
       document.body.insertBefore(el, document.body.firstChild);
       document.body.classList.add("kui-has-header");
       syncSoundIcons();
+      syncVolumeIcons();
       return el;
     }
   };

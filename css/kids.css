@@ -56,7 +56,44 @@ body.kui-has-header {
 }
 .kui-actions {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+
+/* 主音量滑杆：随顶栏常驻，家长可直接拖。窄屏收到一个点击靶的宽度，优先保住标题 */
+.kui-vol {
+  width: 76px;
+  height: 40px;
+  margin: 0;
+  accent-color: var(--game-accent, #2f2a25);
+  cursor: pointer;
+  /* iOS Safari 把横向拖动判成页面平移会中断拖杆 */
+  touch-action: none;
+}
+@media (max-width: 400px) {
+  .kui-vol {
+    width: 48px;
+  }
+  .kui-title {
+    font-size: 1.05rem;
+  }
+}
+/* 320-360px（iPhone SE 1 代等）再收紧间距与标题字号 */
+@media (max-width: 360px) {
+  .kui-header {
+    gap: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .kui-actions {
+    gap: 6px;
+  }
+  .kui-vol {
+    width: 44px;
+  }
+  .kui-title {
+    font-size: 0.98rem;
+  }
 }
 
 /* ── 按钮（纸卡厚影，按压下沉） ── */
