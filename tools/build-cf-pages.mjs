@@ -84,6 +84,7 @@ copy("pwa.js"); // SW 注册 + 更新横幅（每页 <script src="/pwa.js"> 引�
 copy("manifest.webmanifest");
 copy("favicon.ico");
 copy("icons");
+copy("assets"); // 动物叫声 mp3（animal-sounds 预缓存依赖，缺失会被 SW install 失败连坐）
 
 // Cloudflare Pages 响应头与重写规则（_headers/_redirects 不会被当作内容下发）
 copy("_headers");
