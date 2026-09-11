@@ -234,135 +234,55 @@
     <script src="/pwa.js" defer></script>
     <script>
         const ANIMALS = {
-            '🐶': { name: '小狗', freq: 400, duration: 0.3, pattern: 'bark' },
-            '🐱': { name: '小猫', freq: 600, duration: 0.4, pattern: 'meow' },
-            '🐮': { name: '奶牛', freq: 150, duration: 0.8, pattern: 'moo' },
-            '🐷': { name: '小猪', freq: 300, duration: 0.5, pattern: 'oink' },
-            '🐸': { name: '青蛙', freq: 200, duration: 0.2, pattern: 'croak' },
-            '🦁': { name: '狮子', freq: 120, duration: 1.0, pattern: 'roar' },
-            '🐔': { name: '公鸡', freq: 500, duration: 0.6, pattern: 'crow' },
-            '🦆': { name: '鸭子', freq: 350, duration: 0.35, pattern: 'quack' }
+            '🐶': { name: '小狗', sound: 'dog' },
+            '🐱': { name: '小猫', sound: 'cat' },
+            '🐮': { name: '奶牛', sound: 'cow' },
+            '🐷': { name: '小猪', sound: 'pig' },
+            '🐸': { name: '青蛙', sound: 'frog' },
+            '🦁': { name: '狮子', sound: 'lion' },
+            '🐔': { name: '公鸡', sound: 'rooster' },
+            '🦆': { name: '鸭子', sound: 'duck' }
         };
 
-        let audioContext = null;
-
-        function getAudioContext() {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            return audioContext;
-        }
-
-        function playBark(audio, osc, gain, animal) {
-            osc.type = 'square';
-            gain.gain.setValueAtTime(0.3, audio.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
-            osc.frequency.setValueAtTime(animal.freq, audio.currentTime);
-            osc.frequency.setValueAtTime(animal.freq * 0.8, audio.currentTime + 0.1);
-            osc.start(audio.currentTime);
-            osc.stop(audio.currentTime + animal.duration);
-        }
-
-        function playMeow(audio, osc, gain, animal) {
-            osc.type = 'sine';
-            gain.gain.setValueAtTime(0.3, audio.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
-            osc.frequency.setValueAtTime(animal.freq * 0.7, audio.currentTime);
-            osc.frequency.linearRampToValueAtTime(animal.freq * 1.2, audio.currentTime + animal.duration * 0.5);
-            osc.frequency.linearRampToValueAtTime(animal.freq * 0.8, audio.currentTime + animal.duration);
-            osc.start(audio.currentTime);
-            osc.stop(audio.currentTime + animal.duration);
-        }
-
-        function playMoo(audio, osc, gain, animal) {
-            osc.type = 'sawtooth';
-            gain.gain.setValueAtTime(0.2, audio.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
-            osc.frequency.setValueAtTime(animal.freq, audio.currentTime);
-            osc.start(audio.currentTime);
-            osc.stop(audio.currentTime + animal.duration);
-        }
-
-        function playOink(audio, osc, gain, animal) {
-            osc.type = 'square';
-            for (let i = 0; i < 2; i++) {
-                gain.gain.setValueAtTime(0.3, audio.currentTime + i * 0.25);
-                gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + i * 0.25 + 0.2);
-                osc.frequency.setValueAtTime(animal.freq, audio.currentTime + i * 0.25);
-                osc.frequency.setValueAtTime(animal.freq * 1.2, audio.currentTime + i * 0.25 + 0.1);
-            }
-            osc.start(audio.currentTime);
-            osc.stop(audio.currentTime + 0.5);
-        }
-
-        function playCroak(audio, osc, gain, animal) {
-            osc.type = 'sine';
-            for (let i = 0; i < 3; i++) {
-                gain.gain.setValueAtTime(0.3, audio.currentTime + i * 0.15);
-                gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + i * 0.15 + 0.1);
-            }
-            osc.frequency.setValueAtTime(animal.freq, audio.currentTime);
-            osc.frequency.setValueAtTime(animal.freq * 1.5, audio.currentTime + 0.15);
-            osc.frequency.setValueAtTime(animal.freq * 2, audio.currentTime + 0.3);
-            osc.start(audio.currentTime);
-            osc.stop(audio.currentTime + 0.45);
-        }
-
-        function playRoar(audio, osc, gain, animal) {
-            osc.type = 'sawtooth';
-            gain.gain.setValueAtTime(0, audio.currentTime);
-            gain.gain.linearRampToValueAtTime(0.4, audio.currentTime + 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
-            osc.frequency.setValueAtTime(animal.freq * 0.5, audio.currentTime);
-            osc.frequency.linearRampToValueAtTime(animal.freq, audio.currentTime + animal.duration);
-            osc.start(audio.currentTime);
-            osc.stop(audio.currentTime + animal.duration);
-        }
-
-        function playCrow(audio, osc, gain, animal) {
-            osc.type = 'sine';
-            gain.gain.setValueAtTime(0.3, audio.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + animal.duration);
-            osc.frequency.setValueAtTime(animal.freq * 0.5, audio.currentTime);
-            osc.frequency.linearRampToValueAtTime(animal.freq * 1.5, audio.currentTime + animal.duration * 0.3);
-            osc.frequency.setValueAtTime(animal.freq * 1.2, audio.currentTime + animal.duration * 0.5);
-            osc.start(audio.currentTime);
-            osc.stop(audio.currentTime + animal.duration);
-        }
-
-        function playQuack(audio, osc, gain, animal) {
-            osc.type = 'square';
-            for (let i = 0; i < 2; i++) {
-                gain.gain.setValueAtTime(0.3, audio.currentTime + i * 0.2);
-                gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + i * 0.2 + 0.15);
-            }
-            osc.frequency.setValueAtTime(animal.freq, audio.currentTime);
-            osc.frequency.setValueAtTime(animal.freq * 0.9, audio.currentTime + 0.2);
-            osc.start(audio.currentTime);
-            osc.stop(audio.currentTime + 0.35);
-        }
-
-        const PLAYERS = {
-            bark: playBark,
-            meow: playMeow,
-            moo: playMoo,
-            oink: playOink,
-            croak: playCroak,
-            roar: playRoar,
-            crow: playCrow,
-            quack: playQuack
-        };
+        /* 真实叫声录音，见 assets/sounds/ATTRIBUTION.md */
+        const soundEls = {};
+        Object.entries(ANIMALS).forEach(([emoji, animal]) => {
+            const el = new Audio(`/assets/sounds/${animal.sound}.mp3`);
+            el.preload = 'auto';
+            soundEls[emoji] = el;
+        });
 
         function playAnimalSound(emoji) {
-            const animal = ANIMALS[emoji];
-            if (!animal) return;
-            const audio = getAudioContext();
-            if (audio.state === 'suspended') audio.resume();
-            const osc = audio.createOscillator();
-            const gain = audio.createGain();
-            osc.connect(gain);
-            gain.connect(audio.destination);
-            PLAYERS[animal.pattern](audio, osc, gain, animal);
+            const el = soundEls[emoji];
+            if (!el) return;
+            el.muted = false;
+            // SFX.volume 随音量滑杆一起提交；缺失时退回满音量（否则 volume=undefined 会抛 TypeError）
+            el.volume = typeof KidsUI.SFX.volume === "number" ? KidsUI.SFX.volume : 1;
+            el.currentTime = 0;
+            el.play();
+        }
+
+        /* iOS 要求每个 audio 元素都在用户手势里播过一次，之后的程序化播放才放行；
+           首次手势时把全部元素静音跑一遍解锁。except 之外正在播的那个不能碰（会撞上异步 pause）。 */
+        let isAudioUnlocked = false;
+
+        function unlockAnimalAudio(exceptEmoji) {
+            if (isAudioUnlocked) return;
+            isAudioUnlocked = true;
+            Object.entries(soundEls).forEach(([emoji, el]) => {
+                if (emoji === exceptEmoji) return;
+                el.muted = true;
+                el.play().then(() => {
+                    // 用户已在解锁完成前手动播放了该元素（muted 被 playAnimalSound 复位）时不打断
+                    if (el.muted) {
+                        el.pause();
+                        el.currentTime = 0;
+                    }
+                    el.muted = false;
+                }).catch(() => {
+                    el.muted = false;
+                });
+            });
         }
 
         /**
@@ -419,6 +339,7 @@
                     btn.className = 'animal-btn';
                     btn.innerHTML = `<span class="emoji">${emoji}</span><span class="name">${animal.name}</span>`;
                     btn.addEventListener('click', () => {
+                        unlockAnimalAudio(emoji);
                         playAnimalSound(emoji);
                         KidsUI.TTS.speak(animal.name);
                     });
@@ -449,6 +370,7 @@
                     area.appendChild(btn);
                 });
 
+                unlockAnimalAudio(this.currentGuess);
                 playAnimalSound(this.currentGuess);
                 KidsUI.TTS.speak('猜猜是哪个动物');
             }
