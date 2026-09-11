@@ -391,7 +391,7 @@ export default function GameCanvas() {
           </div>
         </div>
         <div className="header-actions">
-          <button className="home-trigger" onClick={() => { window.location.href = "/"; }} aria-label="返回游戏中心"><Home size={20} strokeWidth={2.6} /><span>返回</span></button>
+          <button id="home-btn" className="home-trigger" onClick={() => { window.location.href = "/"; }} aria-label="返回游戏中心"><Home size={20} strokeWidth={2.6} /><span>返回</span></button>
           <button className="parent-trigger" onClick={() => { setIsParentOpen(true); setResetArmed(false); playSound("click"); }} aria-label="打开家长小面板"><Settings2 size={20} strokeWidth={2.6} /><span>家长</span></button>
           <button className="sticker-trigger" onClick={() => { setIsStickerBookOpen(true); playSound("click"); }} aria-label="打开奖励贴纸册"><BookOpen size={20} strokeWidth={2.6} /><span>贴纸册</span></button>
           <button className="sound-trigger" onClick={toggleSound} aria-label={soundEnabled ? "关闭音效" : "打开音效"} aria-pressed={soundEnabled}>{soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}</button>
