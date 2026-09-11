@@ -551,7 +551,7 @@
 
             handleDragEnd(e) {
                 if (!this.drag) return;
-                const { piece, index, btn } = this.drag;
+                const { piece, index } = this.drag;
                 this.drag.ghost.remove();
                 this.drag = null;
 
@@ -570,13 +570,7 @@
                         KidsUI.SFX.wrong();
                         KidsUI.haptic('bad');
                         this.renderAll();
-                        // 弹回动画（renderAll 之后触发，避免 DOM 重建中断动画）
-                        if (btn) {
-                            requestAnimationFrame(() => {
-                                btn.classList.add('bounce-back');
-                                setTimeout(() => btn.classList.remove('bounce-back'), 350);
-                            });
-                        }
+                        this.bouncePiece(index);
                     }
                 } else {
                     if (pt.inside) {
@@ -589,14 +583,19 @@
                         KidsUI.SFX.wrong();
                         KidsUI.haptic('bad');
                         this.renderAll();
-                        if (btn) {
-                            requestAnimationFrame(() => {
-                                btn.classList.add('bounce-back');
-                                setTimeout(() => btn.classList.remove('bounce-back'), 350);
-                            });
-                        }
+                        this.bouncePiece(index);
                     }
                 }
+            }
+
+            // renderAll 会整体重建碎片托盘，拖拽时的旧按钮引用已断连，须按索引取活节点
+            bouncePiece(index) {
+                requestAnimationFrame(() => {
+                    const live = document.getElementById('pieces-grid').children[index];
+                    if (!live) return;
+                    live.classList.add('bounce-back');
+                    setTimeout(() => live.classList.remove('bounce-back'), 350);
+                });
             }
 
             completePuzzle() {

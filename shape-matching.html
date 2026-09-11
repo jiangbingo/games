@@ -284,6 +284,8 @@
                     roundMistakes = 0;
                     KidsUI.Progress.record(gameId, { stars, best: score });
                     setTimeout(() => {
+                        // 450ms 内点 ↻ 重开会重建选项区，旧定时器不弹到新局
+                        if (!button.isConnected) return;
                         KidsUI.Celebrate.show({
                             title: '太棒了！',
                             sub: `连对 ${streak} 题 · 得分 ${score}`,
