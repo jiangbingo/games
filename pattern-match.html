@@ -56,6 +56,7 @@
             align-items: center;
             margin-bottom: 14px;
             gap: 10px;
+            flex-wrap: wrap;
         }
         .theme-name {
             font-size: 1rem;
@@ -70,6 +71,31 @@
             font-size: 0.95rem;
             font-weight: 800;
             box-shadow: var(--kui-shadow);
+        }
+
+        .theme-bar {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .theme-btn {
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border: 2px solid var(--kui-line);
+            border-radius: 999px;
+            background: var(--kui-paper);
+            color: var(--kui-ink-soft);
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .theme-btn:active { transform: translateY(2px); }
+        .theme-btn.active {
+            background: var(--game-accent);
+            color: #fff;
+            border-color: rgba(47, 42, 37, 0.2);
         }
 
         .instruction {
@@ -145,7 +171,19 @@
             align-items: center;
             justify-content: center;
             transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s, border-color 0.12s;
+            position: relative;
+            overflow: hidden;
         }
+
+        .option-btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0.3) 100%);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .option-btn:hover::before { opacity: 1; }
 
         .option-btn:hover {
             transform: translateY(-3px);
@@ -183,6 +221,17 @@
             flex-wrap: wrap;
         }
 
+        .help-hint {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--game-accent);
+            font-weight: 700;
+            margin-top: 8px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .help-hint.show { opacity: 1; }
+
         @media (prefers-reduced-motion: reduce) {
             .option-btn, .pattern-item { transition: none; }
             .pattern-item.filled { animation-duration: 0.01s; }
@@ -198,6 +247,14 @@
                 <div class="level-badge" id="level-badge">第 1/10 关</div>
             </div>
 
+            <div class="theme-bar" id="theme-bar">
+                <button class="theme-btn active" data-theme="random" type="button">🎲 随机</button>
+                <button class="theme-btn" data-theme="colors" type="button">🎨 颜色</button>
+                <button class="theme-btn" data-theme="fruits" type="button">🍎 水果</button>
+                <button class="theme-btn" data-theme="animals" type="button">🐶 动物</button>
+                <button class="theme-btn" data-theme="vehicles" type="button">🚗 车车</button>
+            </div>
+
             <p class="instruction">🔍 看看规律，点一下把 ❓ 补上！</p>
 
             <div class="pattern-sequence" id="pattern-sequence" aria-label="图案序列"></div>
@@ -206,6 +263,8 @@
                 <div class="options-title">点一点，选出正确答案</div>
                 <div class="options-grid" id="options-grid"></div>
             </div>
+
+            <div class="help-hint" id="help-hint">💡 提示：看看前面的图案是什么</div>
 
             <div class="stats-area">
                 <span class="kui-chip">✅ 补上 <b id="correct-count">0/1</b></span>
@@ -228,12 +287,14 @@
                 this.maxLevels = 10;
                 this.score = 0;
                 this.misses = 0;
+                this.consecutiveErrors = 0;
                 this.sequence = [];
                 this.blanks = [];
                 this.filled = new Set();
                 this.options = [];
                 this.themeName = '';
                 this.canClick = true;
+                this.selectedTheme = 'random';
 
                 this.themes = {
                     colors: { name: '🎨 颜色', pool: ['🔴', '🔵', '🟢', '🟡', '🟣', '🟠'] },
@@ -268,16 +329,30 @@
                     accent: '#ff9f1c',
                     onReplay: () => this.startLevel(1)
                 });
+
+                // 主题选择
+                document.querySelectorAll('.theme-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        KidsUI.SFX.tap();
+                        this.selectedTheme = btn.dataset.theme;
+                        document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.startLevel(1);
+                    });
+                });
+
                 this.startLevel(1);
             }
 
             startLevel(level) {
                 this.currentLevel = level;
                 this.misses = 0;
+                this.consecutiveErrors = 0;
                 this.filled = new Set();
                 this.canClick = true;
 
                 document.getElementById('level-badge').textContent = `第 ${level}/${this.maxLevels} 关`;
+                document.getElementById('help-hint').classList.remove('show');
 
                 this.generateLevel(level);
                 document.getElementById('theme-name').textContent = this.themeName;
@@ -289,8 +364,13 @@
 
             generateLevel(level) {
                 const config = this.levelConfig[level - 1];
-                const themeKeys = Object.keys(this.themes);
-                const theme = this.themes[themeKeys[Math.floor(Math.random() * themeKeys.length)]];
+                let theme;
+                if (this.selectedTheme === 'random') {
+                    const themeKeys = Object.keys(this.themes);
+                    theme = this.themes[themeKeys[Math.floor(Math.random() * themeKeys.length)]];
+                } else {
+                    theme = this.themes[this.selectedTheme];
+                }
                 this.themeName = theme.name;
 
                 // 模式串重复截取到目标长度，再映射为主题元素
@@ -360,13 +440,21 @@
 
                 if (position === undefined) {
                     this.misses += 1;
+                    this.consecutiveErrors++;
                     KidsUI.SFX.wrong();
                     KidsUI.haptic('bad');
                     btn.classList.add('wrong');
                     setTimeout(() => btn.classList.remove('wrong'), 450);
+
+                    // 连续错误3次显示提示
+                    if (this.consecutiveErrors >= 3) {
+                        this.showHelp();
+                    }
                     return;
                 }
 
+                this.consecutiveErrors = 0;
+                document.getElementById('help-hint').classList.remove('show');
                 this.filled.add(position);
                 KidsUI.SFX.correct();
                 KidsUI.haptic('good');
@@ -378,6 +466,19 @@
                     this.canClick = false;
                     this.completeLevel();
                 }
+            }
+
+            showHelp() {
+                const helpEl = document.getElementById('help-hint');
+                // 找一个未填的空位，显示它前面的元素
+                const unfilledPos = this.blanks.find(pos => !this.filled.has(pos));
+                if (unfilledPos > 0) {
+                    const prev = this.sequence[unfilledPos - 1];
+                    helpEl.textContent = `💡 提示：第 ${unfilledPos + 1} 格前面是 ${prev}`;
+                } else {
+                    helpEl.textContent = '💡 提示：看看前面的图案是什么';
+                }
+                helpEl.classList.add('show');
             }
 
             paintBlank(position, element) {

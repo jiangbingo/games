@@ -55,16 +55,17 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
-            gap: 10px;
+            gap: 8px;
+            flex-wrap: wrap;
         }
         .preset-name {
             font-size: 1.05rem;
             font-weight: 900;
         }
-        .mode-buttons { display: flex; gap: 8px; }
+        .mode-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
         .mode-btn {
-            padding: 10px 16px;
-            font-size: 0.9rem;
+            padding: 8px 14px;
+            font-size: 0.85rem;
             font-weight: 800;
             border: 2px solid var(--kui-line);
             border-radius: 999px;
@@ -76,6 +77,30 @@
         }
         .mode-btn:active { transform: translateY(2px); box-shadow: none; }
         .mode-btn.active {
+            background: var(--game-accent);
+            color: #fff;
+            border-color: rgba(47, 42, 37, 0.2);
+        }
+
+        .diff-row {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .diff-btn {
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border: 2px solid var(--kui-line);
+            border-radius: 999px;
+            background: var(--kui-paper);
+            color: var(--kui-ink-soft);
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .diff-btn:active { transform: translateY(2px); }
+        .diff-btn.active {
             background: var(--game-accent);
             color: #fff;
             border-color: rgba(47, 42, 37, 0.2);
@@ -108,16 +133,21 @@
             margin-bottom: 10px;
         }
         .pieces-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+            display: flex;
             gap: 10px;
-            max-width: 500px;
-            margin: 0 auto;
+            overflow-x: auto;
+            padding: 4px 8px 10px;
+            scroll-snap-type: x mandatory;
         }
+        .pieces-grid::-webkit-scrollbar { height: 4px; }
+        .pieces-grid::-webkit-scrollbar-track { background: var(--kui-line); border-radius: 2px; }
+        .pieces-grid::-webkit-scrollbar-thumb { background: var(--game-accent); border-radius: 2px; }
 
         .piece-btn {
-            aspect-ratio: 1;
-            min-height: 68px;
+            width: 72px;
+            height: 72px;
+            min-width: 72px;
+            scroll-snap-align: center;
             background: var(--kui-paper);
             border: 2px solid var(--kui-line);
             border-radius: var(--kui-radius-md);
@@ -132,6 +162,14 @@
         }
         .piece-btn:hover { transform: translateY(-3px); }
         .piece-btn:active { cursor: grabbing; }
+        .piece-btn.bounce-back {
+            animation: bounceBack 0.35s var(--kui-bounce);
+        }
+        @keyframes bounceBack {
+            0% { transform: scale(1.1); }
+            40% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
         .piece-btn svg { width: 100%; height: 100%; }
         .piece-btn.placed {
             opacity: 0.35;
@@ -193,6 +231,12 @@
                 </div>
             </div>
 
+            <div class="diff-row" id="diff-row">
+                <button class="diff-btn active" data-diff="easy" type="button">⭐ 简单</button>
+                <button class="diff-btn" data-diff="normal" type="button">⭐⭐ 普通</button>
+                <button class="diff-btn" data-diff="hard" type="button">⭐⭐⭐ 困难</button>
+            </div>
+
             <div class="target-area">
                 <div class="target-label" id="target-label">按住碎片，拖到虚线的位置上</div>
                 <canvas id="target-canvas" class="target-canvas" width="300" height="300"></canvas>
@@ -242,16 +286,23 @@
                 this.canvas = document.getElementById('target-canvas');
                 this.ctx = this.canvas.getContext('2d');
                 this.currentMode = 'preset';
+                this.currentDifficulty = 'easy';
                 this.currentPreset = null;
                 this.pieces = [];
-                this.placedPieces = [];   // preset: 索引数组; free: [{piece,x,y}]
+                this.placedPieces = [];
                 this.score = 0;
                 this.misses = 0;
                 this.snapDistance = 32;
                 this.gameId = 'shape-puzzle';
                 this.drag = null;
 
-                // 预设图案（x/y 为碎片中心点）
+                // 难度配置
+                this.difficulty = {
+                    easy: { snapDistance: 40, showHint: true, label: '简单' },
+                    normal: { snapDistance: 28, showHint: false, label: '普通' },
+                    hard: { snapDistance: 18, showHint: false, label: '困难' }
+                };
+
                 this.presetShapes = [
                     { name: '🏠 小房子', pieces: [
                         { type: 'square', color: '#e74c3c', x: 150, y: 65, width: 70, height: 70 },
@@ -337,6 +388,17 @@
                     this.clearBoard();
                 });
 
+                // 难度选择
+                document.querySelectorAll('.diff-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        KidsUI.SFX.tap();
+                        this.currentDifficulty = btn.dataset.diff;
+                        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        this.restart();
+                    });
+                });
+
                 window.addEventListener('pointermove', (e) => this.handleDragMove(e));
                 window.addEventListener('pointerup', (e) => this.handleDragEnd(e));
                 window.addEventListener('pointercancel', (e) => this.handleDragEnd(e));
@@ -365,6 +427,7 @@
                 this.pieces = [...next.pieces];
                 this.placedPieces = [];
                 this.misses = 0;
+                this.snapDistance = this.difficulty[this.currentDifficulty].snapDistance;
                 document.getElementById('preset-name').textContent = next.name;
                 document.getElementById('target-label').textContent = '按住碎片，拖到虚线的位置上';
                 document.getElementById('pieces-label').textContent = '形状碎片（按住拖动）';
@@ -444,12 +507,11 @@
             // ── 按住即拖：pointer 事件三件套 ──
 
             handleDragStart(e, index, btn) {
-                // 双指并发：拖拽进行中忽略新按下，否则第一个 ghost 碎片永久残留
                 if (this.drag) return;
                 if (e.button !== undefined && e.button !== 0) return;
                 e.preventDefault();
                 const piece = this.pieces[index];
-                this.drag = { piece, index, active: true };
+                this.drag = { piece, index, active: true, btn };
 
                 const ghost = document.createElement('div');
                 ghost.className = 'drag-ghost';
@@ -458,6 +520,11 @@
                 this.drag.ghost = ghost;
                 btn.classList.add('placed');
                 this.moveGhost(e);
+
+                // 简单模式：高亮目标位置
+                if (this.currentMode === 'preset' && this.difficulty[this.currentDifficulty].showHint) {
+                    this.drawHint(piece);
+                }
             }
 
             moveGhost(e) {
@@ -484,7 +551,7 @@
 
             handleDragEnd(e) {
                 if (!this.drag) return;
-                const { piece, index } = this.drag;
+                const { piece, index, btn } = this.drag;
                 this.drag.ghost.remove();
                 this.drag = null;
 
@@ -501,17 +568,33 @@
                     } else {
                         this.misses++;
                         KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
                         this.renderAll();
+                        // 弹回动画（renderAll 之后触发，避免 DOM 重建中断动画）
+                        if (btn) {
+                            requestAnimationFrame(() => {
+                                btn.classList.add('bounce-back');
+                                setTimeout(() => btn.classList.remove('bounce-back'), 350);
+                            });
+                        }
                     }
                 } else {
                     if (pt.inside) {
                         this.placedPieces.push({ piece, x: pt.x, y: pt.y });
                         this.score += 5;
                         KidsUI.SFX.correct();
+                        KidsUI.haptic('good');
                         this.renderAll();
                     } else {
                         KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
                         this.renderAll();
+                        if (btn) {
+                            requestAnimationFrame(() => {
+                                btn.classList.add('bounce-back');
+                                setTimeout(() => btn.classList.remove('bounce-back'), 350);
+                            });
+                        }
                     }
                 }
             }
@@ -583,6 +666,21 @@
                         ctx.fill();
                         ctx.stroke();
                 }
+                ctx.restore();
+            }
+
+            drawHint(piece) {
+                const ctx = this.ctx;
+                ctx.save();
+                ctx.globalAlpha = 0.6;
+                ctx.setLineDash([8, 4]);
+                ctx.strokeStyle = '#f2994a';
+                ctx.lineWidth = 3;
+                const w = piece.width + 8, h = piece.height + 8;
+                const cx = piece.x, cy = piece.y;
+                ctx.beginPath();
+                ctx.arc(cx, cy, Math.max(w, h) / 2 + 6, 0, Math.PI * 2);
+                ctx.stroke();
                 ctx.restore();
             }
         }

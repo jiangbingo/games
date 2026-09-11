@@ -64,6 +64,14 @@
             width: clamp(120px, 34vw, 170px);
             animation: bounce 1.2s ease infinite;
         }
+        .target-shape.pulse {
+            animation: pulse 0.6s ease;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15) rotate(5deg); }
+            100% { transform: scale(1); }
+        }
 
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
@@ -76,6 +84,8 @@
             gap: 14px;
             margin: 18px 0;
         }
+        .options.cols-4 { grid-template-columns: repeat(4, 1fr); }
+        .options.cols-5 { grid-template-columns: repeat(5, 1fr); gap: 10px; }
 
         .shape-btn {
             padding: 14px;
@@ -90,6 +100,11 @@
             box-shadow: var(--kui-shadow);
             transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s;
             touch-action: manipulation;
+            animation: fadeIn 0.3s ease backwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.85); }
+            to { opacity: 1; transform: scale(1); }
         }
         .shape-btn:active { transform: translateY(2px); box-shadow: none; }
         .shape-btn svg { width: 100%; height: auto; max-height: 76px; }
@@ -118,6 +133,30 @@
         .feedback.success { color: var(--kui-good); animation: pop 0.4s var(--kui-bounce); }
         .feedback.retry { color: #d98a00; }
 
+        .diff-bar {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .diff-btn {
+            padding: 5px 12px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            border: 2px solid var(--kui-line);
+            border-radius: 999px;
+            background: var(--kui-paper);
+            color: var(--kui-ink-soft);
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .diff-btn:active { transform: translateY(2px); }
+        .diff-btn.active {
+            background: var(--game-accent);
+            color: #fff;
+            border-color: rgba(47, 42, 37, 0.2);
+        }
+
         @keyframes pop {
             0% { transform: scale(0.8); }
             100% { transform: scale(1); }
@@ -138,6 +177,12 @@
 <body>
     <div class="game-container">
         <p class="instruction">👇 找到和上面<b>一模一样</b>的形状！</p>
+
+        <div class="diff-bar" id="diff-bar">
+            <button class="diff-btn active" data-opts="3" type="button">⭐ 3选1</button>
+            <button class="diff-btn" data-opts="4" type="button">⭐⭐ 4选1</button>
+            <button class="diff-btn" data-opts="5" type="button">⭐⭐⭐ 5选1</button>
+        </div>
 
         <div class="target-shape" id="targetShape" aria-label="目标形状"></div>
 
@@ -173,6 +218,7 @@
         let roundCorrect = 0;
         let roundMistakes = 0;
         let isAnimating = false;
+        let optionCount = 3;
 
         function svgFor(key) {
             const s = SHAPES[key];
@@ -182,11 +228,14 @@
         function generateNewRound() {
             isAnimating = false;
             currentTarget = SHAPE_KEYS[Math.floor(Math.random() * SHAPE_KEYS.length)];
-            document.getElementById('targetShape').innerHTML = svgFor(currentTarget);
+            const targetEl = document.getElementById('targetShape');
+            targetEl.innerHTML = svgFor(currentTarget);
+            targetEl.classList.add('pulse');
+            setTimeout(() => targetEl.classList.remove('pulse'), 600);
 
             const options = [currentTarget];
             const others = SHAPE_KEYS.filter((k) => k !== currentTarget);
-            while (options.length < 3) {
+            while (options.length < optionCount) {
                 const pick = others[Math.floor(Math.random() * others.length)];
                 if (!options.includes(pick)) options.push(pick);
             }
@@ -194,7 +243,7 @@
 
             const container = document.getElementById('optionsContainer');
             container.innerHTML = options
-                .map((k) => `<button class="shape-btn" type="button" data-shape="${k}" aria-label="形状选项">${svgFor(k)}</button>`)
+                .map((k, i) => `<button class="shape-btn" type="button" data-shape="${k}" aria-label="形状选项" style="animation-delay:${i * 0.08}s">${svgFor(k)}</button>`)
                 .join('');
             container.querySelectorAll('.shape-btn').forEach((btn) => {
                 btn.addEventListener('click', () => checkShape(btn));
@@ -221,18 +270,28 @@
                 KidsUI.haptic('good');
                 updateStats();
 
+                // 飞入动画
+                const targetEl = document.getElementById('targetShape');
+                const btnRect = button.getBoundingClientRect();
+                const targetRect = targetEl.getBoundingClientRect();
+                button.style.transition = 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                button.style.transform = `translate(${targetRect.left - btnRect.left}px, ${targetRect.top - btnRect.top}px) scale(0.5)`;
+                button.style.opacity = '0.6';
+
                 if (streak % CELEBRATE_EVERY === 0) {
                     const stars = KidsUI.Progress.starsFor(roundCorrect / (roundCorrect + roundMistakes));
                     roundCorrect = 0;
                     roundMistakes = 0;
                     KidsUI.Progress.record(gameId, { stars, best: score });
-                    KidsUI.Celebrate.show({
-                        title: '太棒了！',
-                        sub: `连对 ${streak} 题 · 得分 ${score}`,
-                        stars,
-                        primaryLabel: '继续玩',
-                        onPrimary: () => generateNewRound()
-                    });
+                    setTimeout(() => {
+                        KidsUI.Celebrate.show({
+                            title: '太棒了！',
+                            sub: `连对 ${streak} 题 · 得分 ${score}`,
+                            stars,
+                            primaryLabel: '继续玩',
+                            onPrimary: () => generateNewRound()
+                        });
+                    }, 450);
                     return;
                 }
                 setTimeout(generateNewRound, 800);
@@ -270,6 +329,20 @@
                 accent: '#43aa8b',
                 onReplay: restartGame
             });
+
+            // 难度选择
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    KidsUI.SFX.tap();
+                    optionCount = parseInt(btn.dataset.opts);
+                    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const container = document.getElementById('optionsContainer');
+                    container.className = 'options' + (optionCount === 4 ? ' cols-4' : optionCount === 5 ? ' cols-5' : '');
+                    restartGame();
+                });
+            });
+
             restartGame();
         });
     </script>
