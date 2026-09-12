@@ -121,23 +121,12 @@
         }
 
         .color-btn.correct {
-            animation: correctPop 0.5s ease;
+            animation: kui-pop 0.5s ease;
             box-shadow: 0 0 0 5px var(--kui-good), 0 5px 0 rgba(47, 42, 37, 0.2);
         }
 
-        @keyframes correctPop {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.14); }
-        }
-
         .color-btn.wrong {
-            animation: shake 0.4s ease;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-10px); }
-            75% { transform: translateX(10px); }
+            animation: kui-shake 0.4s ease;
         }
 
         .stats-area {
@@ -185,6 +174,13 @@
                 this.target = null;
                 this.isBusy = false;
 
+                this.difficulty = new KidsUI.AdaptiveDifficulty({
+                    windowSize: 5,
+                    thresholds: { easy: 0.8, hard: 0.5 },
+                    initialLevel: 1,
+                    onChange: () => this.newRound()
+                });
+
                 this.COLORS = [
                     { name: '红色', hex: '#FF4757', light: '#FF6B7A' },
                     { name: '黄色', hex: '#FFA502', light: '#FFB732' },
@@ -218,7 +214,9 @@
 
             newRound() {
                 this.isBusy = false;
-                const selected = [...this.COLORS].sort(() => Math.random() - 0.5).slice(0, 4);
+                const optionCounts = [2, 3, 4];
+                const optionCount = optionCounts[this.difficulty.getLevel() - 1] || 4;
+                const selected = [...this.COLORS].sort(() => Math.random() - 0.5).slice(0, optionCount);
                 this.target = selected[Math.floor(Math.random() * selected.length)];
 
                 const swatch = document.getElementById('targetSwatch');
@@ -248,6 +246,7 @@
                     KidsUI.SFX.correct();
                     KidsUI.haptic('good');
                     btn.classList.add('correct');
+                    this.difficulty.record(true);
 
                     if (this.score % this.CELEBRATE_EVERY === 0) {
                         const stars = KidsUI.Progress.starsFor(this.score / (this.score + this.misses));
@@ -267,6 +266,7 @@
                     }
                 } else {
                     this.misses += 1;
+                    this.difficulty.record(false);
                     KidsUI.SFX.wrong();
                     KidsUI.haptic('bad');
                     btn.classList.add('wrong');

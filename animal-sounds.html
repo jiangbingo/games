@@ -262,6 +262,19 @@
             el.play();
         }
 
+        /* 播放动物叫声，结束后再播语音提示，避免声音重叠。
+           ended 事件优先触发；3 秒兜底超时保证语音一定播出。 */
+        function playSoundThenSpeak(emoji, text) {
+            playAnimalSound(emoji);
+            const el = soundEls[emoji];
+            if (!el) return KidsUI.TTS.speak(text);
+            const timer = setTimeout(() => KidsUI.TTS.speak(text), 3000);
+            el.addEventListener("ended", () => {
+                clearTimeout(timer);
+                KidsUI.TTS.speak(text);
+            }, { once: true });
+        }
+
         /* iOS 要求每个 audio 元素都在用户手势里播过一次，之后的程序化播放才放行；
            首次手势时把全部元素静音跑一遍解锁。except 之外正在播的那个不能碰（会撞上异步 pause）。 */
         let isAudioUnlocked = false;
@@ -340,8 +353,7 @@
                     btn.innerHTML = `<span class="emoji">${emoji}</span><span class="name">${animal.name}</span>`;
                     btn.addEventListener('click', () => {
                         unlockAnimalAudio(emoji);
-                        playAnimalSound(emoji);
-                        KidsUI.TTS.speak(animal.name);
+                        playSoundThenSpeak(emoji, animal.name);
                     });
                     grid.appendChild(btn);
                 });
@@ -350,14 +362,9 @@
             startNewGuess() {
                 this.isBusy = false;
                 const keys = Object.keys(ANIMALS);
-                this.currentGuess = keys[Math.floor(Math.random() * keys.length)];
-
-                const options = [this.currentGuess];
-                while (options.length < 4) {
-                    const key = keys[Math.floor(Math.random() * keys.length)];
-                    if (!options.includes(key)) options.push(key);
-                }
-                options.sort(() => Math.random() - 0.5);
+                const shuffled = [...keys].sort(() => Math.random() - 0.5);
+                this.currentGuess = shuffled[0];
+                const options = shuffled.slice(0, 4);
 
                 const area = document.getElementById('guessOptions');
                 area.innerHTML = '';
@@ -371,8 +378,7 @@
                 });
 
                 unlockAnimalAudio(this.currentGuess);
-                playAnimalSound(this.currentGuess);
-                KidsUI.TTS.speak('猜猜是哪个动物');
+                playSoundThenSpeak(this.currentGuess, '猜猜是哪个动物');
             }
 
             checkGuess(emoji, btn) {

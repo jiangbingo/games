@@ -243,6 +243,30 @@ body.kui-has-header {
   }
 }
 
+/* ── 动画库（kui- 前缀） ── */
+@keyframes kui-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+@keyframes kui-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@keyframes kui-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes kui-fadeIn {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+.kui-shake { animation: kui-shake 0.4s ease; }
+.kui-pop { animation: kui-pop 0.3s ease; }
+.kui-bounce { animation: kui-bounce 0.3s ease; }
+.kui-fadeIn { animation: kui-fadeIn 0.3s ease backwards; }
+
 @media (prefers-reduced-motion: reduce) {
   .kui-confetti {
     display: none;

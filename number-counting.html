@@ -122,108 +122,18 @@
             background: var(--kui-good);
             border-color: var(--kui-good);
             color: #fff;
-            animation: correctPop 0.5s ease;
-        }
-
-        @keyframes correctPop {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.14); }
+            animation: kui-pop 0.5s ease;
         }
 
         .option-btn.wrong {
-            animation: shake 0.4s ease;
+            animation: kui-shake 0.4s ease;
             border-color: var(--kui-bad);
             background: #fdeae7;
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-8px); }
-            75% { transform: translateX(8px); }
         }
 
         .stats-area {
             display: flex;
             justify-content: center;
-        }
-
-        .settings-fab {
-            position: fixed;
-            bottom: 16px;
-            right: 16px;
-            width: 48px;
-            height: 48px;
-            border: 2px solid var(--kui-line);
-            border-radius: 50%;
-            background: var(--kui-card);
-            box-shadow: var(--kui-shadow);
-            font-size: 22px;
-            cursor: pointer;
-            z-index: 20;
-        }
-
-        .settings-panel {
-            position: fixed;
-            inset: 0;
-            background: rgba(47, 42, 37, 0.55);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 50;
-            padding: 20px;
-        }
-
-        .settings-panel.show {
-            display: flex;
-        }
-
-        .settings-card {
-            background: var(--kui-card);
-            border: 2px solid var(--kui-line);
-            border-radius: var(--kui-radius-lg);
-            box-shadow: 0 8px 0 rgba(47, 42, 37, 0.18);
-            padding: 24px;
-            width: 100%;
-            max-width: 360px;
-            text-align: center;
-        }
-
-        .settings-title {
-            font-size: 1.3rem;
-            font-weight: 900;
-            margin-bottom: 4px;
-        }
-
-        .settings-sub {
-            color: var(--kui-ink-soft);
-            font-weight: 700;
-            font-size: 0.9rem;
-            margin-bottom: 16px;
-        }
-
-        .range-options {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 18px;
-        }
-
-        .range-btn {
-            padding: 13px 20px;
-            font-size: 1rem;
-            font-weight: 800;
-            color: var(--kui-ink);
-            background: var(--kui-paper);
-            border: 3px solid var(--kui-line);
-            border-radius: var(--kui-radius-md);
-            cursor: pointer;
-            touch-action: manipulation;
-        }
-
-        .range-btn.selected {
-            border-color: var(--game-accent);
-            background: #e8f5ee;
-            box-shadow: 0 3px 0 rgba(47, 42, 37, 0.12);
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -247,28 +157,9 @@
         </div>
     </div>
 
-    <button class="settings-fab" id="settingsBtn" type="button" aria-label="家长设置">⚙️</button>
-
-    <div class="settings-panel" id="settingsPanel">
-        <div class="settings-card">
-            <div class="settings-title">家长设置</div>
-            <p class="settings-sub">数字范围</p>
-            <div class="range-options">
-                <button type="button" class="range-btn" data-range="easy">1-3 · 简单</button>
-                <button type="button" class="range-btn" data-range="medium">1-5 · 中等</button>
-                <button type="button" class="range-btn" data-range="hard">1-10 · 困难</button>
-            </div>
-            <button type="button" class="kui-btn kui-big kui-primary" id="settingsClose">确定</button>
-        </div>
-    </div>
-
     <script src="/js/kids-ui.js"></script>
     <script src="/pwa.js" defer></script>
     <script>
-        /**
-         * 数字认知：数物品选数字。难度档位写入进度存档，答对会朗读数字。
-         */
-        const MAX_NUMBERS = { easy: 3, medium: 5, hard: 10 };
         const CELEBRATE_EVERY = 5;
 
         class NumberCountingGame {
@@ -278,16 +169,22 @@
                 this.misses = 0;
                 this.isBusy = false;
                 this.targetNumber = 0;
-                this.range = this.loadRange();
+
+                this.difficulty = new KidsUI.AdaptiveDifficulty({
+                    windowSize: 5,
+                    thresholds: { easy: 0.8, hard: 0.5 },
+                    initialLevel: 1,
+                    onChange: () => this.newRound()
+                });
 
                 this.ITEMS = ['🍎', '🍊', '🍋', '🍇', '🍓', '🐶', '🐱', '🐻', '🐰', '🦋', '⭐', '🌈', '🎈', '🧸', '🚗'];
 
                 this.init();
             }
 
-            loadRange() {
-                const saved = (KidsUI.Progress.get(this.gameId) || {}).settings;
-                return saved && MAX_NUMBERS[saved.range] ? saved.range : 'easy';
+            getMaxNum() {
+                const maxNums = [3, 5, 10];
+                return maxNums[this.difficulty.getLevel() - 1] || 5;
             }
 
             init() {
@@ -297,40 +194,7 @@
                     accent: '#3fa574',
                     onReplay: () => this.reset()
                 });
-                this.bindSettings();
-                this.markSelected();
                 this.newRound();
-            }
-
-            bindSettings() {
-                document.getElementById('settingsBtn').addEventListener('click', () => {
-                    KidsUI.SFX.tap();
-                    document.getElementById('settingsPanel').classList.add('show');
-                });
-                document.getElementById('settingsClose').addEventListener('click', () => {
-                    KidsUI.SFX.tap();
-                    this.hideSettings();
-                });
-                document.querySelectorAll('.range-btn').forEach((btn) => {
-                    btn.addEventListener('click', () => {
-                        KidsUI.SFX.tap();
-                        this.range = btn.dataset.range;
-                        KidsUI.Progress.record(this.gameId, { settings: { range: this.range } });
-                        this.markSelected();
-                        this.hideSettings();
-                        this.reset();
-                    });
-                });
-            }
-
-            hideSettings() {
-                document.getElementById('settingsPanel').classList.remove('show');
-            }
-
-            markSelected() {
-                document.querySelectorAll('.range-btn').forEach((btn) => {
-                    btn.classList.toggle('selected', btn.dataset.range === this.range);
-                });
             }
 
             reset() {
@@ -342,7 +206,7 @@
 
             newRound() {
                 this.isBusy = false;
-                const maxNum = MAX_NUMBERS[this.range];
+                const maxNum = this.getMaxNum();
                 this.targetNumber = Math.floor(Math.random() * maxNum) + 1;
                 const itemType = this.ITEMS[Math.floor(Math.random() * this.ITEMS.length)];
 
@@ -388,6 +252,7 @@
                     KidsUI.haptic('good');
                     KidsUI.TTS.speak(this.targetNumber + ' 个');
                     btn.classList.add('correct');
+                    this.difficulty.record(true);
 
                     if (this.score % CELEBRATE_EVERY === 0) {
                         const stars = KidsUI.Progress.starsFor(this.score / (this.score + this.misses));
@@ -407,6 +272,7 @@
                     }
                 } else {
                     this.misses += 1;
+                    this.difficulty.record(false);
                     KidsUI.SFX.wrong();
                     KidsUI.haptic('bad');
                     btn.classList.add('wrong');

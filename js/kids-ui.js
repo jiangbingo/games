@@ -384,6 +384,45 @@
     }
   };
 
+  // ── 自适应难度 ──
+  function AdaptiveDifficulty(options) {
+    options = options || {};
+    this.windowSize = options.windowSize || 5;
+    this.thresholds = options.thresholds || { easy: 0.8, hard: 0.5 };
+    this.currentLevel = options.initialLevel || 1;
+    this.history = [];
+    this.onChange = options.onChange || null;
+  }
+  AdaptiveDifficulty.prototype.record = function (correct) {
+    this.history.push(correct);
+    if (this.history.length > this.windowSize) this.history.shift();
+    var prev = this.currentLevel;
+    this.adjust();
+    if (this.currentLevel !== prev && this.onChange) {
+      this.onChange(this.currentLevel, prev);
+    }
+  };
+  AdaptiveDifficulty.prototype.adjust = function () {
+    if (this.history.length < this.windowSize) return;
+    var correct = 0;
+    for (var i = 0; i < this.history.length; i++) {
+      if (this.history[i]) correct++;
+    }
+    var rate = correct / this.history.length;
+    if (rate >= this.thresholds.easy && this.currentLevel < 3) {
+      this.currentLevel++;
+    } else if (rate <= this.thresholds.hard && this.currentLevel > 1) {
+      this.currentLevel--;
+    }
+  };
+  AdaptiveDifficulty.prototype.getLevel = function () {
+    return this.currentLevel;
+  };
+  AdaptiveDifficulty.prototype.reset = function () {
+    this.history = [];
+    this.currentLevel = 1;
+  };
+
   window.KidsUI = {
     SFX: SFX,
     Progress: Progress,
@@ -391,6 +430,7 @@
     Header: Header,
     Celebrate: Celebrate,
     Touch: Touch,
-    haptic: haptic
+    haptic: haptic,
+    AdaptiveDifficulty: AdaptiveDifficulty
   };
 })();
