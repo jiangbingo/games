@@ -22,7 +22,8 @@ pnpm --filter kids-maze-world test  # run maze vitest from anywhere
 make start          # Python http.server on port 8000
 make test           # Basic file existence + HTTP check
 make build          # Copy to dist/
-vercel --prod       # Deploy to Vercel
+make deploy-cf      # Deploy root site to Cloudflare Pages (primary: bingo-games-hub.pages.dev)
+make deploy-root    # Deploy root site to Vercel (rollback mirror: games-six-omega.vercel.app)
 ```
 
 ### kids-maze-world (separate project)
@@ -74,7 +75,8 @@ pnpm format         # Prettier
 
 ## Deployment
 
-- **Root**: Vercel (`vercel --prod`), static files only
+- **Root（主站）**: Cloudflare Pages（bingo-games-hub.pages.dev，`make deploy-cf`：注入 SW 版本 → 组装 dist → wrangler 上传）
+- **Root（回滚镜像）**: Vercel（games-six-omega.vercel.app，`make deploy-root`）
 - **kids-maze-world**: Cloudflare Pages (Root dir: `kids-maze-world`, Build: `pnpm build`, Output: `dist/public`)
 
 ## Parallel Development Protocol（并行开发协议）
@@ -111,6 +113,6 @@ pnpm format         # Prettier
 
 ### 部署锁
 
-- 只有**主 worktree** 能执行 `make deploy-cf` / `make deploy-vercel`。部署严格串行——同一时间只有一个 session 部署。
+- 只有**主 worktree** 能执行 `make deploy-cf` / `make deploy-root`。部署严格串行——同一时间只有一个 session 部署。
 - 部署前必须 `git pull`，确保所有已完成任务都包含在内。
 - 部署期间版本号注入会临时修改 `sw.js`，任何人不得在主 worktree 动文件，直到部署结束。
