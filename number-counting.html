@@ -165,6 +165,7 @@
         class NumberCountingGame {
             constructor() {
                 this.gameId = 'number-counting';
+                this.MAX_NUMS = [3, 5, 10];
                 this.score = 0;
                 this.misses = 0;
                 this.isBusy = false;
@@ -183,8 +184,7 @@
             }
 
             getMaxNum() {
-                const maxNums = [3, 5, 10];
-                return maxNums[this.difficulty.getLevel() - 1] || 5;
+                return this.MAX_NUMS[this.difficulty.getLevel() - 1] || 5;
             }
 
             init() {

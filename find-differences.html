@@ -256,6 +256,7 @@
                 this.differences = [];
                 this.canClick = true;
                 this.gameId = 'find-differences';
+                this.DIFF_COUNTS = [2, 3, 4];
 
                 this.difficulty = new KidsUI.AdaptiveDifficulty({
                     windowSize: 5,
@@ -395,8 +396,7 @@
                 const config = this.levelConfig[level - 1];
                 const theme = this.sceneThemes[config.theme];
                 const diffLevel = this.difficulty.getLevel();
-                const diffCounts = [2, 3, 4];
-                this.totalDifferences = diffCounts[diffLevel - 1] || 3;
+                this.totalDifferences = this.DIFF_COUNTS[diffLevel - 1] || 3;
 
                 const baseElements = [...theme.baseElements]
                     .sort(() => Math.random() - 0.5)

@@ -169,6 +169,7 @@
             constructor() {
                 this.gameId = 'color-matching';
                 this.CELEBRATE_EVERY = 5;
+                this.OPTION_COUNTS = [2, 3, 4];
                 this.score = 0;
                 this.misses = 0;
                 this.target = null;
@@ -214,8 +215,7 @@
 
             newRound() {
                 this.isBusy = false;
-                const optionCounts = [2, 3, 4];
-                const optionCount = optionCounts[this.difficulty.getLevel() - 1] || 4;
+                const optionCount = this.OPTION_COUNTS[this.difficulty.getLevel() - 1] || 4;
                 const selected = [...this.COLORS].sort(() => Math.random() - 0.5).slice(0, optionCount);
                 this.target = selected[Math.floor(Math.random() * selected.length)];
 
