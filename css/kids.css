@@ -270,7 +270,8 @@ body.kui-has-header {
 @media (prefers-reduced-motion: reduce) {
   .kui-shake,
   .kui-pop,
-  .kui-bounce {
+  .kui-bounce,
+  .kui-fadeIn {
     animation: none;
   }
   .kui-confetti {

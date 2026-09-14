@@ -341,7 +341,7 @@
                 this.foundPositions = [];
                 this.canClick = true;
                 document.getElementById('right-scene').querySelectorAll('.difference-marker, .hint-highlight').forEach((el) => el.remove());
-                this.generateLevel(this.currentLevel);
+                this.generateLevel(level);
                 this.renderScenes();
                 this.updateStats();
             }
