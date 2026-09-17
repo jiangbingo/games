@@ -100,7 +100,8 @@ pnpm --filter kids-maze-world format           # prettier
 ### 分支命名
 
 - `feat/<task-id-or-name>`，如 `feat/t6-4-a11y`、`feat/t4-1-bank`。
-- merge 后删分支；已存在的长期分支（如 `feat/ipad-pwa-baseline`）继续原工作流。
+- **合并即删，不留长期分支**：merge 后立即 `git branch -d feat/<task-id>` + `git push origin --delete feat/<task-id>`。分支一旦完全并入 main，保留它只会让下一个 session 从陈旧基点开工（`feat/ipad-pwa-baseline` 就曾滞留两周、落后 35 个提交，2026-09-16 清理）。若确需长期存在的分支，必须在 BACKLOG.md 里写明原因与预期寿命。
+- 清理前校验：`git fetch origin --prune`，确认 `git merge-base --is-ancestor origin/<branch> main` 成立、`git rev-list --count main..origin/<branch>` 为 0（无独有提交会被丢弃），且无 worktree 占用。
 
 ### Merge 回主协议
 
