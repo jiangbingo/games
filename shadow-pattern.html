@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#00cec9">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-touch-icon" href="/icons/icon-192.png">
+    <title>影子与规律挑战</title>
+    <link rel="stylesheet" href="/css/kids.css">
+    <style>
+        :root { --game-accent: #00cec9; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--kui-paper);
+            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-size: 26px 26px;
+            min-height: 100vh;
+            color: var(--kui-ink);
+            display: flex;
+            justify-content: center;
+            padding: 14px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .game {
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-lg);
+            box-shadow: var(--kui-shadow);
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+            margin-top: 8px;
+        }
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .mode-btn {
+            padding: 16px 10px;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            background: var(--kui-paper);
+            color: var(--kui-ink);
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s;
+            text-align: center;
+            line-height: 1.4;
+            touch-action: manipulation;
+        }
+        .mode-btn:active { transform: translateY(2px); box-shadow: none; }
+        .mode-btn.active { border-color: rgba(47, 42, 37, 0.2); color: #fff; }
+        .mode-btn .mode-icon { font-size: 1.8rem; display: block; margin-bottom: 4px; }
+        .mode-btn[data-mode="shadow"].active { background: #00cec9; }
+        .mode-btn[data-mode="pattern"].active { background: #fdcb6e; color: #2f2a25; }
+        .mode-btn[data-mode="sequence"].active { background: #6c5ce7; }
+        .mode-btn[data-mode="connect"].active { background: #e17055; }
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .instruction {
+            text-align: center;
+            font-size: clamp(16px, 4.5vw, 20px);
+            font-weight: 800;
+            margin-bottom: 14px;
+            min-height: 2.2em;
+        }
+        .level-hint {
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--game-accent);
+            margin-bottom: 14px;
+        }
+        .shadow-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .shadow-item {
+            font-size: clamp(52px, 16vw, 80px);
+            padding: 12px 20px;
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            box-shadow: var(--kui-shadow);
+            animation: itemBounce 0.5s var(--kui-bounce) backwards;
+        }
+        .shadow-item.shadow {
+            background: rgba(0, 206, 201, 0.12);
+            border-color: rgba(0, 206, 201, 0.4);
+        }
+        .shadow-item.correct { border-color: var(--kui-good); background: #eaf7f0; }
+        .shadow-item.wrong { opacity: 0.45; border-color: var(--kui-bad); border-style: dashed; pointer-events: none; animation: shake 0.35s ease; }
+        @keyframes itemBounce {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.12); }
+            100% { transform: scale(1); }
+        }
+        @keyframes pop {
+            0% { transform: scale(0.9); }
+            50% { transform: scale(1.12); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+        .pattern-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .pattern-item {
+            width: clamp(56px, 15vw, 76px);
+            height: clamp(56px, 15vw, 76px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(32px, 9vw, 48px);
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            box-shadow: var(--kui-shadow);
+        }
+        .pattern-item.question {
+            background: var(--kui-paper-deep);
+            border-color: var(--game-accent);
+            border-style: dashed;
+            font-size: 2rem;
+            color: var(--game-accent);
+        }
+        .pattern-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .sequence-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+        .seq-card {
+            width: clamp(72px, 20vw, 90px);
+            padding: 12px 6px;
+            text-align: center;
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            box-shadow: var(--kui-shadow);
+            cursor: pointer;
+            font-size: 1.5rem;
+            font-weight: 900;
+            touch-action: manipulation;
+            transition: transform 0.12s var(--kui-bounce), border-color 0.2s;
+        }
+        .seq-card:active { transform: scale(0.95); }
+        .seq-card.placed { border-color: var(--kui-good); background: #eaf7f0; }
+        .seq-card.selected { border-color: var(--game-accent); transform: translateY(-4px); }
+        .seq-slot {
+            width: clamp(72px, 20vw, 90px);
+            height: clamp(72px, 20vw, 90px);
+            border: 3px dashed var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: var(--kui-ink-soft);
+            background: var(--kui-paper);
+        }
+        .seq-slot.filled { border-style: solid; border-color: var(--kui-good); background: #eaf7f0; color: var(--kui-ink); }
+        .options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .option-btn {
+            aspect-ratio: 1;
+            min-height: 80px;
+            font-size: clamp(28px, 10vw, 52px);
+            font-weight: 900;
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), border-color 0.2s;
+            touch-action: manipulation;
+        }
+        .option-btn.correct { background: var(--kui-good); border-color: var(--kui-good); color: #fff; animation: pop 0.35s var(--kui-bounce); }
+        .option-btn.wrong { opacity: 0.45; border-color: var(--kui-bad); border-style: dashed; pointer-events: none; animation: shake 0.35s ease; }
+        .feedback {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 800;
+            min-height: 2em;
+            color: var(--kui-ink-soft);
+            margin-bottom: 8px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .shadow-item, .option-btn, .mode-btn, .seq-card { animation: none; transition: none; }
+            .option-btn.correct, .option-btn.wrong { animation-duration: 0.01s; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <div id="modeSelect">
+            <p class="instruction">🔍 影子与规律挑战</p>
+            <div class="mode-grid">
+                <button class="mode-btn active" data-mode="shadow" type="button">
+                    <span class="mode-icon">🌑</span>
+                    影子配对
+                </button>
+                <button class="mode-btn" data-mode="pattern" type="button">
+                    <span class="mode-icon">🔢</span>
+                    找规律
+                </button>
+                <button class="mode-btn" data-mode="sequence" type="button">
+                    <span class="mode-icon">📋</span>
+                    事件排序
+                </button>
+                <button class="mode-btn" data-mode="connect" type="button">
+                    <span class="mode-icon">🔗</span>
+                    连线配对
+                </button>
+            </div>
+            <div class="score-board">
+                <span class="kui-chip">✅ 答对 <b id="correct">0</b></span>
+                <span class="kui-chip">🤔 试错 <b id="wrong">0</b></span>
+            </div>
+        </div>
+        <div id="gameArea" hidden>
+            <div class="level-hint" id="level-hint"></div>
+            <p class="instruction" id="instruction"></p>
+            <div class="shadow-row" id="shadowRow"></div>
+            <div class="pattern-row" id="patternRow"></div>
+            <div class="pattern-options" id="patternOptions"></div>
+            <div class="sequence-area" id="seqArea"></div>
+            <div class="options" id="options"></div>
+            <div class="feedback" id="feedback" aria-live="polite"></div>
+        </div>
+    </div>
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
+    <script>
+        "use strict";
+        const CELEBRATE_EVERY = 5;
+        const gameId = 'shadow-pattern';
+
+        const SHADOWS = ['🍎', '🍊', '🐶', '🐱', '🐰', '🐟', '🚗', '⭐', '🌙', '🍇'];
+        const PATTERN_ITEMS = ['🍎', '🍊', '🐶', '🐱', '⭐', '🚗', '🐟', '🌙'];
+        const EVENTS = [
+            { icon: '🌅', label: '起床' },
+            { icon: '🪥', label: '刷牙' },
+            { icon: '🍳', label: '吃早餐' },
+            { icon: '🎒', label: '上学' },
+            { icon: '🍎', label: '午餐' },
+            { icon: '📚', label: '学习' },
+        ];
+
+        class ShadowPatternGame {
+            constructor() {
+                this.gameId = gameId;
+                this.mode = 'shadow';
+                this.score = { correct: 0, wrong: 0 };
+                this.isBusy = false;
+                this.difficulty = new KidsUI.AdaptiveDifficulty({
+                    windowSize: 5,
+                    thresholds: { easy: 0.8, hard: 0.5 },
+                    initialLevel: 1,
+                    onChange: () => this.updateLevelHint()
+                });
+                this.seqChosen = [];
+                this.round = 0;
+                this.init();
+            }
+
+            init() {
+                KidsUI.Touch.guard();
+                KidsUI.Header.render({
+                    title: '影子与规律挑战',
+                    accent: '#00cec9',
+                    onReplay: () => this.reset()
+                });
+                this.bindModeButtons();
+                this.updateScore();
+                this.updateLevelHint();
+            }
+
+            reset() {
+                this.round++;
+                this.score = { correct: 0, wrong: 0 };
+                this.difficulty.reset();
+                this.seqChosen = [];
+                this.isBusy = false;
+                this.updateScore();
+                this.updateLevelHint();
+                document.getElementById('gameArea').hidden = true;
+                document.getElementById('modeSelect').hidden = false;
+            }
+
+            bindModeButtons() {
+                var self = this;
+                document.querySelectorAll('.mode-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        KidsUI.SFX.tap();
+                        self.selectMode(btn.getAttribute('data-mode'));
+                    });
+                });
+            }
+
+            selectMode(mode) {
+                var self = this;
+                this.round++;
+                this.mode = mode;
+                this.score = { correct: 0, wrong: 0 };
+                this.difficulty.reset();
+                this.seqChosen = [];
+                this.isBusy = false;
+                this.updateScore();
+                this.updateLevelHint();
+
+                document.querySelectorAll('.mode-btn').forEach(function (b) {
+                    b.classList.toggle('active', b.getAttribute('data-mode') === mode);
+                });
+                document.getElementById('modeSelect').hidden = true;
+                document.getElementById('gameArea').hidden = false;
+
+                document.getElementById('shadowRow').hidden = true;
+                document.getElementById('patternRow').hidden = true;
+                document.getElementById('patternOptions').hidden = true;
+                document.getElementById('seqArea').hidden = true;
+                document.getElementById('options').hidden = true;
+
+                switch (mode) {
+                    case 'shadow': this.startShadow(); break;
+                    case 'pattern': this.startPattern(); break;
+                    case 'sequence': this.startSequence(); break;
+                    case 'connect': this.startConnect(); break;
+                }
+            }
+
+            updateScore() {
+                document.getElementById('correct').textContent = this.score.correct;
+                document.getElementById('wrong').textContent = this.score.wrong;
+            }
+
+            updateLevelHint() {
+                var level = this.difficulty.getLevel();
+                var labels = ['🐾 小小挑战', '🔍 仔细想想', '🌟 火眼金睛'];
+                document.getElementById('level-hint').textContent = labels[level - 1];
+            }
+
+            celebrate() {
+                var self = this;
+                var stars = KidsUI.Progress.starsFor(this.score.correct / (this.score.correct + this.score.wrong));
+                KidsUI.Progress.record(this.gameId, { best: this.score.correct, stars });
+                KidsUI.Celebrate.show({
+                    title: '太棒了！',
+                    sub: '答对 ' + this.score.correct + ' 题',
+                    stars: stars,
+                    primaryLabel: '继续',
+                    onPrimary: function () { self.continueGame(); },
+                    announce: '真厉害！'
+                });
+            }
+
+            continueGame() {
+                switch (this.mode) {
+                    case 'shadow': this.startShadow(); break;
+                    case 'pattern': this.startPattern(); break;
+                    case 'sequence': this.startSequence(); break;
+                    case 'connect': this.startConnect(); break;
+                }
+            }
+
+            recordCorrect() {
+                this.difficulty.record(true);
+                this.score.correct++;
+                this.updateScore();
+                if (this.score.correct % CELEBRATE_EVERY === 0) {
+                    this.celebrate();
+                    return true;
+                }
+                return false;
+            }
+
+            /* 定时推进带局号守卫：期间重玩/切模式时旧定时器作废，不会把人拽回游戏 */
+            scheduleNext(delay) {
+                var self = this;
+                var round = this.round;
+                setTimeout(function () {
+                    if (self.round === round) self.continueGame();
+                }, delay);
+            }
+
+            recordWrong() {
+                this.difficulty.record(false);
+                this.score.wrong++;
+                this.updateScore();
+            }
+
+            generateOptions(correct, max) {
+                var count = [3, 3, 4][this.difficulty.getLevel() - 1] || 3;
+                var others = [];
+                for (var i = 0; i < max; i++) {
+                    if (i !== correct) others.push(i);
+                }
+                others.sort(function () { return Math.random() - 0.5; });
+                var opts = [correct];
+                for (var j = 0; j < count - 1 && j < others.length; j++) {
+                    opts.push(others[j]);
+                }
+                return opts.sort(function () { return Math.random() - 0.5; });
+            }
+
+            renderOptions(options, correctIdx, onChoice, labels) {
+                var self = this;
+                var div = document.getElementById('options');
+                div.innerHTML = '';
+                div.hidden = false;
+                options.forEach(function (idx) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'option-btn';
+                    btn.textContent = labels ? labels[idx] : idx;
+                    btn.addEventListener('click', function () { onChoice(btn, idx, correctIdx); });
+                    div.appendChild(btn);
+                });
+            }
+
+            /* ── Mode 1: 影子配对 ── */
+            startShadow() {
+                var self = this;
+                var level = this.difficulty.getLevel();
+                var poolSize = [4, 6, 8][level - 1] || 4;
+                var targetIdx = Math.floor(Math.random() * poolSize);
+                var target = SHADOWS[targetIdx];
+                this.isBusy = false;
+
+                document.getElementById('instruction').textContent = '找到它的影子';
+                document.getElementById('shadowRow').hidden = false;
+                document.getElementById('options').hidden = false;
+
+                var row = document.getElementById('shadowRow');
+                row.innerHTML = '';
+                var original = document.createElement('div');
+                original.className = 'shadow-item';
+                original.textContent = target;
+                original.style.animationDelay = '0s';
+                row.appendChild(original);
+
+                var shadow = document.createElement('div');
+                shadow.className = 'shadow-item shadow';
+                shadow.textContent = '🌑';
+                shadow.style.animationDelay = '0.1s';
+                row.appendChild(shadow);
+
+                var max = poolSize;
+                var options = this.generateOptions(targetIdx, max);
+                this.renderOptions(options, targetIdx, function (btn, idx, correct) {
+                    if (self.isBusy) return;
+                    if (idx === correct) {
+                        self.isBusy = true;
+                        btn.classList.add('correct');
+                        KidsUI.SFX.correct();
+                        KidsUI.haptic('good');
+                        KidsUI.TTS.speak('找到了');
+                        if (!self.recordCorrect()) self.scheduleNext(1200);
+                    } else {
+                        btn.classList.add('wrong');
+                        KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
+                        KidsUI.TTS.speak('不对哦');
+                        self.recordWrong();
+                        setTimeout(function () { btn.classList.remove('wrong'); }, 600);
+                    }
+                }, SHADOWS);
+            }
+
+            /* ── Mode 2: 找规律 ── */
+            startPattern() {
+                var self = this;
+                var level = this.difficulty.getLevel();
+                /* patternLen ≥ 4 保证展示序列不触发补头，孩子看到的全是真实循环项 */
+                var patternLen = [4, 4, 5][level - 1] || 4;
+                var cycleLen = [2, 3, 3][level - 1] || 2;
+
+                document.getElementById('instruction').textContent = '找出下一个';
+                document.getElementById('patternRow').hidden = false;
+
+                var items = [];
+                for (var i = 0; i < patternLen; i++) {
+                    items.push(PATTERN_ITEMS[i % cycleLen]);
+                }
+                var next = PATTERN_ITEMS[patternLen % cycleLen];
+                var display = items.slice(-5);
+
+                var row = document.getElementById('patternRow');
+                row.innerHTML = '';
+                display.forEach(function (item, idx) {
+                    var div = document.createElement('div');
+                    div.className = 'pattern-item';
+                    div.textContent = item;
+                    div.style.animationDelay = idx * 0.1 + 's';
+                    row.appendChild(div);
+                });
+                var q = document.createElement('div');
+                q.className = 'pattern-item question';
+                q.textContent = '?';
+                q.style.animationDelay = display.length * 0.1 + 's';
+                row.appendChild(q);
+
+                var allOpts = [PATTERN_ITEMS.indexOf(next)];
+                while (allOpts.length < 3) {
+                    var wrong = Math.floor(Math.random() * PATTERN_ITEMS.length);
+                    if (allOpts.indexOf(wrong) === -1) allOpts.push(wrong);
+                }
+                var shuffled = allOpts.sort(function () { return Math.random() - 0.5; });
+                var self2 = this;
+                this.renderOptions(shuffled, PATTERN_ITEMS.indexOf(next), function (btn, idx, correct) {
+                    if (self2.isBusy) return;
+                    if (idx === correct) {
+                        self2.isBusy = true;
+                        btn.classList.add('correct');
+                        KidsUI.SFX.correct();
+                        KidsUI.haptic('good');
+                        if (!self2.recordCorrect()) self2.scheduleNext(1200);
+                    } else {
+                        btn.classList.add('wrong');
+                        KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
+                        self2.recordWrong();
+                        setTimeout(function () { btn.classList.remove('wrong'); }, 600);
+                    }
+                }, PATTERN_ITEMS);
+            }
+
+            /* ── Mode 3: 事件排序 ── */
+            startSequence() {
+                var self = this;
+                var level = this.difficulty.getLevel();
+                var count = [3, 4, 5][level - 1] || 3;
+
+                document.getElementById('instruction').textContent = '排一排先后顺序';
+                document.getElementById('seqArea').hidden = false;
+                document.getElementById('options').hidden = false;
+
+                var shuffled = EVENTS.slice().sort(function () { return Math.random() - 0.5; }).slice(0, count);
+                var sorted = shuffled.slice().sort(function (a, b) {
+                    return EVENTS.indexOf(a) - EVENTS.indexOf(b);
+                });
+
+                this.seqChosen = [];
+                this.isBusy = false;
+
+                var seqArea = document.getElementById('seqArea');
+                seqArea.innerHTML = '';
+                for (var i = 0; i < count; i++) {
+                    var slot = document.createElement('div');
+                    slot.className = 'seq-slot';
+                    slot.textContent = '';
+                    slot.setAttribute('data-index', String(i));
+                    seqArea.appendChild(slot);
+                }
+
+                var pool = shuffled.slice();
+                var optsDiv = document.getElementById('options');
+                optsDiv.innerHTML = '';
+                optsDiv.hidden = false;
+                pool.forEach(function (evt) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'option-btn';
+                    btn.style.fontSize = '2rem';
+                    btn.textContent = evt.icon;
+                    btn.setAttribute('data-label', evt.label);
+                    btn.addEventListener('click', function () {
+                        if (self.isBusy || btn.classList.contains('placed')) return;
+                        btn.classList.add('placed');
+                        KidsUI.SFX.tap();
+                        self.seqChosen.push(evt);
+                        self.updateSeqSlots(sorted);
+                    });
+                    optsDiv.appendChild(btn);
+                });
+
+                document.getElementById('feedback').textContent = '点图标，再点空位放入';
+            }
+
+            updateSeqSlots(sorted) {
+                var self = this;
+                var slots = document.getElementById('seqArea').querySelectorAll('.seq-slot');
+                for (var i = 0; i < this.seqChosen.length; i++) {
+                    slots[i].textContent = this.seqChosen[i].icon;
+                    slots[i].classList.add('filled');
+                }
+                if (this.seqChosen.length === sorted.length) {
+                    var correct = true;
+                    for (var j = 0; j < sorted.length; j++) {
+                        if (this.seqChosen[j].icon !== sorted[j].icon) { correct = false; break; }
+                    }
+                    if (correct) {
+                        KidsUI.SFX.correct();
+                        KidsUI.haptic('good');
+                        KidsUI.TTS.speak('排对了');
+                        if (!this.recordCorrect()) this.scheduleNext(1200);
+                    } else {
+                        KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
+                        KidsUI.TTS.speak('顺序不对');
+                        this.recordWrong();
+                        setTimeout(function () {
+                            self.seqChosen = [];
+                            var allSlots = document.getElementById('seqArea').querySelectorAll('.seq-slot');
+                            for (var k = 0; k < allSlots.length; k++) {
+                                allSlots[k].textContent = '';
+                                allSlots[k].classList.remove('filled');
+                            }
+                            var allBtns = document.getElementById('options').querySelectorAll('.option-btn');
+                            for (var m = 0; m < allBtns.length; m++) {
+                                allBtns[m].classList.remove('placed');
+                            }
+                        }, 800);
+                    }
+                }
+            }
+
+            /* ── Mode 4: 连线配对 ── */
+            startConnect() {
+                var self = this;
+                var level = this.difficulty.getLevel();
+                var count = Math.min([3, 4, 5][level - 1] || 3, PATTERN_ITEMS.length);
+
+                document.getElementById('instruction').textContent = '连一连配对';
+
+                /* 左右两列是同一组图案各一份，靠图案相同配对，孩子可推理；
+                 * 右列单独洗牌打乱位置 */
+                var items = PATTERN_ITEMS.slice().sort(function () { return Math.random() - 0.5; }).slice(0, count);
+                var rightItems = items.slice().sort(function () { return Math.random() - 0.5; });
+                this.isBusy = false;
+                this.connectMatched = 0;
+
+                var row = document.getElementById('patternRow');
+                row.hidden = false;
+                row.innerHTML = '';
+                var leftDiv = document.createElement('div');
+                leftDiv.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
+                var rightDiv = document.createElement('div');
+                rightDiv.style.cssText = 'display:flex;flex-direction:column;gap:10px;';
+                items.forEach(function (emoji) {
+                    var lBtn = document.createElement('button');
+                    lBtn.type = 'button';
+                    lBtn.className = 'option-btn';
+                    lBtn.textContent = emoji;
+                    lBtn.style.fontSize = '2rem';
+                    lBtn.setAttribute('data-item', emoji);
+                    leftDiv.appendChild(lBtn);
+                });
+                rightItems.forEach(function (emoji) {
+                    var rBtn = document.createElement('button');
+                    rBtn.type = 'button';
+                    rBtn.className = 'option-btn';
+                    rBtn.textContent = emoji;
+                    rBtn.style.fontSize = '2rem';
+                    rBtn.setAttribute('data-item', emoji);
+                    rightDiv.appendChild(rBtn);
+                });
+                row.appendChild(leftDiv);
+                row.appendChild(rightDiv);
+
+                document.getElementById('feedback').textContent = '点左边，再点右边配对';
+                this.selectedLeft = null;
+
+                row.querySelectorAll('[data-item]').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        if (self.isBusy || btn.disabled) return;
+                        if (btn.parentElement === leftDiv) {
+                            row.querySelectorAll('.option-btn').forEach(function (b) { b.classList.remove('selected'); });
+                            btn.classList.add('selected');
+                            self.selectedLeft = btn.getAttribute('data-item');
+                            return;
+                        }
+                        if (!self.selectedLeft) return; /* 先点左边，右列乱点不扣分 */
+                        if (btn.getAttribute('data-item') === self.selectedLeft) {
+                            btn.disabled = true;
+                            btn.classList.add('correct');
+                            var leftBtn = leftDiv.querySelector('[data-item="' + self.selectedLeft + '"]');
+                            leftBtn.disabled = true;
+                            leftBtn.classList.add('correct');
+                            KidsUI.SFX.correct();
+                            KidsUI.haptic('good');
+                            self.connectMatched++;
+                            if (self.connectMatched === count && !self.recordCorrect()) self.scheduleNext(1400);
+                        } else {
+                            btn.classList.add('wrong');
+                            KidsUI.SFX.wrong();
+                            KidsUI.haptic('bad');
+                            self.recordWrong();
+                            setTimeout(function () { btn.classList.remove('wrong'); }, 600);
+                        }
+                        self.selectedLeft = null;
+                        row.querySelectorAll('.option-btn').forEach(function (b) { b.classList.remove('selected'); });
+                    });
+                });
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            new ShadowPatternGame();
+        });
+    </script>
+</body>
+</html>

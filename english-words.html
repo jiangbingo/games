@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#e17055">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-touch-icon" href="/icons/icon-192.png">
+    <title>英语单词探险</title>
+    <link rel="stylesheet" href="/css/kids.css">
+    <style>
+        :root { --game-accent: #e17055; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--kui-paper);
+            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-size: 26px 26px;
+            min-height: 100vh;
+            color: var(--kui-ink);
+            display: flex;
+            justify-content: center;
+            padding: 14px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .game {
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-lg);
+            box-shadow: var(--kui-shadow);
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+            margin-top: 8px;
+        }
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .mode-btn {
+            padding: 16px 10px;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            background: var(--kui-paper);
+            color: var(--kui-ink);
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s;
+            text-align: center;
+            line-height: 1.4;
+            touch-action: manipulation;
+        }
+        .mode-btn:active { transform: translateY(2px); box-shadow: none; }
+        .mode-btn.active { border-color: rgba(47, 42, 37, 0.2); color: #fff; }
+        .mode-btn .mode-icon { font-size: 1.8rem; display: block; margin-bottom: 4px; }
+        .mode-btn[data-mode="listen"].active { background: #e17055; }
+        .mode-btn[data-mode="read"].active { background: #6c5ce7; }
+        .mode-btn[data-mode="image"].active { background: #00b894; }
+        .mode-btn[data-mode="category"].active { background: #fdcb6e; color: #2f2a25; }
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .instruction {
+            text-align: center;
+            font-size: clamp(16px, 4.5vw, 20px);
+            font-weight: 800;
+            margin-bottom: 10px;
+            min-height: 2.2em;
+        }
+        .level-hint {
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--game-accent);
+            margin-bottom: 14px;
+        }
+        .target-area {
+            text-align: center;
+            margin-bottom: 18px;
+        }
+        .target-emoji {
+            font-size: clamp(84px, 24vw, 120px);
+            line-height: 1.1;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .target-word {
+            font-size: clamp(1.8rem, 7vw, 2.4rem);
+            font-weight: 900;
+            color: var(--game-accent);
+            margin-top: 6px;
+            letter-spacing: 0.04em;
+        }
+        .target-name {
+            font-size: clamp(1.2rem, 4.5vw, 1.6rem);
+            font-weight: 700;
+            color: var(--kui-ink-soft);
+            margin-top: 2px;
+        }
+        .listen-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 32px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border: 3px solid var(--game-accent);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            color: var(--game-accent);
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce);
+            touch-action: manipulation;
+            margin-bottom: 18px;
+        }
+        .listen-btn:active { transform: translateY(2px); box-shadow: none; }
+        .options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .option-btn {
+            aspect-ratio: 1;
+            min-height: 80px;
+            font-size: clamp(28px, 10vw, 52px);
+            font-weight: 900;
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s, border-color 0.2s;
+            touch-action: manipulation;
+        }
+        .option-btn:active { transform: scale(0.95); }
+        .option-btn.correct {
+            background: var(--kui-good);
+            border-color: var(--kui-good);
+            color: #fff;
+            animation: pop 0.35s var(--kui-bounce);
+        }
+        .option-btn.wrong {
+            opacity: 0.45;
+            border-color: var(--kui-bad);
+            border-style: dashed;
+            pointer-events: none;
+            animation: shake 0.35s ease;
+        }
+        @keyframes pop {
+            0% { transform: scale(0.9); }
+            50% { transform: scale(1.12); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+        .feedback {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 800;
+            min-height: 2em;
+            color: var(--kui-ink-soft);
+            margin-bottom: 8px;
+        }
+        .cat-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .cat-tab {
+            padding: 6px 14px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border: 2px solid var(--kui-line);
+            border-radius: 999px;
+            background: var(--kui-paper);
+            color: var(--kui-ink-soft);
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .cat-tab.active { background: var(--game-accent); color: #fff; border-color: rgba(47, 42, 37, 0.2); }
+        .word-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+        .word-btn {
+            padding: 14px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), border-color 0.2s;
+            touch-action: manipulation;
+        }
+        .word-btn:active { transform: scale(0.95); }
+        .word-btn.correct { background: var(--kui-good); border-color: var(--kui-good); color: #fff; }
+        .word-btn.wrong { opacity: 0.45; border-color: var(--kui-bad); border-style: dashed; pointer-events: none; }
+        .category-area { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 14px; }
+        .cat-card {
+            padding: 12px 16px;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-paper);
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            touch-action: manipulation;
+            transition: transform 0.12s var(--kui-bounce);
+        }
+        .cat-card:active { transform: translateY(2px); }
+        .cat-card.selected { border-color: var(--kui-good); background: #eaf7f0; }
+        @media (prefers-reduced-motion: reduce) {
+            .target-emoji, .option-btn, .mode-btn { animation: none; transition: none; }
+            .option-btn.correct, .option-btn.wrong { animation-duration: 0.01s; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <div id="modeSelect">
+            <p class="instruction">🗺️ 英语单词探险</p>
+            <div class="mode-grid">
+                <button class="mode-btn active" data-mode="listen" type="button">
+                    <span class="mode-icon">👂</span>
+                    听音选图
+                </button>
+                <button class="mode-btn" data-mode="read" type="button">
+                    <span class="mode-icon">👀</span>
+                    看词选图
+                </button>
+                <button class="mode-btn" data-mode="image" type="button">
+                    <span class="mode-icon">🖼️</span>
+                    图片选词
+                </button>
+                <button class="mode-btn" data-mode="category" type="button">
+                    <span class="mode-icon">📦</span>
+                    单词分类
+                </button>
+            </div>
+            <div class="score-board">
+                <span class="kui-chip">✅ 答对 <b id="correct">0</b></span>
+                <span class="kui-chip">🤔 试错 <b id="wrong">0</b></span>
+            </div>
+        </div>
+        <div id="gameArea" hidden>
+            <div class="level-hint" id="level-hint"></div>
+            <p class="instruction" id="instruction"></p>
+            <div id="listenArea">
+                <div class="target-area">
+                    <div class="target-emoji" id="target-emoji"></div>
+                    <div class="target-name" id="target-name"></div>
+                </div>
+                <button class="listen-btn" id="listenBtn" type="button">🔊 听一听</button>
+            </div>
+            <div class="target-area" id="readArea" hidden>
+                <div class="target-word" id="target-word"></div>
+            </div>
+            <div class="target-area" id="imageArea" hidden>
+                <div class="target-emoji" id="target-emoji-2"></div>
+                <div class="target-name" id="target-name-2"></div>
+            </div>
+            <div class="options" id="options"></div>
+            <div class="word-options" id="wordOptions" hidden></div>
+            <div class="cat-tabs" id="catTabs" hidden></div>
+            <div class="category-area" id="categoryArea" hidden></div>
+            <div class="feedback" id="feedback" aria-live="polite"></div>
+        </div>
+    </div>
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
+    <script>
+        "use strict";
+        const CELEBRATE_EVERY = 5;
+        const gameId = 'english-words';
+
+        const WORDS = [
+            { word: 'apple', emoji: '🍎', name: '苹果', cat: 'fruits' },
+            { word: 'banana', emoji: '🍌', name: '香蕉', cat: 'fruits' },
+            { word: 'orange', emoji: '🍊', name: '橘子', cat: 'fruits' },
+            { word: 'grape', emoji: '🍇', name: '葡萄', cat: 'fruits' },
+            { word: 'dog', emoji: '🐶', name: '狗', cat: 'animals' },
+            { word: 'cat', emoji: '🐱', name: '猫', cat: 'animals' },
+            { word: 'bird', emoji: '🐦', name: '鸟', cat: 'animals' },
+            { word: 'fish', emoji: '🐟', name: '鱼', cat: 'animals' },
+            { word: 'car', emoji: '🚗', name: '汽车', cat: 'vehicles' },
+            { word: 'bus', emoji: '🚌', name: '公交车', cat: 'vehicles' },
+            { word: 'star', emoji: '⭐', name: '星星', cat: 'objects' },
+            { word: 'moon', emoji: '🌙', name: '月亮', cat: 'objects' },
+        ];
+
+        const CATS = [
+            { id: 'fruits', icon: '🍎', label: '水果' },
+            { id: 'animals', icon: '🐾', label: '动物' },
+            { id: 'vehicles', icon: '🚗', label: '交通' },
+            { id: 'objects', icon: '✨', label: '物品' },
+        ];
+
+        var CAN_SPEAK = "speechSynthesis" in window;
+
+        function speakEnglish(text) {
+            if (!CAN_SPEAK) return;
+            if (KidsUI.SFX.volume <= 0) return;
+            try {
+                window.speechSynthesis.cancel();
+                var u = new SpeechSynthesisUtterance(text);
+                u.lang = "en-US";
+                u.rate = 0.8;
+                u.volume = KidsUI.SFX.volume;
+                window.speechSynthesis.speak(u);
+            } catch (e) { /* 忽略 */ }
+        }
+
+        class EnglishWordsGame {
+            constructor() {
+                this.gameId = gameId;
+                this.mode = 'listen';
+                this.score = { correct: 0, wrong: 0 };
+                this.isBusy = false;
+                this.round = 0;
+                this.difficulty = new KidsUI.AdaptiveDifficulty({
+                    windowSize: 5,
+                    thresholds: { easy: 0.8, hard: 0.5 },
+                    initialLevel: 1,
+                    onChange: () => this.updateLevelHint()
+                });
+                this.init();
+            }
+
+            init() {
+                KidsUI.Touch.guard();
+                KidsUI.Header.render({
+                    title: '英语单词探险',
+                    accent: '#e17055',
+                    onReplay: () => this.reset()
+                });
+                this.bindModeButtons();
+                this.updateScore();
+                this.updateLevelHint();
+            }
+
+            reset() {
+                this.round++;
+                this.score = { correct: 0, wrong: 0 };
+                this.difficulty.reset();
+                this.isBusy = false;
+                this.updateScore();
+                this.updateLevelHint();
+                document.getElementById('gameArea').hidden = true;
+                document.getElementById('modeSelect').hidden = false;
+            }
+
+            bindModeButtons() {
+                var self = this;
+                document.querySelectorAll('.mode-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        KidsUI.SFX.tap();
+                        self.selectMode(btn.getAttribute('data-mode'));
+                    });
+                });
+            }
+
+            selectMode(mode) {
+                var self = this;
+                this.round++;
+                this.mode = mode;
+                this.score = { correct: 0, wrong: 0 };
+                this.difficulty.reset();
+                this.isBusy = false;
+                this.updateScore();
+                this.updateLevelHint();
+
+                document.querySelectorAll('.mode-btn').forEach(function (b) {
+                    b.classList.toggle('active', b.getAttribute('data-mode') === mode);
+                });
+                document.getElementById('modeSelect').hidden = true;
+                document.getElementById('gameArea').hidden = false;
+
+                this.showArea('listenArea');
+                this.showArea('readArea', true);
+                this.showArea('imageArea', true);
+                document.getElementById('options').hidden = false;
+                document.getElementById('wordOptions').hidden = true;
+                document.getElementById('catTabs').hidden = true;
+                document.getElementById('categoryArea').hidden = true;
+
+                switch (mode) {
+                    case 'listen': this.startListen(); break;
+                    case 'read': this.startRead(); break;
+                    case 'image': this.startImage(); break;
+                    case 'category': this.startCategory(); break;
+                }
+            }
+
+            showArea(id, hide) {
+                var el = document.getElementById(id);
+                if (hide) el.hidden = true; else el.hidden = false;
+            }
+
+            updateScore() {
+                document.getElementById('correct').textContent = this.score.correct;
+                document.getElementById('wrong').textContent = this.score.wrong;
+            }
+
+            updateLevelHint() {
+                var level = this.difficulty.getLevel();
+                var labels = ['🐾 小小起步', '🔍 加油闯关', '🌟 单词达人'];
+                document.getElementById('level-hint').textContent = labels[level - 1];
+            }
+
+            celebrate() {
+                var self = this;
+                var stars = KidsUI.Progress.starsFor(this.score.correct / (this.score.correct + this.score.wrong));
+                KidsUI.Progress.record(this.gameId, { best: this.score.correct, stars });
+                KidsUI.Celebrate.show({
+                    title: '太棒了！',
+                    sub: '答对 ' + this.score.correct + ' 题',
+                    stars: stars,
+                    primaryLabel: '继续',
+                    onPrimary: function () { self.continueGame(); },
+                    announce: 'Great job!'
+                });
+            }
+
+            recordCorrect() {
+                this.difficulty.record(true);
+                this.score.correct++;
+                this.updateScore();
+                if (this.score.correct % CELEBRATE_EVERY === 0) {
+                    this.celebrate();
+                    return true;
+                }
+                return false;
+            }
+
+            /* 定时推进带局号守卫：期间重玩/切模式时旧定时器作废，不会把人拽回游戏 */
+            scheduleNext(delay) {
+                var self = this;
+                var round = this.round;
+                setTimeout(function () {
+                    if (self.round === round) self.continueGame();
+                }, delay);
+            }
+
+            continueGame() {
+                switch (this.mode) {
+                    case 'listen': this.startListen(); break;
+                    case 'read': this.startRead(); break;
+                    case 'image': this.startImage(); break;
+                    case 'category': this.startCategory(); break;
+                }
+            }
+
+            recordWrong() {
+                this.difficulty.record(false);
+                this.score.wrong++;
+                this.updateScore();
+            }
+
+            randomWord() {
+                return WORDS[Math.floor(Math.random() * WORDS.length)];
+            }
+
+            optionCount() {
+                return [3, 3, 4][this.difficulty.getLevel() - 1] || 3;
+            }
+
+            generateWordOptions(correctWord) {
+                var self = this;
+                var count = this.optionCount();
+                var others = WORDS.filter(function (w) { return w.word !== correctWord; });
+                var shuffled = others.slice().sort(function () { return Math.random() - 0.5; });
+                var options = [{ word: correctWord, emoji: WORDS.find(function (w) { return w.word === correctWord; }).emoji }];
+                for (var i = 0; i < count - 1 && i < shuffled.length; i++) {
+                    options.push({ word: shuffled[i].word, emoji: shuffled[i].emoji });
+                }
+                return options.sort(function () { return Math.random() - 0.5; });
+            }
+
+            generateImageOptions(correctWord) {
+                var self = this;
+                var count = this.optionCount();
+                var others = WORDS.filter(function (w) { return w.word !== correctWord; });
+                var shuffled = others.slice().sort(function () { return Math.random() - 0.5; });
+                var options = [{ word: correctWord, emoji: WORDS.find(function (w) { return w.word === correctWord; }).emoji }];
+                for (var i = 0; i < count - 1 && i < shuffled.length; i++) {
+                    options.push({ word: shuffled[i].word, emoji: shuffled[i].emoji });
+                }
+                return options.sort(function () { return Math.random() - 0.5; });
+            }
+
+            renderImageOptions(options, onChoice) {
+                var self = this;
+                var div = document.getElementById('options');
+                div.innerHTML = '';
+                div.hidden = false;
+                document.getElementById('wordOptions').hidden = true;
+                options.forEach(function (opt) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'option-btn';
+                    btn.textContent = opt.emoji;
+                    btn.addEventListener('click', function () { onChoice(btn, opt); });
+                    div.appendChild(btn);
+                });
+            }
+
+            renderWordOptions(options, onChoice) {
+                var self = this;
+                var div = document.getElementById('wordOptions');
+                div.innerHTML = '';
+                div.hidden = false;
+                document.getElementById('options').hidden = true;
+                options.forEach(function (opt) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'word-btn';
+                    btn.textContent = opt.word;
+                    btn.addEventListener('click', function () { onChoice(btn, opt.word); });
+                    div.appendChild(btn);
+                });
+            }
+
+            /* ── Mode 1: 听音选图 ── */
+            startListen() {
+                var self = this;
+                var word = this.randomWord();
+                this.isBusy = false;
+
+                this.showArea('listenArea');
+                this.showArea('readArea', true);
+                this.showArea('imageArea', true);
+                document.getElementById('options').hidden = false;
+                document.getElementById('wordOptions').hidden = true;
+
+                document.getElementById('instruction').textContent = '听一听，选一选';
+                /* 听音模式不直接亮出答案；设备不支持发音或主音量为 0 时降级为看图配对 */
+                var audible = CAN_SPEAK && KidsUI.SFX.volume > 0;
+                document.getElementById('target-emoji').textContent = audible ? '❓' : word.emoji;
+                document.getElementById('target-name').textContent = audible ? '' : word.name;
+                document.getElementById('feedback').textContent = audible ? '' : '现在没有声音，看着图猜吧';
+
+                var options = this.generateImageOptions(word.word);
+                this.renderImageOptions(options, function (btn, opt) {
+                    if (self.isBusy) return;
+                    var correct = WORDS.find(function (w) { return w.word === opt.word; });
+                    if (opt.word === word.word) {
+                        self.isBusy = true;
+                        btn.classList.add('correct');
+                        KidsUI.SFX.correct();
+                        KidsUI.haptic('good');
+                        speakEnglish(word.word);
+                        document.getElementById('target-emoji').textContent = word.emoji;
+                        document.getElementById('target-name').textContent = word.name;
+                        if (!self.recordCorrect()) self.scheduleNext(1200);
+                    } else {
+                        btn.classList.add('wrong');
+                        KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
+                        KidsUI.TTS.speak('再听听');
+                        self.recordWrong();
+                        setTimeout(function () { btn.classList.remove('wrong'); }, 600);
+                    }
+                });
+
+                document.getElementById('listenBtn').onclick = function () {
+                    if (!audible) {
+                        document.getElementById('feedback').textContent = '现在没有声音，看着图猜吧';
+                        return;
+                    }
+                    speakEnglish(word.word);
+                    KidsUI.SFX.tap();
+                };
+            }
+
+            /* ── Mode 2: 看词选图 ── */
+            startRead() {
+                var self = this;
+                var word = this.randomWord();
+                this.isBusy = false;
+
+                this.showArea('listenArea', true);
+                this.showArea('readArea');
+                this.showArea('imageArea', true);
+                document.getElementById('options').hidden = false;
+                document.getElementById('wordOptions').hidden = true;
+
+                document.getElementById('instruction').textContent = '读一读，选一选';
+                document.getElementById('target-word').textContent = word.word;
+
+                var options = this.generateImageOptions(word.word);
+                this.renderImageOptions(options, function (btn, opt) {
+                    if (self.isBusy) return;
+                    if (opt.word === word.word) {
+                        self.isBusy = true;
+                        btn.classList.add('correct');
+                        KidsUI.SFX.correct();
+                        KidsUI.haptic('good');
+                        speakEnglish(word.word);
+                        if (!self.recordCorrect()) self.scheduleNext(1200);
+                    } else {
+                        btn.classList.add('wrong');
+                        KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
+                        self.recordWrong();
+                        setTimeout(function () { btn.classList.remove('wrong'); }, 600);
+                    }
+                });
+            }
+
+            /* ── Mode 3: 图片选词 ── */
+            startImage() {
+                var self = this;
+                var word = this.randomWord();
+                this.isBusy = false;
+
+                this.showArea('listenArea', true);
+                this.showArea('readArea', true);
+                this.showArea('imageArea');
+                document.getElementById('options').hidden = true;
+                document.getElementById('wordOptions').hidden = false;
+
+                document.getElementById('instruction').textContent = '看看图，选单词';
+                document.getElementById('target-emoji-2').textContent = word.emoji;
+                document.getElementById('target-name-2').textContent = word.name;
+
+                var options = this.generateWordOptions(word.word);
+                this.renderWordOptions(options, function (btn, opt) {
+                    if (self.isBusy) return;
+                    if (opt === word.word) {
+                        self.isBusy = true;
+                        btn.classList.add('correct');
+                        KidsUI.SFX.correct();
+                        KidsUI.haptic('good');
+                        speakEnglish(word.word);
+                        if (!self.recordCorrect()) self.scheduleNext(1200);
+                    } else {
+                        btn.classList.add('wrong');
+                        KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
+                        self.recordWrong();
+                        setTimeout(function () { btn.classList.remove('wrong'); }, 600);
+                    }
+                });
+            }
+
+            /* ── Mode 4: 单词分类 ── */
+            startCategory() {
+                var self = this;
+                this.isBusy = false;
+
+                this.showArea('listenArea', true);
+                this.showArea('readArea', true);
+                this.showArea('imageArea', true);
+                document.getElementById('options').hidden = true;
+                document.getElementById('wordOptions').hidden = true;
+                document.getElementById('catTabs').hidden = false;
+                document.getElementById('categoryArea').hidden = false;
+
+                document.getElementById('instruction').textContent = '把这些单词送回正确的家';
+
+                /* 池子 5 词 = CELEBRATE_EVERY：全部送对时正好触发结算推进，不会停在半空 */
+                var pool = WORDS.slice().sort(function () { return Math.random() - 0.5; }).slice(0, CELEBRATE_EVERY);
+                this.categoryPool = pool;
+                this.categoryAnswered = new Set();
+                this.selectedCat = null;
+
+                var tabs = document.getElementById('catTabs');
+                tabs.innerHTML = '';
+                var presentCats = CATS.filter(function (cat) {
+                    return pool.some(function (item) { return item.cat === cat.id; });
+                });
+                presentCats.forEach(function (cat) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'cat-tab';
+                    btn.textContent = cat.icon + ' ' + cat.label;
+                    btn.addEventListener('click', function () {
+                        KidsUI.SFX.tap();
+                        tabs.querySelectorAll('.cat-tab').forEach(function (b) { b.classList.remove('active'); });
+                        btn.classList.add('active');
+                        self.selectedCat = cat.id;
+                        self.renderCategoryItems(pool);
+                    });
+                    tabs.appendChild(btn);
+                });
+                if (presentCats.length > 0) tabs.children[0].click();
+            }
+
+            renderCategoryItems(pool) {
+                var self = this;
+                var area = document.getElementById('categoryArea');
+                area.innerHTML = '';
+                var shuffled = pool.slice().sort(function () { return Math.random() - 0.5; });
+                shuffled.forEach(function (item) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'cat-card';
+                    btn.textContent = item.word;
+                    if (self.categoryAnswered.has(item.word)) btn.classList.add('selected');
+                    btn.addEventListener('click', function () {
+                        if (self.isBusy || self.categoryAnswered.has(item.word)) return;
+                        if (item.cat === self.selectedCat) {
+                            self.categoryAnswered.add(item.word);
+                            btn.classList.add('selected');
+                            KidsUI.SFX.correct();
+                            KidsUI.haptic('good');
+                            speakEnglish(item.word);
+                            self.recordCorrect();
+                        } else {
+                            btn.classList.add('wrong');
+                            KidsUI.SFX.wrong();
+                            KidsUI.haptic('bad');
+                            document.getElementById('feedback').textContent = '送错家啦，换个分类试试';
+                            KidsUI.TTS.speak('换个分类试试');
+                            self.recordWrong();
+                            setTimeout(function () { btn.classList.remove('wrong'); }, 600);
+                        }
+                    });
+                    area.appendChild(btn);
+                });
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            new EnglishWordsGame();
+        });
+    </script>
+</body>
+</html>

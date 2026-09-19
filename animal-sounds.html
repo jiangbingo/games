@@ -125,6 +125,13 @@
             margin-bottom: 16px;
         }
 
+        .level-hint {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--game-accent);
+            margin-bottom: 12px;
+        }
+
         .play-sound-btn {
             padding: 14px 34px;
             font-size: 1.1rem;
@@ -220,6 +227,7 @@
 
             <div id="guessMode" class="guess-section" hidden>
                 <p class="guess-title">👂 猜猜是谁在叫？</p>
+                <div class="level-hint" id="guess-level-hint"></div>
                 <button type="button" class="play-sound-btn" id="playSoundBtn">🔊 再听一次</button>
                 <div class="options" id="guessOptions" aria-label="动物选项"></div>
             </div>
@@ -300,6 +308,7 @@
 
         /**
          * 动物叫声：自由听 + 听音猜动物。答对会读出动物名字。
+         * 自适应难度：选项数 2/3/4 随答题率升降；答错留在本题重试。
          */
         class AnimalSoundsGame {
             constructor() {
@@ -309,6 +318,19 @@
                 this.misses = 0;
                 this.currentGuess = null;
                 this.isBusy = false;
+                this.roundTimer = null;
+                this.roundMissed = false;
+
+                // 难度 → 选项数（至少含 1 个正确 + 其余干扰项）
+                this.OPTION_COUNTS = [2, 3, 4];
+
+                this.difficulty = new KidsUI.AdaptiveDifficulty({
+                    windowSize: 5,
+                    thresholds: { easy: 0.8, hard: 0.5 },
+                    initialLevel: 1,
+                    onChange: () => this.updateLevelHint()
+                });
+
                 this.init();
             }
 
@@ -321,6 +343,15 @@
                 });
                 this.renderFreeMode();
                 this.bindEvents();
+            }
+
+            reset() {
+                this.score = 0;
+                this.misses = 0;
+                this.difficulty.reset();
+                this.updateLevelHint();
+                document.getElementById('score').textContent = '0';
+                this.setMode('free');
             }
 
             bindEvents() {
@@ -341,7 +372,22 @@
                 document.getElementById('guessBtn').classList.toggle('active', mode === 'guess');
                 document.getElementById('freePlayMode').hidden = mode !== 'free';
                 document.getElementById('guessMode').hidden = mode !== 'guess';
-                if (mode === 'guess') this.startNewGuess();
+                if (mode === 'guess') {
+                    this.updateLevelHint();
+                    this.startNewGuess();
+                }
+            }
+
+            updateLevelHint() {
+                const level = this.difficulty.getLevel();
+                const optionCount = this.OPTION_COUNTS[level - 1] || 2;
+                const labels = ['🐾 小小耳朵', '🔍 仔细听听', '🌟 火眼金睛'];
+                const el = document.getElementById('guess-level-hint');
+                if (el) el.textContent = `${labels[level - 1]} · 从 ${optionCount} 个里选`;
+            }
+
+            optionCount() {
+                return this.OPTION_COUNTS[this.difficulty.getLevel() - 1] || 2;
             }
 
             renderFreeMode() {
@@ -361,10 +407,11 @@
 
             startNewGuess() {
                 this.isBusy = false;
+                this.roundMissed = false;
                 const keys = Object.keys(ANIMALS);
                 const shuffled = [...keys].sort(() => Math.random() - 0.5);
                 this.currentGuess = shuffled[0];
-                const options = shuffled.slice(0, 4);
+                const options = shuffled.slice(0, this.optionCount());
 
                 const area = document.getElementById('guessOptions');
                 area.innerHTML = '';
@@ -394,10 +441,15 @@
                     KidsUI.TTS.speak(animal.name);
                     btn.classList.add('correct');
 
+                    // 完成一道题后才评估难度：本题一次未错记通过，错过则记不通过（可降级）
+                    this.difficulty.record(!this.roundMissed);
+
                     if (this.score % this.CELEBRATE_EVERY === 0) {
                         const stars = KidsUI.Progress.starsFor(this.score / (this.score + this.misses));
                         KidsUI.Progress.record(this.gameId, { best: this.score, stars });
-                        setTimeout(() => {
+                        // 走 roundTimer：900ms 内切模式会被 setMode 清掉，庆祝层不会弹在自由听上
+                        this.roundTimer = setTimeout(() => {
+                            this.roundTimer = null;
                             KidsUI.Celebrate.show({
                                 title: '小耳朵真灵！',
                                 sub: `已经猜对 ${this.score} 次`,
@@ -419,6 +471,8 @@
                     KidsUI.haptic('bad');
                     btn.classList.add('wrong');
                     setTimeout(() => btn.classList.remove('wrong'), 500);
+                    // 留在本题重试，完成本题时才把「错过」计入难度
+                    this.roundMissed = true;
                 }
             }
         }

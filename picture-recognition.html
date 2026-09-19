@@ -145,6 +145,15 @@
       color: var(--kui-ink-soft);
     }
 
+    .level-hint {
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--game-accent);
+      margin-top: -8px;
+      margin-bottom: 14px;
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .target-emoji, .option-btn, .cat-btn { animation: none; transition: none; }
     }
@@ -166,6 +175,7 @@
     <div class="target-area">
       <div class="target-emoji" id="target-emoji">🐶</div>
       <div class="target-name" id="target-name">小狗</div>
+      <div class="level-hint" id="level-hint"></div>
     </div>
 
     <div class="options" id="options"></div>
@@ -173,146 +183,197 @@
     <div class="feedback" id="feedback" aria-live="polite">点一个一样的！</div>
   </div>
 
-  <script src="/js/kids-ui.js"></script>
-  <script src="/pwa.js" defer></script>
-  <script>
-    // 游戏数据
-    const data = {
-      animals: [
-        { emoji: '🐶', name: '小狗' },
-        { emoji: '🐱', name: '小猫' },
-        { emoji: '🐰', name: '兔子' },
-        { emoji: '🦊', name: '狐狸' },
-        { emoji: '🐻', name: '小熊' },
-        { emoji: '🐼', name: '熊猫' }
-      ],
-      fruits: [
-        { emoji: '🍎', name: '苹果' },
-        { emoji: '🍊', name: '橘子' },
-        { emoji: '🍋', name: '柠檬' },
-        { emoji: '🍇', name: '葡萄' },
-        { emoji: '🍓', name: '草莓' },
-        { emoji: '🍑', name: '桃子' }
-      ],
-      vehicles: [
-        { emoji: '🚗', name: '汽车' },
-        { emoji: '🚌', name: '公交车' },
-        { emoji: '🚓', name: '警车' },
-        { emoji: '🚑', name: '救护车' },
-        { emoji: '🚒', name: '消防车' },
-        { emoji: '🚕', name: '出租车' }
-      ]
-    };
+<script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
+    <script>
+      // 游戏数据
+      const DATA = {
+        animals: [
+          { emoji: '🐶', name: '小狗' },
+          { emoji: '🐱', name: '小猫' },
+          { emoji: '🐰', name: '兔子' },
+          { emoji: '🦊', name: '狐狸' },
+          { emoji: '🐻', name: '小熊' },
+          { emoji: '🐼', name: '熊猫' }
+        ],
+        fruits: [
+          { emoji: '🍎', name: '苹果' },
+          { emoji: '🍊', name: '橘子' },
+          { emoji: '🍋', name: '柠檬' },
+          { emoji: '🍇', name: '葡萄' },
+          { emoji: '🍓', name: '草莓' },
+          { emoji: '🍑', name: '桃子' }
+        ],
+        vehicles: [
+          { emoji: '🚗', name: '汽车' },
+          { emoji: '🚌', name: '公交车' },
+          { emoji: '🚔', name: '警车' },
+          { emoji: '🚑', name: '救护车' },
+          { emoji: '🚒', name: '消防车' },
+          { emoji: '🚕', name: '出租车' }
+        ]
+      };
 
-    const CELEBRATE_EVERY = 10;
-    const gameId = 'picture-recognition';
+      const CELEBRATE_EVERY = 10;
 
-    let currentCategory = 'animals';
-    let currentTarget = null;
-    let score = { correct: 0, wrong: 0 };
-    let cycleCorrect = 0;
-    let cycleWrong = 0;
-    let canClick = true;
+      /**
+       * 看图识物：自适应难度 —— 选项数随答题率在 3/4/5 之间升降。
+       * 答错留在本题重试（幼儿友好），难度只在「完成一道题」时评估。
+       */
+      class PictureRecognitionGame {
+        constructor() {
+          this.gameId = 'picture-recognition';
+          this.score = { correct: 0, wrong: 0 };
+          this.cycleCorrect = 0;
+          this.cycleWrong = 0;
+          this.currentCategory = 'animals';
+          this.currentTarget = null;
+          this.canClick = true;
+          this.roundMissed = false;
 
-    function startGame(category) {
-      currentCategory = category;
-      score = { correct: 0, wrong: 0 };
-      cycleCorrect = 0;
-      cycleWrong = 0;
-      updateScore();
-      document.querySelectorAll('.cat-btn').forEach((btn) => {
-        btn.classList.toggle('active', btn.dataset.cat === category);
-      });
-      KidsUI.SFX.tap();
-      nextRound();
-    }
+          // 难度 → 选项数（至少含 1 个正确 + 其余干扰项）
+          this.OPTION_COUNTS = [3, 4, 5];
 
-    function nextRound() {
-      canClick = true;
-      const fb = document.getElementById('feedback');
-      fb.textContent = '点一个一样的！';
-
-      const items = data[currentCategory];
-      currentTarget = items[Math.floor(Math.random() * items.length)];
-
-      document.getElementById('target-emoji').textContent = currentTarget.emoji;
-      document.getElementById('target-name').textContent = currentTarget.name;
-
-      const options = [currentTarget];
-      const others = items.filter((item) => item !== currentTarget);
-      while (options.length < 3 && others.length) {
-        const idx = Math.floor(Math.random() * others.length);
-        options.push(others.splice(idx, 1)[0]);
-      }
-      options.sort(() => Math.random() - 0.5);
-
-      const optionsDiv = document.getElementById('options');
-      optionsDiv.innerHTML = options
-        .map((item) => `<button class="option-btn" type="button" data-emoji="${item.emoji}">${item.emoji}</button>`)
-        .join('');
-      optionsDiv.querySelectorAll('.option-btn').forEach((btn) => {
-        btn.addEventListener('click', () => check(btn));
-      });
-    }
-
-    // 答错：该选项划掉，留在本题重试（幼儿友好）
-    function check(btn) {
-      if (!canClick) return;
-
-      if (btn.dataset.emoji === currentTarget.emoji) {
-        canClick = false;
-        btn.classList.add('correct');
-        score.correct++;
-        cycleCorrect++;
-        KidsUI.SFX.correct();
-        KidsUI.haptic('good');
-        KidsUI.TTS.speak(currentTarget.name);
-        document.getElementById('feedback').textContent = `对啦！这是${currentTarget.name}`;
-        updateScore();
-
-        if (cycleCorrect >= CELEBRATE_EVERY) {
-          cycleCorrect = 0;
-          cycleWrong = 0;
-          const stars = KidsUI.Progress.starsFor(score.correct / (score.correct + score.wrong));
-          KidsUI.Progress.record(gameId, { stars, best: score.correct });
-          KidsUI.Celebrate.show({
-            title: '真厉害！',
-            sub: `已经答对 ${score.correct} 题`,
-            stars,
-            primaryLabel: '继续玩',
-            onPrimary: () => nextRound()
+          this.difficulty = new KidsUI.AdaptiveDifficulty({
+            windowSize: 5,
+            thresholds: { easy: 0.8, hard: 0.5 },
+            initialLevel: 1,
+            onChange: (level) => this.onDifficultyChange(level)
           });
-          return;
+
+          this.init();
         }
-        setTimeout(nextRound, 1200);
-      } else {
-        score.wrong++;
-        cycleWrong++;
-        btn.classList.add('wrong');
-        KidsUI.SFX.wrong();
-        KidsUI.haptic('bad');
-        document.getElementById('feedback').textContent = '🤔 再找一个一样的';
-        updateScore();
+
+        init() {
+          KidsUI.Touch.guard();
+          KidsUI.Header.render({
+            title: '看图识物',
+            accent: '#e63946',
+            onReplay: () => this.startGame(this.currentCategory)
+          });
+          document.querySelectorAll('.cat-btn').forEach((btn) => {
+            btn.addEventListener('click', () => this.startGame(btn.dataset.cat));
+          });
+          this.startGame(this.currentCategory);
+        }
+
+        startGame(category) {
+          this.currentCategory = category;
+          this.score = { correct: 0, wrong: 0 };
+          this.cycleCorrect = 0;
+          this.cycleWrong = 0;
+          this.difficulty.reset();
+          this.updateScore();
+          this.updateLevelHint();
+          document.querySelectorAll('.cat-btn').forEach((btn) => {
+            btn.classList.toggle('active', btn.dataset.cat === category);
+          });
+          KidsUI.SFX.tap();
+          this.nextRound();
+        }
+
+        onDifficultyChange(level) {
+          // 只更新提示栏；下一题由 check() 里的 setTimeout(nextRound) 走完，避免重复出题
+          this.updateLevelHint();
+        }
+
+        updateLevelHint() {
+          const level = this.difficulty.getLevel();
+          const optionCount = this.OPTION_COUNTS[level - 1] || 3;
+          const labels = ['🐾 小小挑战', '🔍 有点难啦', '🌟 火眼金睛'];
+          document.getElementById('level-hint').textContent =
+            `${labels[level - 1]} · 从 ${optionCount} 个里选`;
+        }
+
+        optionCount() {
+          return this.OPTION_COUNTS[this.difficulty.getLevel() - 1] || 3;
+        }
+
+        nextRound() {
+          this.canClick = true;
+          this.roundMissed = false;
+          const fb = document.getElementById('feedback');
+          fb.textContent = '点一个一样的！';
+
+          const items = DATA[this.currentCategory];
+          this.currentTarget = items[Math.floor(Math.random() * items.length)];
+
+          document.getElementById('target-emoji').textContent = this.currentTarget.emoji;
+          document.getElementById('target-name').textContent = this.currentTarget.name;
+
+          const options = [this.currentTarget];
+          const others = items.filter((item) => item !== this.currentTarget);
+          const targetCount = this.optionCount();
+          while (options.length < targetCount && others.length) {
+            const idx = Math.floor(Math.random() * others.length);
+            options.push(others.splice(idx, 1)[0]);
+          }
+          options.sort(() => Math.random() - 0.5);
+
+          const optionsDiv = document.getElementById('options');
+          optionsDiv.innerHTML = options
+            .map((item) => `<button class="option-btn" type="button" data-emoji="${item.emoji}">${item.emoji}</button>`)
+            .join('');
+          optionsDiv.querySelectorAll('.option-btn').forEach((btn) => {
+            btn.addEventListener('click', () => this.check(btn));
+          });
+        }
+
+        // 答错：该选项划掉，留在本题重试（幼儿友好）
+        check(btn) {
+          if (!this.canClick) return;
+
+          if (btn.dataset.emoji === this.currentTarget.emoji) {
+            this.canClick = false;
+            btn.classList.add('correct');
+            this.score.correct++;
+            this.cycleCorrect++;
+            KidsUI.SFX.correct();
+            KidsUI.haptic('good');
+            KidsUI.TTS.speak(this.currentTarget.name);
+            document.getElementById('feedback').textContent = `对啦！这是${this.currentTarget.name}`;
+            this.updateScore();
+
+            // 完成一道题后才评估难度：本题一次未错记通过，错过则记不通过（可降级）
+            this.difficulty.record(!this.roundMissed);
+
+            if (this.cycleCorrect >= CELEBRATE_EVERY) {
+              this.cycleCorrect = 0;
+              this.cycleWrong = 0;
+              const stars = KidsUI.Progress.starsFor(this.score.correct / (this.score.correct + this.score.wrong));
+              KidsUI.Progress.record(this.gameId, { stars, best: this.score.correct });
+              KidsUI.Celebrate.show({
+                title: '真厉害！',
+                sub: `已经答对 ${this.score.correct} 题`,
+                stars,
+                primaryLabel: '继续玩',
+                onPrimary: () => this.nextRound()
+              });
+              return;
+            }
+            setTimeout(() => this.nextRound(), 1200);
+          } else {
+            this.score.wrong++;
+            this.cycleWrong++;
+            btn.classList.add('wrong');
+            KidsUI.SFX.wrong();
+            KidsUI.haptic('bad');
+            document.getElementById('feedback').textContent = '🤔 再找一个一样的';
+            this.updateScore();
+            // 留在本题重试，完成本题时才把「错过」计入难度
+            this.roundMissed = true;
+          }
+        }
+
+        updateScore() {
+          document.getElementById('correct').textContent = this.score.correct;
+          document.getElementById('wrong').textContent = this.score.wrong;
+        }
       }
-    }
 
-    function updateScore() {
-      document.getElementById('correct').textContent = score.correct;
-      document.getElementById('wrong').textContent = score.wrong;
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      KidsUI.Touch.guard();
-      KidsUI.Header.render({
-        title: '看图识物',
-        accent: '#e63946',
-        onReplay: () => startGame(currentCategory)
+      window.addEventListener('DOMContentLoaded', () => {
+        new PictureRecognitionGame();
       });
-      document.querySelectorAll('.cat-btn').forEach((btn) => {
-        btn.addEventListener('click', () => startGame(btn.dataset.cat));
-      });
-      nextRound();
-    });
-  </script>
+    </script>
 </body>
 </html>

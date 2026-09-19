@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#f2994a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-touch-icon" href="/icons/icon-192.png">
+    <title>数学侦探岛</title>
+    <link rel="stylesheet" href="/css/kids.css">
+    <style>
+        :root { --game-accent: #f2994a; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--kui-paper);
+            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-size: 26px 26px;
+            min-height: 100vh;
+            color: var(--kui-ink);
+            display: flex;
+            justify-content: center;
+            padding: 14px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .game {
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-lg);
+            box-shadow: var(--kui-shadow);
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+            margin-top: 8px;
+        }
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .mode-btn {
+            padding: 16px 10px;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            background: var(--kui-paper);
+            color: var(--kui-ink);
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s, border-color 0.2s;
+            text-align: center;
+            line-height: 1.4;
+        }
+        .mode-btn:active { transform: translateY(2px); box-shadow: none; }
+        .mode-btn.active {
+            border-color: rgba(47, 42, 37, 0.2);
+            color: #fff;
+        }
+        .mode-btn .mode-icon { font-size: 1.8rem; display: block; margin-bottom: 4px; }
+        .mode-btn[data-mode="count"].active { background: #f2994a; }
+        .mode-btn[data-mode="compare"].active { background: #4f8ff7; }
+        .mode-btn[data-mode="sort"].active { background: #3fa574; }
+        .mode-btn[data-mode="calc"].active { background: #e63946; }
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .instruction {
+            text-align: center;
+            font-size: clamp(16px, 4.5vw, 20px);
+            font-weight: 800;
+            margin-bottom: 14px;
+            min-height: 2.2em;
+        }
+        .items-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            min-height: 100px;
+            align-content: center;
+            background: var(--kui-paper);
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            padding: 14px;
+            margin-bottom: 18px;
+        }
+        .item {
+            font-size: clamp(32px, 10vw, 48px);
+            animation: itemBounce 0.5s var(--kui-bounce) backwards;
+        }
+        @keyframes itemBounce {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        .options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .option-btn {
+            aspect-ratio: 1;
+            min-height: 80px;
+            font-size: clamp(28px, 10vw, 52px);
+            font-weight: 900;
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s, border-color 0.2s;
+            touch-action: manipulation;
+        }
+        .option-btn:active { transform: scale(0.95); }
+        .option-btn.correct {
+            background: var(--kui-good);
+            border-color: var(--kui-good);
+            color: #fff;
+            animation: pop 0.35s var(--kui-bounce);
+        }
+        .option-btn.wrong {
+            opacity: 0.45;
+            border-color: var(--kui-bad);
+            border-style: dashed;
+            pointer-events: none;
+            animation: shake 0.35s ease;
+        }
+        @keyframes pop {
+            0% { transform: scale(0.9); }
+            50% { transform: scale(1.12); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+        .feedback {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 800;
+            min-height: 2em;
+            color: var(--kui-ink-soft);
+            margin-bottom: 8px;
+        }
+        .level-hint {
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--game-accent);
+            margin-bottom: 14px;
+        }
+        .sort-area {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+            min-height: 70px;
+        }
+        .sort-btn {
+            width: clamp(56px, 16vw, 72px);
+            height: clamp(56px, 16vw, 72px);
+            font-size: clamp(22px, 7vw, 32px);
+            font-weight: 900;
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), border-color 0.2s;
+            touch-action: manipulation;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .sort-btn:active { transform: scale(0.95); }
+        .sort-btn.placed {
+            border-color: var(--kui-good);
+            background: #eaf7f0;
+        }
+        .sort-slots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+        .sort-slot {
+            width: clamp(56px, 16vw, 72px);
+            height: clamp(56px, 16vw, 72px);
+            border: 3px dashed var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(20px, 6vw, 28px);
+            font-weight: 900;
+            color: var(--kui-ink-soft);
+            background: var(--kui-paper);
+        }
+        .sort-slot.filled {
+            border-style: solid;
+            border-color: var(--kui-good);
+            background: #eaf7f0;
+            color: var(--kui-ink);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .item, .option-btn, .mode-btn, .sort-btn { animation: none; transition: none; }
+            .option-btn.correct, .option-btn.wrong { animation-duration: 0.01s; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <div id="modeSelect">
+            <p class="instruction">🕵️ 选择侦探任务</p>
+            <div class="mode-grid">
+                <button class="mode-btn active" data-mode="count" type="button">
+                    <span class="mode-icon">🔢</span>
+                    数数巡逻
+                </button>
+                <button class="mode-btn" data-mode="compare" type="button">
+                    <span class="mode-icon">⚖️</span>
+                    比大小侦探
+                </button>
+                <button class="mode-btn" data-mode="sort" type="button">
+                    <span class="mode-icon">📊</span>
+                    排序追踪
+                </button>
+                <button class="mode-btn" data-mode="calc" type="button">
+                    <span class="mode-icon">➕</span>
+                    加减推理
+                </button>
+            </div>
+            <div class="score-board">
+                <span class="kui-chip">✅ 答对 <b id="correct">0</b></span>
+                <span class="kui-chip">🤔 试错 <b id="wrong">0</b></span>
+            </div>
+        </div>
+        <div id="gameArea" hidden>
+            <div class="level-hint" id="level-hint"></div>
+            <p class="instruction" id="instruction"></p>
+            <div class="items-area" id="itemsArea" hidden></div>
+            <div class="options" id="options"></div>
+            <div class="sort-area" id="sortArea" hidden></div>
+            <div class="sort-slots" id="sortSlots" hidden></div>
+            <div class="feedback" id="feedback" aria-live="polite"></div>
+        </div>
+    </div>
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
+    <script>
+        "use strict";
+        const CELEBRATE_EVERY = 5;
+        const gameId = 'math-detective';
+
+        class MathDetectiveGame {
+            constructor() {
+                this.gameId = gameId;
+                this.mode = 'count';
+                this.score = { correct: 0, wrong: 0 };
+                this.isBusy = false;
+                this.difficulty = new KidsUI.AdaptiveDifficulty({
+                    windowSize: 5,
+                    thresholds: { easy: 0.8, hard: 0.5 },
+                    initialLevel: 1,
+                    onChange: () => this.updateLevelHint()
+                });
+                this.sortChosen = [];
+                this.round = 0;
+                this.init();
+            }
+
+            init() {
+                KidsUI.Touch.guard();
+                KidsUI.Header.render({
+                    title: '数学侦探岛',
+                    accent: '#f2994a',
+                    onReplay: () => this.reset()
+                });
+                this.bindModeButtons();
+                this.updateScore();
+                this.updateLevelHint();
+            }
+
+            reset() {
+                this.round++;
+                this.score = { correct: 0, wrong: 0 };
+                this.difficulty.reset();
+                this.sortChosen = [];
+                this.isBusy = false;
+                this.updateScore();
+                this.updateLevelHint();
+                document.getElementById('gameArea').hidden = true;
+                document.getElementById('modeSelect').hidden = false;
+            }
+
+            bindModeButtons() {
+                var self = this;
+                document.querySelectorAll('.mode-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        KidsUI.SFX.tap();
+                        self.selectMode(btn.getAttribute('data-mode'));
+                    });
+                });
+            }
+
+            selectMode(mode) {
+                var self = this;
+                this.round++;
+                this.mode = mode;
+                this.score = { correct: 0, wrong: 0 };
+                this.difficulty.reset();
+                this.sortChosen = [];
+                this.isBusy = false;
+                this.updateScore();
+                this.updateLevelHint();
+
+                document.querySelectorAll('.mode-btn').forEach(function (b) {
+                    b.classList.toggle('active', b.getAttribute('data-mode') === mode);
+                });
+                document.getElementById('modeSelect').hidden = true;
+                document.getElementById('gameArea').hidden = false;
+                document.getElementById('feedback').textContent = '';
+
+                switch (mode) {
+                    case 'count': this.startCount(); break;
+                    case 'compare': this.startCompare(); break;
+                    case 'sort': this.startSort(); break;
+                    case 'calc': this.startCalc(); break;
+                }
+            }
+
+            updateScore() {
+                document.getElementById('correct').textContent = this.score.correct;
+                document.getElementById('wrong').textContent = this.score.wrong;
+            }
+
+            updateLevelHint() {
+                var level = this.difficulty.getLevel();
+                var labels = {
+                    count: ['🐾 小小数数', '🔍 仔细数数', '🌟 侦探数数'],
+                    compare: ['🐾 简单比', '🔍 细心比', '🌟 火眼金睛'],
+                    sort: ['🐾 小小排序', '🔍 仔细排', '🌟 侦探排序'],
+                    calc: ['🐾 简单算', '🔍 试着算', '🌟 侦探推理']
+                };
+                var el = document.getElementById('level-hint');
+                if (el) {
+                    var modeLabels = labels[this.mode] || labels.count;
+                    el.textContent = modeLabels[level - 1];
+                }
+            }
+
+            celebrate() {
+                var self = this;
+                var stars = KidsUI.Progress.starsFor(this.score.correct / (this.score.correct + this.score.wrong));
+                KidsUI.Progress.record(this.gameId, { best: this.score.correct, stars });
+                KidsUI.Celebrate.show({
+                    title: '破案了！',
+                    sub: '答对 ' + this.score.correct + ' 题',
+                    stars: stars,
+                    primaryLabel: '继续',
+                    onPrimary: function () { self.continueGame(); },
+                    announce: '太厉害了！'
+                });
+            }
+
+            continueGame() {
+                switch (this.mode) {
+                    case 'count': this.startCount(); break;
+                    case 'compare': this.startCompare(); break;
+                    case 'sort': this.startSort(); break;
+                    case 'calc': this.startCalc(); break;
+                }
+            }
+
+            recordCorrect() {
+                var self = this;
+                this.difficulty.record(true);
+                this.score.correct++;
+                this.updateScore();
+                if (this.score.correct % CELEBRATE_EVERY === 0) {
+                    this.celebrate();
+                    return true;
+                }
+                return false;
+            }
+
+            /* 定时推进带局号守卫：期间重玩/切模式时旧定时器作废，不会把人拽回游戏 */
+            scheduleNext(delay) {
+                var self = this;
+                var round = this.round;
+                setTimeout(function () {
+                    if (self.round === round) self.continueGame();
+                }, delay);
+            }
+
+            recordWrong() {
+                this.difficulty.record(false);
+                this.score.wrong++;
+                this.updateScore();
+            }
+
+            /* ── Mode 1: 数数巡逻 ── */
+            startCount() {
+                var self = this;
+                var maxNum = [3, 5, 8][this.difficulty.getLevel() - 1] || 5;
+                var target = Math.floor(Math.random() * maxNum) + 1;
+                var itemEmojis = ['🍎', '🍊', '⭐', '🐶', '🐱', '🌸', '🦋', '🍋', '🍇'];
+                var itemType = itemEmojis[Math.floor(Math.random() * itemEmojis.length)];
+
+                document.getElementById('instruction').textContent = '数一数，一共有几个？';
+                document.getElementById('itemsArea').hidden = false;
+                document.getElementById('options').hidden = false;
+                document.getElementById('sortArea').hidden = true;
+                document.getElementById('sortSlots').hidden = true;
+
+                var itemsArea = document.getElementById('itemsArea');
+                itemsArea.innerHTML = '';
+                for (var i = 0; i < target; i++) {
+                    var item = document.createElement('span');
+                    item.className = 'item';
+                    item.textContent = itemType;
+                    item.style.animationDelay = i * 0.08 + 's';
+                    itemsArea.appendChild(item);
+                }
+
+                this.isBusy = false;
+                var options = this.generateOptions(target, maxNum);
+                this.renderOptions(options, function (btn, opt) {
+                    if (self.isBusy) return;
+                    if (opt === target) {
+                        self.isBusy = true;
+                        btn.classList.add('correct');
+                        KidsUI.SFX.correct();
+                        KidsUI.haptic('good');
+                        KidsUI.TTS.speak(target + ' 个');
+                        if (!self.recordCorrect()) self.scheduleNext(1200);
+                    } else {
+                        btn.classList.add('wrong');
+                        KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
+                        KidsUI.TTS.speak('不对哦');
+                        self.recordWrong();
+                        setTimeout(function () { btn.classList.remove('wrong'); }, 600);
+                    }
+                });
+            }
+
+            /* ── Mode 2: 比大小侦探 ── */
+            startCompare() {
+                var self = this;
+                var level = this.difficulty.getLevel();
+                var maxNum = [5, 10, 15][level - 1] || 10;
+
+                document.getElementById('instruction').textContent = '哪个数字更大？';
+                document.getElementById('options').hidden = false;
+                document.getElementById('sortArea').hidden = true;
+                document.getElementById('sortSlots').hidden = true;
+
+                var a = Math.floor(Math.random() * maxNum) + 1;
+                var b = Math.floor(Math.random() * maxNum) + 1;
+                while (b === a) b = Math.floor(Math.random() * maxNum) + 1;
+                var correct = Math.max(a, b);
+
+                var itemsArea = document.getElementById('itemsArea');
+                itemsArea.hidden = false;
+                itemsArea.innerHTML = '';
+                [a, b].forEach(function (num, i) {
+                    var item = document.createElement('span');
+                    item.className = 'item';
+                    item.textContent = num;
+                    item.style.animationDelay = i * 0.1 + 's';
+                    itemsArea.appendChild(item);
+                });
+
+                // 选项必含 a、b 本身；干扰项严格小于正确答案，「最大的数」才是对的
+                var smaller = [];
+                for (var n = 1; n < correct; n++) {
+                    if (n !== a && n !== b) smaller.push(n);
+                }
+                smaller.sort(function () { return Math.random() - 0.5; });
+                var optionCount = [2, 3, 4][level - 1] || 3;
+                var options = [a, b].concat(smaller.slice(0, optionCount - 2));
+                options.sort(function () { return Math.random() - 0.5; });
+
+                this.isBusy = false;
+                this.renderOptions(options, function (btn, opt) {
+                    if (self.isBusy) return;
+                    if (opt === correct) {
+                        self.isBusy = true;
+                        btn.classList.add('correct');
+                        KidsUI.SFX.correct();
+                        KidsUI.haptic('good');
+                        KidsUI.TTS.speak(correct + ' 最大');
+                        if (!self.recordCorrect()) self.scheduleNext(1000);
+                    } else {
+                        btn.classList.add('wrong');
+                        KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
+                        KidsUI.TTS.speak('再试试');
+                        self.recordWrong();
+                        setTimeout(function () { btn.classList.remove('wrong'); }, 600);
+                    }
+                });
+            }
+
+            /* ── Mode 3: 排序追踪 ── */
+            startSort() {
+                var self = this;
+                var count = [3, 5, 7][this.difficulty.getLevel() - 1] || 3;
+                var maxNum = count + 2;
+
+                document.getElementById('instruction').textContent = '从小到大排一排';
+                document.getElementById('itemsArea').hidden = true;
+                document.getElementById('options').hidden = true;
+                document.getElementById('sortArea').hidden = false;
+                document.getElementById('sortSlots').hidden = false;
+
+                var numbers = [];
+                while (numbers.length < count) {
+                    var n = Math.floor(Math.random() * maxNum) + 1;
+                    if (numbers.indexOf(n) === -1) numbers.push(n);
+                }
+                var shuffled = numbers.slice().sort(function () { return Math.random() - 0.5; });
+                var sorted = numbers.slice().sort(function (a, b) { return a - b; });
+
+                this.sortChosen = [];
+                this.isBusy = false;
+
+                var sortArea = document.getElementById('sortArea');
+                sortArea.innerHTML = '';
+                var btnEls = [];
+                shuffled.forEach(function (num) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'sort-btn';
+                    btn.textContent = num;
+                    btn.addEventListener('click', function () {
+                        if (self.isBusy || btn.classList.contains('placed')) return;
+                        btn.classList.add('placed');
+                        KidsUI.SFX.tap();
+                        self.sortChosen.push(num);
+                        self.updateSortSlots(sorted, btnEls);
+                    });
+                    sortArea.appendChild(btn);
+                    btnEls.push(btn);
+                });
+
+                var sortSlots = document.getElementById('sortSlots');
+                sortSlots.innerHTML = '';
+                for (var i = 0; i < count; i++) {
+                    var slot = document.createElement('div');
+                    slot.className = 'sort-slot';
+                    slot.setAttribute('data-index', String(i));
+                    sortSlots.appendChild(slot);
+                }
+                document.getElementById('feedback').textContent = '点数字，再点空位放入';
+            }
+
+            updateSortSlots(sorted, btnEls) {
+                var self = this;
+                var sortSlots = document.getElementById('sortSlots');
+                var slots = sortSlots.querySelectorAll('.sort-slot');
+                for (var i = 0; i < this.sortChosen.length; i++) {
+                    slots[i].textContent = this.sortChosen[i];
+                    slots[i].classList.add('filled');
+                }
+                if (this.sortChosen.length === sorted.length) {
+                    var correct = true;
+                    for (var j = 0; j < sorted.length; j++) {
+                        if (parseInt(slots[j].textContent, 10) !== sorted[j]) {
+                            correct = false;
+                            break;
+                        }
+                    }
+                    if (correct) {
+                        KidsUI.SFX.correct();
+                        KidsUI.haptic('good');
+                        KidsUI.TTS.speak('排对了');
+                        if (!this.recordCorrect()) this.scheduleNext(1200);
+                    } else {
+                        KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
+                        KidsUI.TTS.speak('顺序不对');
+                        this.recordWrong();
+                        var self2 = this;
+                        setTimeout(function () {
+                            self.sortChosen = [];
+                            var allSlots = document.getElementById('sortSlots').querySelectorAll('.sort-slot');
+                            for (var k = 0; k < allSlots.length; k++) {
+                                allSlots[k].textContent = '';
+                                allSlots[k].classList.remove('filled');
+                            }
+                            var allBtns = document.getElementById('sortArea').querySelectorAll('.sort-btn');
+                            for (var m = 0; m < allBtns.length; m++) {
+                                allBtns[m].classList.remove('placed');
+                            }
+                        }, 800);
+                    }
+                }
+            }
+
+            /* ── Mode 4: 加减推理 ── */
+            startCalc() {
+                var self = this;
+                var level = this.difficulty.getLevel();
+                var maxSum = [5, 10, 15][level - 1] || 10;
+
+                document.getElementById('instruction').textContent = '算一算，答案是几？';
+                document.getElementById('itemsArea').hidden = true;
+                document.getElementById('options').hidden = false;
+                document.getElementById('sortArea').hidden = true;
+                document.getElementById('sortSlots').hidden = true;
+
+                var isAdd = Math.random() > 0.5;
+                var a = Math.floor(Math.random() * (maxSum / 2)) + 1;
+                var b = Math.floor(Math.random() * (maxSum - a)) + 1;
+                var answer;
+                var question;
+                if (isAdd) {
+                    answer = a + b;
+                    question = a + ' + ' + b + ' = ?';
+                } else {
+                    answer = a + b;
+                    a = Math.max(a, b) + Math.floor(Math.random() * 3) + 1;
+                    b = a - answer;
+                    if (b <= 0) { b = 1; a = answer + b; }
+                    question = a + ' − ' + b + ' = ?';
+                }
+
+                var options = this.generateOptions(answer, maxSum);
+                this.isBusy = false;
+                this.renderOptions(options, function (btn, opt) {
+                    if (self.isBusy) return;
+                    if (opt === answer) {
+                        self.isBusy = true;
+                        btn.classList.add('correct');
+                        KidsUI.SFX.correct();
+                        KidsUI.haptic('good');
+                        KidsUI.TTS.speak('答案是' + answer);
+                        if (!self.recordCorrect()) self.scheduleNext(1200);
+                    } else {
+                        btn.classList.add('wrong');
+                        KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
+                        KidsUI.TTS.speak('不对哦');
+                        self.recordWrong();
+                        setTimeout(function () { btn.classList.remove('wrong'); }, 600);
+                    }
+                });
+
+                document.getElementById('instruction').textContent = question;
+            }
+
+            /* ── 通用工具 ── */
+            generateOptions(correct, maxVal) {
+                var options = [correct];
+                var target = [3, 3, 4][this.difficulty.getLevel() - 1] || 3;
+                while (options.length < target) {
+                    var wrong = Math.floor(Math.random() * maxVal) + 1;
+                    if (wrong !== correct && options.indexOf(wrong) === -1) {
+                        options.push(wrong);
+                    }
+                }
+                return options.sort(function () { return Math.random() - 0.5; });
+            }
+
+            renderOptions(options, onChoice) {
+                var self = this;
+                var optionsDiv = document.getElementById('options');
+                optionsDiv.innerHTML = '';
+                options.forEach(function (opt) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'option-btn';
+                    btn.textContent = opt;
+                    btn.addEventListener('click', function () { onChoice(btn, opt); });
+                    optionsDiv.appendChild(btn);
+                });
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            new MathDetectiveGame();
+        });
+    </script>
+</body>
+</html>

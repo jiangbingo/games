@@ -91,6 +91,7 @@
     phi: PRESETS.standard.phi,
     printPerPage: 1,
     printLabel: false,
+    rotatePortrait: true,
     gen: 0,
   };
 
@@ -133,10 +134,12 @@
     });
   }
   function imgToCanvas(img, maxEdge) {
-    var scale = Math.min(1, maxEdge / Math.max(img.naturalWidth, img.naturalHeight));
+    var w = img.naturalWidth || img.width;
+    var h = img.naturalHeight || img.height;
+    var scale = Math.min(1, maxEdge / Math.max(w, h));
     var c = document.createElement("canvas");
-    c.width = Math.max(1, Math.round(img.naturalWidth * scale));
-    c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+    c.width = Math.max(1, Math.round(w * scale));
+    c.height = Math.max(1, Math.round(h * scale));
     c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
     return c;
   }
@@ -148,6 +151,25 @@
       img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("无法解码该图片")); };
       img.src = url;
     }).then(function (img) { return imgToCanvas(img, MAX_EDGE); });
+  }
+
+  /**
+   * 横图（宽 > 高）转竖：A4 竖版打印时，横图放在一页里会留大片空白。
+   * 旋转 90° 让长边贴合 A4 高度，孩子涂起来不用歪头。
+   * 正方形/竖图不动；旋转后重新走 imgToCanvas 归一到 MAX_EDGE。
+   */
+  function rotateToPortrait(img) {
+    var w = img.naturalWidth || img.width;
+    var h = img.naturalHeight || img.height;
+    if (w <= h) return img;
+    var c = document.createElement("canvas");
+    c.width = h;
+    c.height = w;
+    var ctx = c.getContext("2d");
+    ctx.translate(c.width / 2, c.height / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(img, -w / 2, -h / 2);
+    return imgToCanvas(c, MAX_EDGE);
   }
   function triggerDownload(dataURL, filename) {
     var a = document.createElement("a");
@@ -162,7 +184,7 @@
   }
 
   /* ---------- 批量管线 ---------- */
-  function addFiles(fileList) {
+  async function addFiles(fileList) {
     var files = Array.prototype.slice.call(fileList).filter(function (f) { return /^image\//.test(f.type); });
     var skipped = fileList.length - files.length;
     if (skipped > 0) toast("已跳过 " + skipped + " 个非图片文件");
@@ -171,31 +193,38 @@
       files = files.slice(0, ITEM_LIMIT - state.items.length);
       toast("最多同时处理 " + ITEM_LIMIT + " 张");
     }
-    files.forEach(function (f) {
-      fileToCanvas(f)
-        .then(function (canvas) {
-          if (state.items.length >= ITEM_LIMIT) {
-            toast("最多同时处理 " + ITEM_LIMIT + " 张，已忽略多余的图片");
-            return;
-          }
-          state.items.push({
-            id: uid(),
-            name: f.name.replace(/\.[^.]+$/, "").slice(0, 24) || "图片",
-            srcFull: canvas.toDataURL("image/jpeg", JPEG_SRC_QUALITY),
-            w: canvas.width,
-            h: canvas.height,
-            lineURL: null,
-            status: "pending",
-            checked: true,
-          });
-          renderGrid();
-          updateSummary();
-          reprocessSoon();
-        })
-        .catch(function () {
-          toast("「" + f.name + "」无法解码（HEIC 请先转 JPG/PNG）");
-        });
-    });
+    /* 串行解码：单张 12MP 照片解码位图约 50MB，并发批处理会把 iPad Safari 顶过内存上限 */
+    var added = 0;
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      try {
+        var canvas = await fileToCanvas(f);
+        if (state.rotatePortrait) canvas = rotateToPortrait(canvas);
+        if (state.items.length >= ITEM_LIMIT) {
+          toast("最多同时处理 " + ITEM_LIMIT + " 张，已忽略多余的图片");
+          break;
+        }
+        var item = {
+          id: uid(),
+          name: f.name.replace(/\.[^.]+$/, "").slice(0, 24) || "图片",
+          srcFull: canvas.toDataURL("image/jpeg", JPEG_SRC_QUALITY),
+          w: canvas.width,
+          h: canvas.height,
+          lineURL: null,
+          status: "pending",
+          checked: true,
+        };
+        state.items.push(item);
+        added++;
+        renderCard(item);
+        updateSummary();
+      } catch (e) {
+        toast("「" + f.name + "」无法解码（HEIC 请先转 JPG/PNG）");
+      }
+    }
+    /* 全部入队后只触发一轮重处理——循环内逐张调用会因单张耗时超过 debounce
+     * 窗口而反复作废在跑的管线，每张照片被白烧一整轮 DoG */
+    if (added) reprocessSoon();
   }
 
   function addCanvasAsItem(name, canvas) {
@@ -222,6 +251,8 @@
     for (var i = 0; i < todo.length; i++) {
       if (gen !== state.gen) return;
       var it = todo[i];
+      /* 快照里可能混入处理期间被用户删除的项：跳过，否则 renderCard 会把已删卡片复活 */
+      if (state.items.indexOf(it) === -1) continue;
       it.status = "processing";
       renderCard(it);
       updateSummary(todo.length - doneCount);
@@ -258,8 +289,12 @@
 
   function renderCard(item) {
     var old = dom.grid.querySelector('[data-id="' + item.id + '"]');
-    if (old) dom.grid.replaceChild(buildCard(item), old);
-    else renderGrid();
+    if (old) {
+      dom.grid.replaceChild(buildCard(item), old);
+      return;
+    }
+    dom.grid.appendChild(buildCard(item));
+    dom.studio.classList.toggle("has-items", state.items.length > 0);
   }
 
   function buildCard(it) {
@@ -480,8 +515,11 @@
         $all(".perpage-btn").forEach(function (x) { x.classList.toggle("active", x === b); });
       });
     });
-    dom.labelCheck.addEventListener("change", function () {
-      state.printLabel = dom.labelCheck.checked;
+dom.labelCheck.addEventListener("change", function () {
+        state.printLabel = dom.labelCheck.checked;
+    });
+    dom.rotateCheck.addEventListener("change", function () {
+        state.rotatePortrait = dom.rotateCheck.checked;
     });
     dom.printBtn.addEventListener("click", printSelection);
     dom.downloadAllBtn.addEventListener("click", downloadAll);
@@ -502,6 +540,7 @@
     dom.printBtn = $("#printBtn");
     dom.downloadAllBtn = $("#downloadAllBtn");
     dom.labelCheck = $("#labelCheck");
+    dom.rotateCheck = $("#rotateCheck");
     dom.printArea = $("#printArea");
     dom.toast = $("#toast");
   }
