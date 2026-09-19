@@ -32,6 +32,8 @@ export type Level = {
   size: number;
   seed: number;
   theme: MazeTheme;
+  /** 手工关卡：每格一位 16 进制墙面掩码（上1 右2 下4 左8），提供后忽略 seed */
+  maskRows?: string[];
 };
 
 export type Maze = {

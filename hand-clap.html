@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#e84393">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-touch-icon" href="/icons/icon-192.png">
+    <title>双手拍拍</title>
+    <link rel="stylesheet" href="/css/kids.css">
+    <style>
+        :root {
+            --game-accent: #e84393;
+            --cell-h: 104px;
+            --lane-h: min(430px, 54vh);
+            --judge-from-bottom: 78px;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--kui-paper);
+            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-size: 26px 26px;
+            min-height: 100vh;
+            color: var(--kui-ink);
+            display: flex;
+            justify-content: center;
+            padding: 14px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .game {
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-lg);
+            box-shadow: var(--kui-shadow);
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+            margin-top: 8px;
+        }
+        .instruction {
+            text-align: center;
+            font-size: clamp(16px, 4.5vw, 20px);
+            font-weight: 800;
+            margin-bottom: 14px;
+            min-height: 2.2em;
+        }
+        .legend {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .legend-item {
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-paper);
+            box-shadow: var(--kui-shadow);
+            padding: 14px 8px;
+            text-align: center;
+        }
+        .legend-item .legend-icon { font-size: 2.6rem; display: block; }
+        .legend-item .legend-name { font-weight: 900; font-size: 1.05rem; margin-top: 4px; }
+        .legend-item .legend-sub { font-size: 0.85rem; color: var(--kui-ink-soft); }
+        .legend-item.hand { border-color: rgba(232, 67, 147, 0.45); }
+        .legend-item.circle { border-color: rgba(63, 165, 116, 0.45); }
+        .speed-label {
+            text-align: center;
+            font-weight: 800;
+            color: var(--kui-ink-soft);
+            margin-bottom: 8px;
+        }
+        .speed-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .speed-btn {
+            padding: 12px 6px;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            font-size: 0.95rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s;
+            touch-action: manipulation;
+        }
+        .speed-btn:active { transform: translateY(2px); box-shadow: none; }
+        .speed-btn.active { background: var(--game-accent); border-color: var(--game-accent); color: #fff; }
+        .big-start {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.3rem;
+            font-weight: 900;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .speed-row.mini { margin: 0 0 10px; }
+        .speed-row.mini .speed-btn { padding: 8px 4px; font-size: 0.85rem; }
+        .playfield {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .lane {
+            position: relative;
+            height: var(--lane-h);
+            overflow: hidden;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-paper-deep);
+            cursor: pointer;
+        }
+        /* 还原照片里的纸带：格子像一张张贴起来的纸 */
+        .lane::before {
+            content: "";
+            position: absolute;
+            top: -6px; left: 50%;
+            width: 64px; height: 18px;
+            transform: translateX(-50%) rotate(-2deg);
+            background: rgba(232, 67, 147, 0.35);
+            border-radius: 3px;
+            opacity: 0.7;
+            z-index: 3;
+        }
+        .tape {
+            position: absolute;
+            left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column-reverse;
+            will-change: transform;
+        }
+        .cell {
+            height: var(--cell-h);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(40px, 13vw, 56px);
+            background: var(--kui-card);
+            border-bottom: 2px dashed var(--kui-line);
+            transition: background 0.15s;
+        }
+        .cell.hit-hand { background: #fde8f1; animation: pop 0.35s var(--kui-bounce); }
+        .cell.hit-circle { background: #eaf7f0; animation: pop 0.35s var(--kui-bounce); }
+        .cell.missed { opacity: 0.35; filter: grayscale(1); }
+        .judge-zone {
+            position: absolute;
+            left: 0; right: 0; bottom: var(--judge-from-bottom);
+            height: 4px;
+            background: var(--game-accent);
+            box-shadow: 0 0 0 3px rgba(232, 67, 147, 0.25);
+            pointer-events: none;
+        }
+        .lane-flash {
+            position: absolute;
+            inset: 0;
+            background: rgba(232, 67, 147, 0.10);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .lane-flash.on { animation: flash 0.25s ease; }
+        @keyframes flash {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        @keyframes pop {
+            0% { transform: scale(0.86); }
+            50% { transform: scale(1.14); }
+            100% { transform: scale(1); }
+        }
+        @keyframes wobble {
+            0%, 100% { transform: translateX(0); }
+            30% { transform: translateX(-5px); }
+            70% { transform: translateX(5px); }
+        }
+        .hand-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .hand-btn {
+            padding: 16px 6px;
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            font-size: 1.15rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.1s var(--kui-bounce), box-shadow 0.1s, background 0.15s;
+            touch-action: manipulation;
+        }
+        .hand-btn:active, .hand-btn.pressed {
+            transform: translateY(3px);
+            box-shadow: none;
+            background: var(--kui-paper);
+        }
+        .hand-btn.empty-tap { animation: wobble 0.3s ease; }
+        .hand-btn .hand-emoji { font-size: 1.8rem; display: block; }
+        .combo-pop {
+            position: absolute;
+            top: 8px; left: 50%;
+            transform: translateX(-50%);
+            font-weight: 900;
+            font-size: 1.15rem;
+            color: var(--game-accent);
+            background: var(--kui-card);
+            border: 2px solid rgba(232, 67, 147, 0.4);
+            border-radius: 999px;
+            padding: 3px 14px;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 3;
+        }
+        .combo-pop.on { animation: comboIn 0.7s var(--kui-bounce); }
+        @keyframes comboIn {
+            0% { opacity: 0; transform: translateX(-50%) scale(0.6); }
+            30% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-50%) scale(1); }
+        }
+        .hint {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--kui-ink-soft);
+            margin-top: 8px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .cell, .combo-pop, .lane-flash, .hand-btn { animation: none; transition: none; }
+            .lane::before { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <div id="startScreen">
+            <p class="instruction">🖐️ 双手拍拍</p>
+            <div class="legend">
+                <div class="legend-item hand">
+                    <span class="legend-icon">✋</span>
+                    <span class="legend-name">拍拍</span>
+                    <span class="legend-sub">手掌大声拍「啪！」</span>
+                </div>
+                <div class="legend-item circle">
+                    <span class="legend-icon">⭕</span>
+                    <span class="legend-name">摸摸</span>
+                    <span class="legend-sub">圆圈轻轻摸「咚～」</span>
+                </div>
+            </div>
+            <p class="speed-label">纸带会自动滚下来，到线上的图案就做动作</p>
+            <div class="speed-row" id="speedRowStart"></div>
+            <button class="kui-btn kui-primary kui-big big-start" id="startBtn" type="button">开始游戏 🥁</button>
+        </div>
+
+        <div id="playScreen" hidden>
+            <div class="stats-row">
+                <span class="kui-chip">✅ 拍中 <b id="hitCount">0</b></span>
+                <span class="kui-chip">💤 错过 <b id="missCount">0</b></span>
+                <span class="kui-chip">🔥 连击 <b id="combo">0</b></span>
+            </div>
+            <div class="speed-row mini" id="speedRowPlay"></div>
+            <div class="playfield" id="playfield">
+                <div class="lane" data-side="left" aria-label="左手轨道，点一下出左手">
+                    <div class="tape" id="tapeLeft"></div>
+                    <div class="lane-flash" id="flashLeft"></div>
+                    <div class="judge-zone"></div>
+                </div>
+                <div class="lane" data-side="right" aria-label="右手轨道，点一下出右手">
+                    <div class="tape" id="tapeRight"></div>
+                    <div class="lane-flash" id="flashRight"></div>
+                    <div class="judge-zone"></div>
+                </div>
+                <div class="combo-pop" id="comboPop"></div>
+            </div>
+            <div class="hand-row">
+                <button class="hand-btn" id="btnLeft" type="button" data-side="left" aria-label="左手">
+                    <span class="hand-emoji">✋</span>左手
+                </button>
+                <button class="hand-btn" id="btnRight" type="button" data-side="right" aria-label="右手">
+                    <span class="hand-emoji">🤚</span>右手
+                </button>
+            </div>
+            <p class="hint">键盘也能玩：A / ← 出左手，D / → 出右手</p>
+        </div>
+    </div>
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
+    <script>
+        "use strict";
+        var gameId = 'hand-clap';
+        var LS_SPEED = 'handclap_speed';
+        var CELL_H = 104; /* 与 CSS --cell-h 同步 */
+        /* 与 CSS --judge-from-bottom（线到轨道底距离）和 4px 判定线高度同步 */
+        var JUDGE_FROM_BOTTOM = 78;
+        var JUDGE_ZONE_H = 4;
+        var LEAD_CELLS = 1.6;
+        var TOTAL_BEATS = 22;
+        var BLANK_LEAD_BEATS = 2;
+        var SYMBOL_CHANCE = 0.75;
+        var MAX_FRAME_MS = 100;
+        /* 滚速 px/s：beat 间隔 = CELL_H / v，慢≈1.3s / 中≈0.9s / 快≈0.65s */
+        var SPEEDS = [
+            { id: 'slow', label: '🐢 慢慢', v: 80 },
+            { id: 'mid', label: '🚶 中速', v: 115 },
+            { id: 'fast', label: '🐇 快快', v: 160 }
+        ];
+
+        function laneGeometry() {
+            var lane = document.querySelector('.lane');
+            var laneH = lane ? lane.clientHeight : 400;
+            return {
+                laneH: laneH,
+                lineY: laneH - JUDGE_FROM_BOTTOM - JUDGE_ZONE_H / 2
+            };
+        }
+
+        class HandClapGame {
+            constructor() {
+                this.gameId = gameId;
+                this.speedId = this.loadSpeed();
+                this.isPlaying = false;
+                this.rafId = 0;
+                this.lastTs = 0;
+                this.resetScore();
+                this.init();
+            }
+
+            resetScore() {
+                this.hits = 0;
+                this.misses = 0;
+                this.combo = 0;
+                this.bestCombo = 0;
+            }
+
+            loadSpeed() {
+                var saved = localStorage.getItem(LS_SPEED);
+                return SPEEDS.some(function (s) { return s.id === saved; }) ? saved : 'mid';
+            }
+
+            saveSpeed() {
+                localStorage.setItem(LS_SPEED, this.speedId);
+            }
+
+            get speed() {
+                var self = this;
+                return SPEEDS.find(function (s) { return s.id === self.speedId; }) || SPEEDS[1];
+            }
+
+            /* 判定窗随速度伸缩：间隔的 45%，上下限 0.28s–0.55s（幼儿容差），按当前速度换算成像素 */
+            hitWindowPx() {
+                var interval = CELL_H / this.speed.v;
+                var windowS = Math.min(0.55, Math.max(0.28, interval * 0.45));
+                return this.speed.v * windowS;
+            }
+
+            init() {
+                KidsUI.Touch.guard();
+                KidsUI.Header.render({
+                    title: '双手拍拍',
+                    accent: '#e84393',
+                    onReplay: () => this.backToStart()
+                });
+                this.renderSpeedButtons('speedRowStart');
+                this.renderSpeedButtons('speedRowPlay');
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    KidsUI.SFX.tap();
+                    this.startRound();
+                });
+                document.getElementById('playfield').addEventListener('pointerdown', (e) => {
+                    var target = e.target.closest('[data-side]');
+                    if (target) this.tap(target.getAttribute('data-side'));
+                });
+                document.getElementById('btnLeft').addEventListener('pointerdown', () => this.tap('left'));
+                document.getElementById('btnRight').addEventListener('pointerdown', () => this.tap('right'));
+                window.addEventListener('keydown', (e) => {
+                    if (!this.isPlaying || e.repeat) return;
+                    var isLeft = e.key === 'a' || e.key === 'A' || e.key === 'ArrowLeft';
+                    var isRight = e.key === 'd' || e.key === 'D' || e.key === 'ArrowRight';
+                    if (!isLeft && !isRight) return;
+                    e.preventDefault();
+                    this.tap(isLeft ? 'left' : 'right');
+                });
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) this.lastTs = 0;
+                });
+            }
+
+            renderSpeedButtons(containerId) {
+                var self = this;
+                var row = document.getElementById(containerId);
+                row.innerHTML = '';
+                SPEEDS.forEach(function (speed) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'speed-btn' + (speed.id === self.speedId ? ' active' : '');
+                    btn.textContent = speed.label;
+                    btn.setAttribute('aria-pressed', String(speed.id === self.speedId));
+                    btn.addEventListener('click', function () {
+                        KidsUI.SFX.tap();
+                        self.setSpeed(speed.id);
+                    });
+                    row.appendChild(btn);
+                });
+            }
+
+            setSpeed(speedId) {
+                this.speedId = speedId;
+                this.saveSpeed();
+                this.renderSpeedButtons('speedRowStart');
+                this.renderSpeedButtons('speedRowPlay');
+            }
+
+            backToStart() {
+                this.stopLoop();
+                this.resetScore();
+                this.updateStats();
+                document.getElementById('playScreen').hidden = true;
+                document.getElementById('startScreen').hidden = false;
+            }
+
+            startRound() {
+                var self = this;
+                this.resetScore();
+                this.updateStats();
+                document.getElementById('startScreen').hidden = true;
+                document.getElementById('playScreen').hidden = false;
+                this.offset = -LEAD_CELLS * CELL_H;
+                this.tapes = {
+                    left: this.buildTape('tapeLeft'),
+                    right: this.buildTape('tapeRight')
+                };
+                this.totalSymbols = this.tapes.left.symbols.length + this.tapes.right.symbols.length;
+                this.resolved = 0;
+                this.lastTs = 0;
+                this.renderTapes();
+                this.stopLoop();
+                this.isPlaying = true;
+                this.rafId = requestAnimationFrame(function (ts) { self.tick(ts); });
+            }
+
+            /* 生成一条纸带序列：前两拍留空热身，之后 75% 出符号，手掌/圆圈各半 */
+            buildTape(tapeId) {
+                var cells = [];
+                for (var i = 0; i < TOTAL_BEATS; i++) {
+                    var kind = null;
+                    if (i >= BLANK_LEAD_BEATS && Math.random() < SYMBOL_CHANCE) {
+                        kind = Math.random() < 0.5 ? 'hand' : 'circle';
+                    }
+                    cells.push({ kind: kind, state: 'pending' });
+                }
+                return { id: tapeId, cells: cells, symbols: cells.filter(function (c) { return c.kind; }) };
+            }
+
+            renderTapes() {
+                var self = this;
+                ['left', 'right'].forEach(function (side) {
+                    var tape = self.tapes[side];
+                    var el = document.getElementById(tape.id);
+                    el.innerHTML = '';
+                    tape.cells.forEach(function (cell) {
+                        var div = document.createElement('div');
+                        div.className = 'cell';
+                        div.textContent = cell.kind === 'hand' ? '✋' : cell.kind === 'circle' ? '⭕' : '';
+                        el.appendChild(div);
+                        cell.el = div;
+                    });
+                });
+                this.applyTapeTransform();
+            }
+
+            /* 纸带锚在轨道底部、向上堆叠（column-reverse）：格子 i 的中心在轨道内高度
+             * screenY(i) = laneH - CELL_H/2 - i*CELL_H + offset，滚到判定线 lineY 时做动作 */
+            screenYOf(index, laneH) {
+                return laneH - CELL_H / 2 - index * CELL_H + this.offset;
+            }
+
+            applyTapeTransform() {
+                var self = this;
+                ['left', 'right'].forEach(function (side) {
+                    document.getElementById(self.tapes[side].id).style.transform = 'translateY(' + self.offset.toFixed(1) + 'px)';
+                });
+            }
+
+            tick(ts) {
+                if (!this.isPlaying) return;
+                if (this.lastTs === 0) this.lastTs = ts;
+                var dt = Math.min(MAX_FRAME_MS, ts - this.lastTs);
+                this.lastTs = ts;
+                this.offset += (this.speed.v * dt) / 1000;
+                this.applyTapeTransform();
+                this.checkMisses();
+                if (this.resolved >= this.totalSymbols) {
+                    this.endRound();
+                    return;
+                }
+                var self = this;
+                this.rafId = requestAnimationFrame(function (t) { self.tick(t); });
+            }
+
+            stopLoop() {
+                this.isPlaying = false;
+                if (this.rafId) cancelAnimationFrame(this.rafId);
+                this.rafId = 0;
+            }
+
+            /* 距判定线最近的未处理符号，超出判定窗返回 null */
+            activeSymbol(side) {
+                var geo = laneGeometry();
+                var windowPx = this.hitWindowPx();
+                var best = null;
+                var bestDist = Infinity;
+                var cells = this.tapes[side].cells;
+                for (var i = 0; i < cells.length; i++) {
+                    var cell = cells[i];
+                    if (!cell.kind || cell.state !== 'pending') continue;
+                    var dist = Math.abs(this.screenYOf(i, geo.laneH) - geo.lineY);
+                    if (dist <= windowPx && dist < bestDist) {
+                        best = cell;
+                        bestDist = dist;
+                    }
+                }
+                return best;
+            }
+
+            tap(side) {
+                if (!this.isPlaying) return;
+                var btn = document.getElementById(side === 'left' ? 'btnLeft' : 'btnRight');
+                var flash = document.getElementById(side === 'left' ? 'flashLeft' : 'flashRight');
+                var found = this.activeSymbol(side);
+                if (!found) {
+                    btn.classList.remove('empty-tap');
+                    void btn.offsetWidth;
+                    btn.classList.add('empty-tap');
+                    return;
+                }
+                found.state = 'hit';
+                found.el.classList.add(found.kind === 'hand' ? 'hit-hand' : 'hit-circle');
+                this.playClap(found.kind);
+                KidsUI.haptic('good');
+                flash.classList.remove('on');
+                void flash.offsetWidth;
+                flash.classList.add('on');
+                this.hits++;
+                this.combo++;
+                this.bestCombo = Math.max(this.bestCombo, this.combo);
+                this.resolved++;
+                this.updateStats();
+                if (this.combo >= 3 && this.combo % 3 === 0) this.popCombo();
+            }
+
+            checkMisses() {
+                var geo = laneGeometry();
+                var windowPx = this.hitWindowPx();
+                for (var side in this.tapes) {
+                    var cells = this.tapes[side].cells;
+                    for (var i = 0; i < cells.length; i++) {
+                        var cell = cells[i];
+                        if (!cell.kind || cell.state !== 'pending') continue;
+                        if (this.screenYOf(i, geo.laneH) - geo.lineY > windowPx) {
+                            cell.state = 'missed';
+                            cell.el.classList.add('missed');
+                            this.misses++;
+                            this.combo = 0;
+                            this.resolved++;
+                            this.updateStats();
+                        }
+                    }
+                }
+            }
+
+            popCombo() {
+                var pop = document.getElementById('comboPop');
+                pop.textContent = '🔥 连击 ' + this.combo;
+                pop.classList.remove('on');
+                void pop.offsetWidth;
+                pop.classList.add('on');
+            }
+
+            updateStats() {
+                document.getElementById('hitCount').textContent = this.hits;
+                document.getElementById('missCount').textContent = this.misses;
+                document.getElementById('combo').textContent = this.combo;
+            }
+
+            endRound() {
+                var self = this;
+                this.stopLoop();
+                var total = this.hits + this.misses;
+                var accuracy = total ? this.hits / total : 0;
+                var stars = KidsUI.Progress.starsFor(accuracy);
+                KidsUI.Progress.record(this.gameId, { best: Math.round(accuracy * 100), stars: stars });
+                window.setTimeout(function () {
+                    KidsUI.Celebrate.show({
+                        title: accuracy >= 0.9 ? '节奏大师！' : accuracy >= 0.6 ? '拍得不错！' : '再来一次吧！',
+                        sub: '拍中 ' + self.hits + ' 个，最长连击 ' + self.bestCombo,
+                        stars: stars,
+                        primaryLabel: '再来一局',
+                        onPrimary: function () { self.startRound(); },
+                        secondaryLabel: '回主页',
+                        onSecondary: function () { self.backToStart(); },
+                        announce: '本局拍中' + self.hits + '个'
+                    });
+                }, 600);
+            }
+
+            /* 拍击声属于内容音效：只随主音量（与 animal-sounds 约定一致），不受静音开关影响 */
+            playClap(kind) {
+                var ctx = KidsUI.SFX._ensure();
+                if (!ctx || KidsUI.SFX.volume <= 0) return;
+                var isHand = kind === 'hand';
+                var dur = isHand ? 0.1 : 0.09;
+                var buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+                var data = buffer.getChannelData(0);
+                for (var i = 0; i < data.length; i++) {
+                    var decay = 1 - i / data.length;
+                    data[i] = (Math.random() * 2 - 1) * decay * decay;
+                }
+                var src = ctx.createBufferSource();
+                src.buffer = buffer;
+                var filter = ctx.createBiquadFilter();
+                filter.type = isHand ? 'bandpass' : 'lowpass';
+                filter.frequency.value = isHand ? 1700 : 420;
+                filter.Q.value = isHand ? 0.9 : 0.7;
+                var gain = ctx.createGain();
+                gain.gain.value = (isHand ? 0.55 : 0.3) * KidsUI.SFX.volume;
+                src.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                src.start();
+                if (isHand) {
+                    var thump = ctx.createOscillator();
+                    var thumpGain = ctx.createGain();
+                    thump.frequency.value = 190;
+                    thumpGain.gain.setValueAtTime(0.3 * KidsUI.SFX.volume, ctx.currentTime);
+                    thumpGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.09);
+                    thump.connect(thumpGain);
+                    thumpGain.connect(ctx.destination);
+                    thump.start();
+                    thump.stop(ctx.currentTime + 0.1);
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            new HandClapGame();
+        });
+    </script>
+</body>
+</html>

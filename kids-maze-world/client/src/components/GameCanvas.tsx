@@ -22,6 +22,8 @@ const STICKERS = [
 
 type StickerId = (typeof STICKERS)[number]["id"];
 
+const CHAPTER_COUNT = Math.ceil(LEVELS.length / 10);
+
 const readCompleted = () => {
   try {
     return JSON.parse(localStorage.getItem("maze-completed-levels") ?? "[]") as number[];
@@ -386,7 +388,7 @@ export default function GameCanvas() {
         <div className="brand-lockup">
           <img src={LOGO_URL} alt="叶片罗盘" className="brand-mark" />
           <div>
-            <p className="eyebrow">森林邮局 · 120封小信</p>
+            <p className="eyebrow">森林邮局 · {LEVELS.length}封小信</p>
             <h1>迷宫小小探险家</h1>
           </div>
         </div>
@@ -396,7 +398,7 @@ export default function GameCanvas() {
           <button className="sticker-trigger" onClick={() => { setIsStickerBookOpen(true); playSound("click"); }} aria-label="打开奖励贴纸册"><BookOpen size={20} strokeWidth={2.6} /><span>贴纸册</span></button>
           <button className="sound-trigger" onClick={toggleSound} aria-label={soundEnabled ? "关闭音效" : "打开音效"} aria-pressed={soundEnabled}>{soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}</button>
           <button className="keyboard-help-trigger" onClick={() => { setIsKeyboardHelpOpen((open) => !open); playSound("click"); }} aria-label="打开键盘操作说明" aria-expanded={isKeyboardHelpOpen}><Keyboard size={20} strokeWidth={2.6} /><span>按键</span></button>
-          <button className="map-trigger" onClick={() => { setIsMapOpen(true); playSound("click"); }} aria-label="打开120关地图"><Map size={20} strokeWidth={2.6} /><span>小站地图</span></button>
+          <button className="map-trigger" onClick={() => { setIsMapOpen(true); playSound("click"); }} aria-label={`打开${LEVELS.length}关地图`}><Map size={20} strokeWidth={2.6} /><span>小站地图</span></button>
         </div>
       </header>
 
@@ -405,7 +407,7 @@ export default function GameCanvas() {
         <div className="progress-card-top">
           <span className="theme-avatar" aria-hidden="true">{presentation.icon}</span>
           <span className="tiny-label">正在送</span>
-          <span className="level-number">{level.id} / 120</span>
+          <span className="level-number">{level.id} / {LEVELS.length}</span>
         </div>
         <strong>{level.styleName}</strong>
         <small className="companion-label">小伙伴：{presentation.companion}</small>
@@ -529,22 +531,22 @@ export default function GameCanvas() {
       {isParentOpen && <ParentPanel completedCount={completionCount} stickerCount={stickers.length} dailySeconds={dailySeconds} dailyLimit={dailyLimit} soundEnabled={soundEnabled} ambientEnabled={ambientEnabled} onClose={() => setIsParentOpen(false)} onDailyLimitChange={setNewDailyLimit} onToggleSound={toggleSound} onToggleAmbient={toggleAmbient} onResetProgress={resetProgress} resetArmed={resetArmed} weeklyDays={weeklyDays} />}
 
       {isMapOpen && (
-        <div className="map-modal" role="dialog" aria-modal="true" aria-label="120关迷宫地图">
+        <div className="map-modal" role="dialog" aria-modal="true" aria-label={`${LEVELS.length}关迷宫地图`}>
           <section className="world-map-panel">
             <button className="close-map" onClick={() => setIsMapOpen(false)} aria-label="关闭地图"><X size={22} /></button>
             <div className="map-intro">
               <p className="eyebrow">你已盖好 {completionCount} 枚树叶邮票</p>
-              <h2>120座森林小站</h2>
+              <h2>{LEVELS.length}座森林小站</h2>
               <p>每一封邮包都有一条不一样的小路。想去哪里，就轻轻点一下。</p>
             </div>
             <div className="chapter-tabs">
-              {Array.from({ length: 12 }).map((_, index) => {
+              {Array.from({ length: CHAPTER_COUNT }).map((_, index) => {
                 const firstLevel = LEVELS[index * 10];
                 return <button key={firstLevel.id} onClick={() => document.getElementById(`chapter-${index + 1}`)?.scrollIntoView({ behavior: "smooth", block: "start" })}>{index + 1}. {firstLevel.theme.shortName}</button>;
               })}
             </div>
             <div className="level-browser">
-              {Array.from({ length: 12 }).map((_, chapterIndex) => {
+              {Array.from({ length: CHAPTER_COUNT }).map((_, chapterIndex) => {
                 const chapterLevels = LEVELS.slice(chapterIndex * 10, chapterIndex * 10 + 10);
                 return (
                   <div className="level-chapter" id={`chapter-${chapterIndex + 1}`} key={chapterIndex}>

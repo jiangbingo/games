@@ -1,4 +1,4 @@
-import { createMaze, hasWall, samePoint, solveMaze, step } from "./maze";
+import { buildLevelMaze, hasWall, samePoint, solveMaze, step } from "./maze";
 import type { Direction, GameSnapshot, Level, Maze, Point, RouteMarker } from "./types";
 
 type Listener = (snapshot: GameSnapshot) => void;
@@ -18,7 +18,7 @@ export class GameWorld {
   private routeMarkerTick = 0;
 
   constructor(private level: Level) {
-    this._maze = createMaze(level.size, level.seed);
+    this._maze = buildLevelMaze(level);
     this.position = { ...this._maze.start };
     this.routeMarkers = this.createRouteMarkers();
   }
@@ -54,7 +54,7 @@ export class GameWorld {
   loadLevel(level: Level) {
     this.stopDemo();
     this.level = level;
-    this._maze = createMaze(level.size, level.seed);
+    this._maze = buildLevelMaze(level);
     this.position = { ...this._maze.start };
     this.history = [];
     this.moves = 0;

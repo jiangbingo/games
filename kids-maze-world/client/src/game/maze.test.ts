@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LEVELS } from "./levels";
-import { createMaze, hasWall, isInside, samePoint, solveMaze, step } from "./maze";
-import type { Direction, Point } from "./types";
+import { buildLevelMaze, hasWall, isInside, samePoint, solveMaze, step } from "./maze";
+import type { Direction, Maze, Point } from "./types";
 
 const OPPOSITE: Record<Direction, Direction> = { up: "down", right: "left", down: "up", left: "right" };
 const DIRECTIONS = Object.keys(OPPOSITE) as Direction[];
@@ -15,17 +15,17 @@ function directionBetween(from: Point, to: Point): Direction {
 }
 
 describe("maze", () => {
-  it("rebuilds identical walls from the same seed for all 120 levels", () => {
+  it("rebuilds identical walls from the same seed for all levels", () => {
     for (const level of LEVELS) {
-      const first = createMaze(level.size, level.seed);
-      const second = createMaze(level.size, level.seed);
+      const first = buildLevelMaze(level);
+      const second = buildLevelMaze(level);
       expect(Array.from(second.walls), `level ${level.id}`).toEqual(Array.from(first.walls));
     }
   });
 
   it("solves every level from start to goal through open passages only", () => {
     for (const level of LEVELS) {
-      const maze = createMaze(level.size, level.seed);
+      const maze = buildLevelMaze(level);
       const path = solveMaze(maze);
 
       expect(path.length, `level ${level.id} should be solvable`).toBeGreaterThan(1);
@@ -41,9 +41,9 @@ describe("maze", () => {
     }
   });
 
-  it("keeps the outer boundary sealed for all 120 levels", () => {
+  it("keeps the outer boundary sealed for all levels", () => {
     for (const level of LEVELS) {
-      const maze = createMaze(level.size, level.seed);
+      const maze = buildLevelMaze(level);
       for (let row = 0; row < maze.size; row += 1) {
         for (let col = 0; col < maze.size; col += 1) {
           const point = { row, col };
@@ -56,9 +56,9 @@ describe("maze", () => {
     }
   });
 
-  it("mirrors walls between neighbouring cells in all 120 levels", () => {
+  it("mirrors walls between neighbouring cells in all levels", () => {
     for (const level of LEVELS) {
-      const maze = createMaze(level.size, level.seed);
+      const maze = buildLevelMaze(level);
       for (let row = 0; row < maze.size; row += 1) {
         for (let col = 0; col < maze.size; col += 1) {
           const point = { row, col };
@@ -80,5 +80,50 @@ describe("maze", () => {
     expect(step(center, "right")).toEqual({ row: 4, col: 7 });
     expect(step(center, "down")).toEqual({ row: 5, col: 6 });
     expect(step(center, "left")).toEqual({ row: 4, col: 5 });
+  });
+});
+
+function countOpenings(maze: Maze, point: Point) {
+  return DIRECTIONS.filter((direction) => !hasWall(maze, point, direction)).length;
+}
+
+describe("handcrafted book maze (level 121)", () => {
+  const level = LEVELS[LEVELS.length - 1];
+  const maze = buildLevelMaze(level);
+
+  it("is the photo maze appended after the 120 generated levels", () => {
+    expect(LEVELS).toHaveLength(121);
+    expect(level.id).toBe(121);
+    expect(level.maskRows).toBeDefined();
+    expect(level.maskRows).toHaveLength(15);
+    level.maskRows?.forEach((row) => expect(row).toMatch(/^[0-9a-f]{15}$/));
+  });
+
+  it("solves from the top-left start to the bottom-right goal with a detour-worthy path", () => {
+    const path = solveMaze(maze);
+    expect(samePoint(path[0], { row: 0, col: 0 })).toBe(true);
+    expect(samePoint(path[path.length - 1], { row: 14, col: 14 })).toBe(true);
+    expect(path.length).toBeGreaterThanOrEqual(29);
+    expect(path.length).toBeLessThanOrEqual(44);
+  });
+
+  it("keeps the ring breaks and alcoves as kid-sized dead ends", () => {
+    const deadEnds: Point[] = [];
+    for (let row = 0; row < maze.size; row += 1) {
+      for (let col = 0; col < maze.size; col += 1) {
+        if (countOpenings(maze, { row, col }) === 1) deadEnds.push({ row, col });
+      }
+    }
+    expect(deadEnds.length).toBeGreaterThanOrEqual(10);
+    expect(deadEnds.length).toBeLessThanOrEqual(16);
+    expect(deadEnds).toContainEqual({ row: 7, col: 7 });
+    expect(deadEnds).toContainEqual({ row: 8, col: 0 });
+    expect(deadEnds).toContainEqual({ row: 0, col: 9 });
+  });
+
+  it("rejects malformed mask grids at the data boundary", () => {
+    expect(() => buildLevelMaze({ ...level, maskRows: ["fff", "fff"] })).toThrow();
+    expect(() => buildLevelMaze({ ...level, maskRows: [...level.maskRows!.slice(0, 14), "zzzzzzzzzzzzzzz"] })).toThrow();
+    expect(() => buildLevelMaze({ ...level, maskRows: [...level.maskRows!.slice(1)] })).toThrow();
   });
 });

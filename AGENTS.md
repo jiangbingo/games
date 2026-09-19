@@ -4,8 +4,8 @@
 
 Children's logic games (ages 3-6). Managed as a **pnpm workspace monorepo** (single lockfile at repo root):
 
-- **Root (`/`)**: 14 games (11 root game HTML pages + classic-games snake/tetris + maze app) + optional Express backend
-- **`kids-maze-world/`**: React/TypeScript maze game (120 levels, Vite build)
+- **Root (`/`)**: 18 games (15 root game HTML pages + classic-games snake/tetris + maze app) + optional Express backend
+- **`kids-maze-world/`**: React/TypeScript maze game (121 levels: 120 generated + 1 handcrafted photo maze, Vite build)
 - **`backend/`**: optional Express API workspace package (`kids-logic-games-backend`)
 - **`packages/*`**: reserved for future shared packages (PWA template, per BACKLOG T3-0)
 
@@ -43,10 +43,11 @@ pnpm --filter kids-maze-world format           # prettier
 ### Root project
 - `index.html` — game hub linking all games (incl. kids-maze-world pages.dev)
 - `*.html` — individual game HTML pages (link shared css/kids.css + js/kids-ui.js)
-- `js/` — shared modules: `kids-ui.js` (UI lib), `api.js`, `config.js`, `storage.js`, `coloring-studio.js`, `coloring-paint.js`, `difficulty.js`, `bigmodel-client.js`, and `games/` subdir (per-game scripts)
-- `css/kids.css` — shared styles (kui- design system)
+- `js/` — shared modules: `kids-ui.js` (UI lib + `AdaptiveDifficulty` class), `api.js`, `config.js`, `storage.js`, `coloring-lineart.js`, `coloring-paint.js`, `coloring-studio.js`, and `games/` subdir (per-game scripts)
+- `css/kids.css` — shared styles (kui- design system + shared animations `kui-shake`/`kui-pop`/`kui-bounce`/`kui-fadeIn`)
 - `backend/` — Express API (optional, for progress sync)
 - `docs/` — design docs and historical reports
+- `tools/` — build/deploy scripts: `build-cf-pages.mjs` (assembles full dist/), `inject-sw-version.mjs` (SW version bump during deploy)
 - `kids-maze-world/` — React app as a workspace package (no code sharing with root games)
 - `pnpm-workspace.yaml` — workspace root: `kids-maze-world`, `backend`, `packages/*`
 
@@ -59,11 +60,12 @@ pnpm --filter kids-maze-world format           # prettier
 ## Key Conventions
 
 1. **Root games are HTML files with shared assets** — games link `/css/kids.css` and `/js/kids-ui.js`; must be served from repo root (file:// breaks shared asset paths)
-2. **Backend is optional** — all games work with localStorage only; backend adds cloud sync
-3. **kids-maze-world is isolated** — own package.json and build system; the pnpm lockfile lives at the repo root (workspace mode). Do NOT mix dependencies
-4. **Chinese UI** — all user-facing text is Chinese (Simplified)
-5. **Mobile-first** — touch optimization is critical, test on iPhone/iPad
-6. **No build step for root** — HTML files are served as-is; no transpilation
+2. **Adding a game = register it in 3 places** — `index.html` hub grid, the `pages` array in `tools/build-cf-pages.mjs`, and the `sw.js` PRECACHE list; miss one and the game won't deploy or won't work offline
+3. **Backend is optional** — all games work with localStorage only; backend adds cloud sync
+4. **kids-maze-world is isolated** — own package.json and build system; the pnpm lockfile lives at the repo root (workspace mode). Do NOT mix dependencies
+5. **Chinese UI** — all user-facing text is Chinese (Simplified)
+6. **Mobile-first** — touch optimization is critical, test on iPhone/iPad
+7. **No build step for root** — HTML files are served as-is; no transpilation
 
 ## Gotchas
 
@@ -72,7 +74,8 @@ pnpm --filter kids-maze-world format           # prettier
 - Root HTML games have no bundled dependencies — vanilla JS via CDN or script tags; always use pnpm at the workspace root, never `npm install`
 - The single lockfile is `pnpm-lock.yaml` at the **repo root**; `pnpm.overrides` (nanoid pin) live in the root `package.json`, not in `kids-maze-world/`
 - Cloudflare Pages builds the maze with root dir `kids-maze-world` but pnpm walks up to the workspace root — the root lockfile must be committed before any maze deploy
-- `make build` only copies css/js/index.html to dist/ — it is incomplete for deployment; use `make build-cf` to assemble the full dist/ (all 12 game pages + classic-games + assets + maze merge)
+- `make build` only copies css/js/index.html to dist/ — it is incomplete for deployment; use `make build-cf` to assemble the full dist/ (entry pages enumerated in `tools/build-cf-pages.mjs` + classic-games + assets + maze merge)
+- `ai-api-test.html` and `animal-sounds-voice-demo.html` are historical test/demo pages — deliberately excluded from the deploy list; do not link them from the hub
 - `docker-compose.yml` is for optional backend services (PostgreSQL, Redis). Not required for core games
 
 ## Deployment

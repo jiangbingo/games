@@ -17,7 +17,27 @@ const themes: MazeTheme[] = [
 
 const styleNames = ["晨光版", "露珠版", "微风版", "云朵版", "叶影版", "小雨版", "晚霞版", "星点版", "节日版", "藏宝版"];
 
-export const LEVELS: Level[] = Array.from({ length: 120 }, (_, index) => {
+// 手工关卡（第 121 关）：复刻 2026-09-19 用户照片里的书页迷宫。
+// 结构：回字形嵌套走廊 + 战略闸口 + 死胡同岔路；掩码含义见 createMazeFromMaskRows。
+const BOOK_MAZE_MASK_ROWS = [
+  "9155155557d5553",
+  "aeffafffffffffa",
+  "af954557d5553fa",
+  "afafffffffffafa",
+  "852f955155152fa",
+  "afafaffaffafafa",
+  "afafaf903fafafa",
+  "87afafaeafafafa",
+  "efafafc5452fafa",
+  "bfafafffffafafa",
+  "afaf8557d56fafa",
+  "afafaffffbffafa",
+  "afc5455554516fa",
+  "affffffffffaffa",
+  "c55555555554556",
+];
+
+const generatedLevels: Level[] = Array.from({ length: 120 }, (_, index) => {
   const id = index + 1;
   const theme = themes[Math.floor(index / 10)];
   const size = 8 + Math.min(7, Math.floor(index / 12));
@@ -31,6 +51,18 @@ export const LEVELS: Level[] = Array.from({ length: 120 }, (_, index) => {
     theme,
   };
 });
+
+const BOOK_MAZE_LEVEL: Level = {
+  id: 121,
+  title: "第 121 封邮包",
+  styleName: "橡果书屋 · 书页迷宫",
+  size: 15,
+  seed: 0,
+  theme: themes[5],
+  maskRows: BOOK_MAZE_MASK_ROWS,
+};
+
+export const LEVELS: Level[] = [...generatedLevels, BOOK_MAZE_LEVEL];
 
 export const getLevel = (id: number) => LEVELS.find((level) => level.id === id) ?? LEVELS[0];
 export const getNextLevel = (id: number) => getLevel(id === LEVELS.length ? 1 : id + 1);

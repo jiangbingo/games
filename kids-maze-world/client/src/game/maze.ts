@@ -1,4 +1,4 @@
-import type { Direction, Maze, Point } from "./types";
+import type { Direction, Level, Maze, Point } from "./types";
 
 const WALL = { up: 1, right: 2, down: 4, left: 8 } as const;
 
@@ -70,6 +70,31 @@ export function createMaze(size: number, seed: number): Maze {
   }
 
   return { size, walls, start: { row: 0, col: 0 }, goal: { row: size - 1, col: size - 1 } };
+}
+
+export function createMazeFromMaskRows(maskRows: string[]): Maze {
+  const size = maskRows.length;
+  if (size < 3 || size % 2 === 0) {
+    throw new Error("maskRows must describe an odd-sized square grid (>= 3 rows)");
+  }
+  const walls = new Uint8Array(size * size);
+  maskRows.forEach((row, rowIndex) => {
+    if (row.length !== size) {
+      throw new Error(`maskRows row ${rowIndex} must have ${size} cells, got ${row.length}`);
+    }
+    for (let col = 0; col < size; col += 1) {
+      const value = Number.parseInt(row[col], 16);
+      if (Number.isNaN(value)) {
+        throw new Error(`maskRows row ${rowIndex} col ${col} must be a hex digit`);
+      }
+      walls[rowIndex * size + col] = value;
+    }
+  });
+  return { size, walls, start: { row: 0, col: 0 }, goal: { row: size - 1, col: size - 1 } };
+}
+
+export function buildLevelMaze(level: Level): Maze {
+  return level.maskRows ? createMazeFromMaskRows(level.maskRows) : createMaze(level.size, level.seed);
 }
 
 export function solveMaze(maze: Maze, from = maze.start, to = maze.goal): Point[] {
