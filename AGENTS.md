@@ -4,7 +4,7 @@
 
 Children's logic games (ages 3-6). Managed as a **pnpm workspace monorepo** (single lockfile at repo root):
 
-- **Root (`/`)**: 18 games (15 root game HTML pages + classic-games snake/tetris + maze app) + optional Express backend
+- **Root (`/`)**: 23 games (20 root game HTML pages + classic-games snake/tetris + maze app) + optional Express backend
 - **`kids-maze-world/`**: React/TypeScript maze game (121 levels: 120 generated + 1 handcrafted photo maze, Vite build)
 - **`backend/`**: optional Express API workspace package (`kids-logic-games-backend`)
 - **`packages/*`**: reserved for future shared packages (PWA template, per BACKLOG T3-0)
