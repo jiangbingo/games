@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#4a69bd">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-touch-icon" href="/icons/icon-192.png">
+    <title>拼音火车</title>
+    <link rel="stylesheet" href="/css/kids.css">
+    <style>
+        :root { --game-accent: #4a69bd; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--kui-paper);
+            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-size: 26px 26px;
+            min-height: 100vh; color: var(--kui-ink); display: flex; justify-content: center;
+            padding: 14px; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none;
+        }
+        .game { background: var(--kui-card); border: 2px solid var(--kui-line); border-radius: var(--kui-radius-lg); box-shadow: var(--kui-shadow); max-width: 500px; width: 100%; padding: 20px; margin-top: 8px; }
+        .intro-sub { text-align: center; font-size: 0.9rem; font-weight: 700; color: var(--kui-ink-soft); margin-bottom: 16px; }
+        .mode-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+        .mode-btn { padding: 14px 6px; border: 2px solid var(--kui-line); border-radius: var(--kui-radius-md); font-size: 0.95rem; font-weight: 800; cursor: pointer; background: var(--kui-paper); color: var(--kui-ink); box-shadow: var(--kui-shadow); transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s; text-align: center; line-height: 1.4; touch-action: manipulation; }
+        .mode-btn:active { transform: translateY(2px); box-shadow: none; }
+        .mode-btn.active { border-color: rgba(47, 42, 37, 0.2); color: #fff; }
+        .mode-btn .mode-icon { font-size: 1.7rem; display: block; margin-bottom: 4px; }
+        .mode-btn[data-mode="blend"].active { background: #4a69bd; }
+        .mode-btn[data-mode="listen"].active { background: #b45309; }
+        .mode-btn[data-mode="sort"].active { background: #15803d; }
+        .stats-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+        .level-hint { text-align: center; font-size: 0.85rem; font-weight: 700; color: var(--game-accent); margin-bottom: 12px; }
+        .instruction { text-align: center; font-size: clamp(16px, 4.5vw, 20px); font-weight: 800; margin-bottom: 12px; min-height: 2.2em; }
+        /* ── 火车元素：圆角纸卡车厢 + 双轮圆点 ── */
+        .train-row { display: flex; align-items: flex-end; justify-content: center; gap: 8px; margin-bottom: 16px; }
+        .car { border: 3px solid var(--kui-line); border-radius: var(--kui-radius-md); background: var(--kui-card); box-shadow: var(--kui-shadow); padding: 8px 18px 4px; text-align: center; }
+        .car-tag { display: block; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; color: var(--kui-ink-soft); }
+        .car-letter { display: block; font-size: clamp(2.6rem, 11vw, 3.4rem); font-weight: 900; line-height: 1.15; color: var(--game-accent); }
+        .engine { background: #edf1fa; border-color: rgba(74, 105, 189, 0.45); }
+        .hint-hanzi { display: block; font-size: clamp(1.9rem, 8vw, 2.4rem); font-weight: 900; line-height: 1.2; }
+        .hint-emoji { display: block; font-size: clamp(1.6rem, 7vw, 2rem); line-height: 1.25; }
+        .wheels { display: flex; justify-content: center; gap: 18px; margin-top: 2px; }
+        .wheels i { width: 12px; height: 12px; border-radius: 50%; background: var(--kui-ink); border: 3px solid var(--kui-card); box-shadow: 0 2px 0 rgba(47, 42, 37, 0.18); }
+        .coupler { width: 16px; height: 6px; border-radius: 3px; background: var(--kui-line); margin-bottom: 30px; }
+        .carriage-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+        .carriage { border: 3px solid var(--kui-line); border-radius: var(--kui-radius-md); background: var(--kui-card); box-shadow: var(--kui-shadow); padding: 8px 4px 4px; cursor: pointer; touch-action: manipulation; transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s, border-color 0.2s, background 0.2s; }
+        .carriage .f { display: block; font-size: clamp(1.7rem, 8vw, 2.2rem); font-weight: 900; line-height: 1.25; }
+        .carriage:active { transform: translateY(2px); box-shadow: none; }
+        .carriage.correct { background: var(--kui-good); border-color: var(--kui-good); }
+        .carriage.correct .f { color: #fff; }
+        .carriage.wrong { animation: kui-shake 0.4s ease; border-color: var(--kui-bad); }
+        .composed { text-align: center; font-size: clamp(1.05rem, 4.5vw, 1.3rem); font-weight: 900; border: 2px dashed rgba(74, 105, 189, 0.5); border-radius: var(--kui-radius-sm); background: #f3f6fd; padding: 10px 8px; margin-bottom: 12px; }
+        .composed .py { color: var(--game-accent); }
+        #listenArea { text-align: center; }
+        .target-area { margin-bottom: 12px; min-height: 100px; }
+        .target-quiz { font-size: clamp(56px, 18vw, 84px); line-height: 1.2; }
+        .target-quiz .zh { font-size: clamp(2rem, 9vw, 2.8rem); font-weight: 900; }
+        .target-py { font-size: clamp(2.6rem, 12vw, 3.6rem); font-weight: 900; line-height: 1.3; color: var(--game-accent); }
+        .listen-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 32px; font-size: 1.1rem; font-weight: 800; border: 3px solid var(--game-accent); border-radius: var(--kui-radius-md); background: var(--kui-card); color: var(--game-accent); cursor: pointer; box-shadow: var(--kui-shadow); transition: transform 0.12s var(--kui-bounce); touch-action: manipulation; margin-bottom: 16px; }
+        .listen-btn:active { transform: translateY(2px); box-shadow: none; }
+        /* 作者 display 会击穿 UA 的 [hidden]{display:none}，降级时必须显式隐藏 */
+        .listen-btn[hidden] { display: none; }
+        .pick-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+        .pick-card { border: 3px solid var(--kui-line); border-radius: var(--kui-radius-md); background: var(--kui-card); box-shadow: var(--kui-shadow); padding: 10px 6px; cursor: pointer; text-align: center; touch-action: manipulation; transition: transform 0.12s var(--kui-bounce), border-color 0.2s, background 0.2s; }
+        .pick-card .py { display: block; font-size: clamp(1.05rem, 4vw, 1.25rem); font-weight: 800; color: var(--game-accent); }
+        .pick-card .zh { display: block; font-size: clamp(1.8rem, 8vw, 2.2rem); font-weight: 900; line-height: 1.3; }
+        .pick-card .em { display: block; font-size: clamp(1.6rem, 7vw, 2rem); line-height: 1.3; }
+        .pick-card:active { transform: scale(0.95); }
+        .pick-card.correct { background: var(--kui-good); border-color: var(--kui-good); }
+        .pick-card.wrong { opacity: 0.45; border-color: var(--kui-bad); border-style: dashed; animation: kui-shake 0.4s ease; }
+        .sort-pool { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+        .sort-card { border: 3px solid var(--kui-line); border-radius: var(--kui-radius-md); background: var(--kui-card); box-shadow: var(--kui-shadow); padding: 6px 2px 4px; cursor: pointer; text-align: center; touch-action: manipulation; transition: transform 0.15s var(--kui-bounce), opacity 0.3s, border-color 0.2s, background 0.2s; }
+        .sort-card .py { display: block; font-size: 0.85rem; font-weight: 800; color: var(--game-accent); }
+        .sort-card .zh { display: block; font-size: clamp(1.35rem, 6vw, 1.7rem); font-weight: 900; line-height: 1.3; }
+        .sort-card .em { display: block; font-size: 1.25rem; line-height: 1.3; }
+        .sort-card.picked { transform: translateY(-6px) scale(1.05); border-color: var(--game-accent); background: #edf1fa; }
+        .sort-card.bounced { animation: kui-shake 0.4s ease; }
+        .sort-card.gone { opacity: 0; transform: scale(0.6); pointer-events: none; }
+        .sort-track { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 8px; }
+        .sort-car { border: 3px solid var(--kui-line); border-radius: var(--kui-radius-md); background: var(--kui-paper); box-shadow: var(--kui-shadow); padding: 6px 4px 2px; cursor: pointer; text-align: center; touch-action: manipulation; }
+        .sort-car .f { display: block; font-size: 1.5rem; font-weight: 900; line-height: 1.35; color: var(--game-accent); }
+        .sort-car .loaded-list { min-height: 1.4em; font-size: 0.95rem; font-weight: 900; color: #2c7a52; }
+        .sort-car.gain { animation: kui-pop 0.3s ease; border-color: var(--kui-good); }
+        .sort-car.wrong { animation: kui-shake 0.4s ease; border-color: var(--kui-bad); }
+        .feedback { text-align: center; font-size: 1.2rem; font-weight: 800; min-height: 2em; color: var(--kui-ink-soft); margin-bottom: 8px; }
+        .carriage:focus-visible, .pick-card:focus-visible, .sort-card:focus-visible, .sort-car:focus-visible, .listen-btn:focus-visible { outline: 3px solid var(--game-accent); outline-offset: 2px; }
+        @media (prefers-reduced-motion: reduce) {
+            .mode-btn, .carriage, .pick-card, .sort-card, .listen-btn { transition: none; }
+            .carriage.wrong, .pick-card.wrong, .sort-card.bounced, .sort-car.wrong, .sort-car.gain { animation: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <div id="modeSelect">
+            <p class="instruction">🚂 拼音火车</p>
+            <p class="intro-sub">声母车头带上韵母车厢，一起开火车</p>
+            <div class="mode-grid">
+                <button class="mode-btn active" data-mode="blend" type="button">
+                    <span class="mode-icon">🧩</span>
+                    拼读配对
+                </button>
+                <button class="mode-btn" data-mode="listen" type="button">
+                    <span class="mode-icon">👂</span>
+                    听音选图
+                </button>
+                <button class="mode-btn" data-mode="sort" type="button">
+                    <span class="mode-icon">🚃</span>
+                    韵母归类
+                </button>
+            </div>
+        </div>
+        <div id="gameArea" hidden>
+            <div class="stats-row">
+                <span class="kui-chip">✅ 答对 <b id="correct">0</b></span>
+                <span class="kui-chip">🤔 试错 <b id="wrong">0</b></span>
+                <span class="kui-chip">🚦 进度 <b id="progress">0/5</b></span>
+            </div>
+            <div class="level-hint" id="level-hint"></div>
+            <p class="instruction" id="instruction"></p>
+            <div id="blendArea" hidden>
+                <div class="train-row">
+                    <div class="car engine">
+                        <span class="car-tag">🚂 车头</span>
+                        <span class="car-letter" id="engineLetter"></span>
+                        <span class="wheels" aria-hidden="true"><i></i><i></i></span>
+                    </div>
+                    <span class="coupler" aria-hidden="true"></span>
+                    <div class="car">
+                        <span class="car-tag">目标字</span>
+                        <span class="hint-hanzi" id="hintHanzi"></span>
+                        <span class="hint-emoji" id="hintEmoji"></span>
+                        <span class="wheels" aria-hidden="true"><i></i><i></i></span>
+                    </div>
+                </div>
+                <div class="carriage-grid" id="carriageGrid"></div>
+                <div class="composed" id="composed" hidden></div>
+            </div>
+            <div id="listenArea" hidden data-audible="0">
+                <div class="target-area">
+                    <div class="target-quiz" id="targetQuiz">❓</div>
+                    <div class="target-py" id="targetPy" hidden></div>
+                </div>
+                <button class="listen-btn" id="listenBtn" type="button">🔊 听一听</button>
+                <div class="pick-grid" id="pickGrid"></div>
+            </div>
+            <div id="sortArea" hidden>
+                <div class="sort-pool" id="sortPool"></div>
+                <div class="sort-track" id="sortTrack"></div>
+            </div>
+            <div class="feedback" id="feedback" aria-live="polite"></div>
+        </div>
+    </div>
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
+    <script>
+        "use strict";
+        var gameId = 'pinyin-train';
+        var FINALS = ['a', 'o', 'i', 'u'];
+        var ROUND_QUESTIONS = 5;
+        var SORT_CARDS_PER_FINAL = 2;
+        var OPTION_COUNTS = [2, 3, 4];
+        var CONFUSION_PAIRS = [['b', 'd'], ['m', 'n'], ['p', 'q']];
+        var LEVEL_LABELS = ['🚂 蒸汽小火车', '🚃 加油小火车', '🏆 拼读小司机'];
+        var NEXT_DELAY_MS = 1200;
+        var AUTO_SPEAK_DELAY_MS = 350;
+        var WRONG_CLEAR_MS = 500;
+        var GONE_REMOVE_MS = 450;
+        var GAIN_CLEAR_MS = 400;
+        var SORT_FINISH_DELAY_MS = 650;
+        var PICK_RETRY_MAX = 8;
+
+        var SYLLABLES = [
+            { py: 'mā', ini: 'm', fin: 'a', hanzi: '妈', emoji: '👩' },
+            { py: 'mǎ', ini: 'm', fin: 'a', hanzi: '马', emoji: '🐴' },
+            { py: 'mǐ', ini: 'm', fin: 'i', hanzi: '米', emoji: '🍚' },
+            { py: 'mō', ini: 'm', fin: 'o', hanzi: '摸', emoji: '🖐️' },
+            { py: 'mù', ini: 'm', fin: 'u', hanzi: '木', emoji: '🌳' },
+            { py: 'bā', ini: 'b', fin: 'a', hanzi: '八', emoji: '8️⃣' },
+            { py: 'bà', ini: 'b', fin: 'a', hanzi: '爸', emoji: '👨' },
+            { py: 'bō', ini: 'b', fin: 'o', hanzi: '波', emoji: '🌊' },
+            { py: 'bǐ', ini: 'b', fin: 'i', hanzi: '笔', emoji: '✏️' },
+            { py: 'bù', ini: 'b', fin: 'u', hanzi: '不', emoji: '🙅' },
+            { py: 'pō', ini: 'p', fin: 'o', hanzi: '坡', emoji: '⛰️' },
+            { py: 'pó', ini: 'p', fin: 'o', hanzi: '婆', emoji: '👵' },
+            { py: 'pà', ini: 'p', fin: 'a', hanzi: '怕', emoji: '😱' },
+            { py: 'fú', ini: 'f', fin: 'u', hanzi: '服', emoji: '👕' },
+            { py: 'fù', ini: 'f', fin: 'u', hanzi: '父', emoji: '👨‍🦱' },
+            { py: 'dī', ini: 'd', fin: 'i', hanzi: '滴', emoji: '💧' },
+            { py: 'dà', ini: 'd', fin: 'a', hanzi: '大', emoji: '🐘' },
+            { py: 'dá', ini: 'd', fin: 'a', hanzi: '答', emoji: '✅' },
+            { py: 'dì', ini: 'd', fin: 'i', hanzi: '地', emoji: '🌍' },
+            { py: 'tù', ini: 't', fin: 'u', hanzi: '兔', emoji: '🐰' },
+            { py: 'tī', ini: 't', fin: 'i', hanzi: '踢', emoji: '⚽' },
+            { py: 'tā', ini: 't', fin: 'a', hanzi: '他', emoji: '👦' },
+            { py: 'tǔ', ini: 't', fin: 'u', hanzi: '土', emoji: '🟫' },
+            { py: 'ní', ini: 'n', fin: 'i', hanzi: '泥', emoji: '🟤' },
+            { py: 'nù', ini: 'n', fin: 'u', hanzi: '怒', emoji: '😠' },
+            { py: 'nǎ', ini: 'n', fin: 'a', hanzi: '哪', emoji: '❓' },
+            { py: 'nǐ', ini: 'n', fin: 'i', hanzi: '你', emoji: '👈' },
+            { py: 'lù', ini: 'l', fin: 'u', hanzi: '鹿', emoji: '🦌' },
+            { py: 'lā', ini: 'l', fin: 'a', hanzi: '拉', emoji: '🤝' },
+            { py: 'lí', ini: 'l', fin: 'i', hanzi: '梨', emoji: '🍐' }
+        ];
+
+        function shuffle(list) {
+            var copy = list.slice();
+            for (var i = copy.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var t = copy[i];
+                copy[i] = copy[j];
+                copy[j] = t;
+            }
+            return copy;
+        }
+
+        function randomOf(list) {
+            return list[Math.floor(Math.random() * list.length)];
+        }
+
+        function isConfused(a, b) {
+            return CONFUSION_PAIRS.some(function (pair) {
+                return (pair[0] === a && pair[1] === b) || (pair[0] === b && pair[1] === a);
+            });
+        }
+
+        /* 干扰项打分：视觉混淆对（b/d、m/n、p/q）与同韵母优先，随机数保证每次有变化；
+           每个候选只掷一次，排序用预计算分（比较器内掷随机会破坏传递性） */
+        function distractorScore(target, cand) {
+            var score = Math.random();
+            if (cand.fin === target.fin) score += 2;
+            if (isConfused(cand.ini, target.ini)) score += 3;
+            if (cand.ini === target.ini) score += 1;
+            return score;
+        }
+
+        function pickConfusedPair(group) {
+            for (var i = 0; i < group.length; i++) {
+                for (var j = i + 1; j < group.length; j++) {
+                    if (isConfused(group[i].ini, group[j].ini)) return [group[i], group[j]];
+                }
+            }
+            return null;
+        }
+
+        function buildSortPool(level) {
+            var groups = FINALS.map(function (f) {
+                var group = shuffle(SYLLABLES.filter(function (s) { return s.fin === f; }));
+                if (level >= 2) {
+                    var pair = pickConfusedPair(group);
+                    if (pair) return pair;
+                }
+                return group.slice(0, SORT_CARDS_PER_FINAL);
+            });
+            return groups.reduce(function (flat, g) { return flat.concat(g); }, []);
+        }
+
+        /* 有声音 ≠ 有中文声音：默认 voice 朗读整字会变成英文含糊音，必须确认存在 zh 前缀语音 */
+        function voicesReady() {
+            if (!("speechSynthesis" in window)) return false;
+            try {
+                return window.speechSynthesis.getVoices().some(function (v) {
+                    return v.lang && v.lang.indexOf('zh') === 0;
+                });
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function canListen() {
+            return voicesReady() && KidsUI.SFX.volume > 0;
+        }
+
+        /* 汽笛属于内容音效：只随主音量，不受静音开关影响（与 hand-clap 约定一致） */
+        function trainWhistle() {
+            var ctx = KidsUI.SFX._ensure();
+            if (!ctx || KidsUI.SFX.volume <= 0) return;
+            var t = ctx.currentTime;
+            [523.25, 659.25].forEach(function (freq) {
+                var osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, t);
+                osc.frequency.linearRampToValueAtTime(freq * 1.02, t + 0.5);
+                var gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.001, t);
+                gain.gain.linearRampToValueAtTime(0.12 * KidsUI.SFX.volume, t + 0.06);
+                gain.gain.setValueAtTime(0.12 * KidsUI.SFX.volume, t + 0.4);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.62);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(t);
+                osc.stop(t + 0.65);
+            });
+        }
+
+        class PinyinTrainGame {
+            constructor() {
+                this.gameId = gameId;
+                this.mode = null;
+                this.round = 0;
+                this.lastPy = '';
+                this.score = { correct: 0, wrong: 0 };
+                this.isBusy = false;
+                this.difficulties = {
+                    blend: this.makeDifficulty(),
+                    listen: this.makeDifficulty(),
+                    sort: this.makeDifficulty()
+                };
+                this.difficulty = this.difficulties.blend;
+                this.init();
+            }
+
+            makeDifficulty() {
+                var self = this;
+                return new KidsUI.AdaptiveDifficulty({
+                    windowSize: 5,
+                    thresholds: { easy: 0.8, hard: 0.5 },
+                    initialLevel: 1,
+                    onChange: function () { self.updateLevelHint(); }
+                });
+            }
+
+            init() {
+                KidsUI.Touch.guard();
+                KidsUI.Header.render({
+                    title: '拼音火车',
+                    accent: '#4a69bd',
+                    onReplay: () => this.backToSelect(true)
+                });
+                this.bindModeButtons();
+            }
+
+            bindModeButtons() {
+                var self = this;
+                document.querySelectorAll('.mode-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        KidsUI.SFX.tap();
+                        trainWhistle();
+                        self.startMode(btn.getAttribute('data-mode'));
+                    });
+                });
+            }
+
+            startMode(mode) {
+                this.round++;
+                this.mode = mode;
+                this.difficulty = this.difficulties[mode];
+                this.score = { correct: 0, wrong: 0 };
+                this.isBusy = false;
+                this.updateScore();
+                this.updateLevelHint();
+                document.querySelectorAll('.mode-btn').forEach(function (b) {
+                    b.classList.toggle('active', b.getAttribute('data-mode') === mode);
+                });
+                document.getElementById('modeSelect').hidden = true;
+                document.getElementById('gameArea').hidden = false;
+                this.show('blendArea', mode !== 'blend');
+                this.show('listenArea', mode !== 'listen');
+                this.show('sortArea', mode !== 'sort');
+                document.getElementById('feedback').textContent = '';
+                if (mode === 'blend') this.startBlendQuestion();
+                else if (mode === 'listen') this.startListenQuestion();
+                else this.startSortRound();
+            }
+
+            backToSelect(resetAll) {
+                this.round++;
+                KidsUI.Celebrate.hide();
+                if (resetAll) {
+                    var all = this.difficulties;
+                    Object.keys(all).forEach(function (key) { all[key].reset(); });
+                }
+                this.mode = null;
+                document.getElementById('gameArea').hidden = true;
+                document.getElementById('modeSelect').hidden = false;
+            }
+
+            show(id, hide) {
+                document.getElementById(id).hidden = !!hide;
+            }
+
+            updateScore() {
+                document.getElementById('correct').textContent = this.score.correct;
+                document.getElementById('wrong').textContent = this.score.wrong;
+            }
+
+            updateProgress(now, total) {
+                document.getElementById('progress').textContent = now + '/' + total;
+            }
+
+            updateLevelHint() {
+                document.getElementById('level-hint').textContent =
+                    LEVEL_LABELS[this.difficulty.getLevel() - 1];
+            }
+
+            /* 带局号守卫的延时：期间重玩/切模式时旧定时器作废，不会把人拽回游戏 */
+            guardedTimeout(fn, ms) {
+                var self = this;
+                var round = this.round;
+                setTimeout(function () {
+                    if (self.round === round) fn();
+                }, ms);
+            }
+
+            pickSyllable() {
+                var s = randomOf(SYLLABLES);
+                var guard = 0;
+                while (s.py === this.lastPy && guard < PICK_RETRY_MAX) {
+                    s = randomOf(SYLLABLES);
+                    guard++;
+                }
+                this.lastPy = s.py;
+                return s;
+            }
+
+            recordCorrect() {
+                this.difficulty.record(true);
+                this.score.correct++;
+                this.updateScore();
+                if (this.mode === 'sort') {
+                    if (this.sortLoaded >= this.sortPool.length) {
+                        this.guardedTimeout(() => this.finishRound(), SORT_FINISH_DELAY_MS);
+                    }
+                    return false;
+                }
+                if (this.score.correct >= ROUND_QUESTIONS) {
+                    this.finishRound();
+                    return true;
+                }
+                return false;
+            }
+
+            recordWrong() {
+                this.difficulty.record(false);
+                this.score.wrong++;
+                this.updateScore();
+            }
+
+            finishRound() {
+                var mode = this.mode;
+                var total = this.score.correct + this.score.wrong;
+                var accuracy = total > 0 ? this.score.correct / total : 1;
+                var stars = KidsUI.Progress.starsFor(accuracy);
+                KidsUI.Progress.record(this.gameId, { best: this.score.correct, stars: stars });
+                KidsUI.Celebrate.show({
+                    title: accuracy >= 0.9 ? '小司机真棒！' : '火车到站啦！',
+                    sub: '答对 ' + this.score.correct + ' 题，试错 ' + this.score.wrong + ' 次',
+                    stars: stars,
+                    primaryLabel: '再来一局',
+                    onPrimary: () => this.startMode(mode),
+                    secondaryLabel: '换个玩法',
+                    onSecondary: () => this.backToSelect(false),
+                    announce: '太棒了，火车到站啦'
+                });
+            }
+
+            continueGame() {
+                if (this.mode === 'blend') this.startBlendQuestion();
+                else if (this.mode === 'listen') this.startListenQuestion();
+            }
+
+            /* ── 模式一：拼读配对 ── */
+            startBlendQuestion() {
+                var self = this;
+                this.isBusy = false;
+                var s = this.pickSyllable();
+                this.current = s;
+                this.updateProgress(Math.min(this.score.correct + 1, ROUND_QUESTIONS), ROUND_QUESTIONS);
+                document.getElementById('instruction').textContent = '点对车厢，拼出「' + s.hanzi + '」';
+                document.getElementById('feedback').textContent = '';
+                document.getElementById('engineLetter').textContent = s.ini;
+                document.getElementById('hintHanzi').textContent = s.hanzi;
+                document.getElementById('hintEmoji').textContent = s.emoji;
+                var composed = document.getElementById('composed');
+                composed.hidden = true;
+                composed.classList.remove('kui-pop');
+
+                var count = OPTION_COUNTS[this.difficulty.getLevel() - 1] || OPTION_COUNTS[0];
+                var finals = shuffle(FINALS.filter(function (f) { return f !== s.fin; }))
+                    .slice(0, count - 1);
+                finals.push(s.fin);
+                finals = shuffle(finals);
+
+                var grid = document.getElementById('carriageGrid');
+                grid.innerHTML = '';
+                finals.forEach(function (f) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'carriage';
+                    btn.dataset.final = f;
+                    btn.setAttribute('aria-label', '韵母 ' + f);
+                    btn.innerHTML = '<span class="f">' + f + '</span>' +
+                        '<span class="wheels" aria-hidden="true"><i></i><i></i></span>';
+                    btn.addEventListener('click', function () { self.answerBlend(btn, f); });
+                    grid.appendChild(btn);
+                });
+            }
+
+            answerBlend(btn, f) {
+                if (this.isBusy) return;
+                var s = this.current;
+                if (f === s.fin) {
+                    this.isBusy = true;
+                    btn.classList.add('correct');
+                    var composed = document.getElementById('composed');
+                    composed.innerHTML = s.ini + ' + ' + s.py.slice(s.ini.length) +
+                        ' = <span class="py">' + s.py + '</span> ' + s.hanzi + ' ' + s.emoji;
+                    composed.hidden = false;
+                    composed.classList.add('kui-pop');
+                    KidsUI.SFX.correct();
+                    KidsUI.haptic('good');
+                    /* TTS 只读整字（「妈」），绝不读拼音字母（「a」会被读成英文） */
+                    KidsUI.TTS.speak(s.hanzi);
+                    document.getElementById('feedback').textContent = '拼对啦！';
+                    if (!this.recordCorrect()) {
+                        this.guardedTimeout(() => this.continueGame(), NEXT_DELAY_MS);
+                    }
+                } else {
+                    /* wrong 类存续期内的重复点击只算一次错（幼儿反射性双击是常态） */
+                    if (btn.classList.contains('wrong')) return;
+                    btn.classList.add('wrong');
+                    KidsUI.SFX.wrong();
+                    KidsUI.haptic('bad');
+                    KidsUI.TTS.speak('再想一想');
+                    document.getElementById('feedback').textContent = '再试一次吧';
+                    this.recordWrong();
+                    this.guardedTimeout(() => btn.classList.remove('wrong'), WRONG_CLEAR_MS);
+                }
+            }
+
+            /* ── 模式二：听音选图（TTS 不可用/无 voices 时自动降级为看拼音选图） ── */
+            startListenQuestion() {
+                this.isBusy = false;
+                var s = this.pickSyllable();
+                this.current = s;
+                this.updateProgress(Math.min(this.score.correct + 1, ROUND_QUESTIONS), ROUND_QUESTIONS);
+                document.getElementById('feedback').textContent = '';
+                var audible = canListen();
+                var area = document.getElementById('listenArea');
+                area.setAttribute('data-audible', audible ? '1' : '0');
+                var quiz = document.getElementById('targetQuiz');
+                var py = document.getElementById('targetPy');
+                if (audible) {
+                    document.getElementById('instruction').textContent = '听一听，选一选';
+                    document.getElementById('listenBtn').hidden = false;
+                    quiz.hidden = false;
+                    quiz.textContent = '❓';
+                    py.hidden = true;
+                    /* 抢答后 isBusy 已置位，迟到的自动朗读不再打断反馈/结算语音 */
+                    this.guardedTimeout(() => {
+                        if (!this.isBusy) KidsUI.TTS.speak(s.hanzi);
+                    }, AUTO_SPEAK_DELAY_MS);
+                } else {
+                    this.showPyFallback(s);
+                }
+                var self = this;
+                document.getElementById('listenBtn').onclick = function () {
+                    KidsUI.SFX.tap();
+                    /* 局中把音量拖到 0 时按钮变死控件，就地降级为看拼音 */
+                    if (KidsUI.SFX.volume <= 0) {
+                        self.showPyFallback(s);
+                        return;
+                    }
+                    KidsUI.TTS.speak(s.hanzi);
+                };
+                var count = OPTION_COUNTS[this.difficulty.getLevel() - 1] || OPTION_COUNTS[0];
+                this.renderPickCards(this.pickListenOptions(s, count));
+            }
+
+            showPyFallback(s) {
+                document.getElementById('listenArea').setAttribute('data-audible', '0');
+                document.getElementById('instruction').textContent = '现在没有声音，看拼音选一选';
+                document.getElementById('listenBtn').hidden = true;
+                document.getElementById('targetQuiz').hidden = true;
+                var py = document.getElementById('targetPy');
+                py.hidden = false;
+                py.textContent = s.py;
+            }
+
+            pickListenOptions(target, count) {
+                var others = SYLLABLES.filter(function (s) { return s.py !== target.py; })
+                    .map(function (cand) {
+                        return { cand: cand, score: distractorScore(target, cand) };
+                    })
+                    .sort(function (a, b) { return b.score - a.score; });
+                return shuffle([target].concat(others.slice(0, count - 1).map(function (o) { return o.cand; })));
+            }
+
+            renderPickCards(options) {
+                var self = this;
+                var grid = document.getElementById('pickGrid');
+                grid.innerHTML = '';
+                options.forEach(function (opt) {
+                    var card = document.createElement('button');
+                    card.type = 'button';
+                    card.className = 'pick-card';
+                    card.dataset.syllable = opt.py;
+                    card.setAttribute('aria-label', opt.py + ' ' + opt.hanzi);
+                    card.innerHTML = '<span class="py">' + opt.py + '</span>' +
+                        '<span class="zh">' + opt.hanzi + '</span>' +
+                        '<span class="em">' + opt.emoji + '</span>';
+                    card.addEventListener('click', function () { self.answerListen(card, opt); });
+                    grid.appendChild(card);
+                });
+            }
+
+            answerListen(card, opt) {
+                if (this.isBusy) return;
+                var s = this.current;
+                if (opt.py === s.py) {
+                    this.isBusy = true;
+                    card.classList.add('correct');
+                    var quiz = document.getElementById('targetQuiz');
+                    quiz.hidden = false;
+                    quiz.innerHTML = '<span class="zh">' + s.hanzi + '</span> ' + s.emoji;
+                    KidsUI.SFX.correct();
+                    KidsUI.haptic('good');
+                    KidsUI.TTS.speak(s.hanzi);
+                    if (!this.recordCorrect()) {
+                        this.guardedTimeout(() => this.continueGame(), NEXT_DELAY_MS);
+                    }
+                } else {
+                    if (card.classList.contains('wrong')) return;
+                    card.classList.add('wrong');
+                    KidsUI.SFX.wrong();
+                    KidsUI.haptic('bad');
+                    KidsUI.TTS.speak('再听一听');
+                    document.getElementById('feedback').textContent = '不对哦，再选一次';
+                    this.recordWrong();
+                    this.guardedTimeout(() => card.classList.remove('wrong'), WRONG_CLEAR_MS);
+                }
+            }
+
+            /* ── 模式三：韵母归类 ── */
+            startSortRound() {
+                this.isBusy = false;
+                this.sortLoaded = 0;
+                this.selectedCard = null;
+                this.sortPool = buildSortPool(this.difficulty.getLevel());
+                document.getElementById('instruction').textContent = '先点一张字卡，再点车厢装进去';
+                document.getElementById('feedback').textContent = '';
+                this.renderSortPool();
+                this.renderSortTrack();
+                this.updateProgress(0, this.sortPool.length);
+            }
+
+            renderSortPool() {
+                var self = this;
+                var pool = document.getElementById('sortPool');
+                pool.innerHTML = '';
+                shuffle(this.sortPool).forEach(function (s) {
+                    var card = document.createElement('button');
+                    card.type = 'button';
+                    card.className = 'sort-card';
+                    card.dataset.syllable = s.py;
+                    card.setAttribute('aria-label', s.py + ' ' + s.hanzi);
+                    card.innerHTML = '<span class="py">' + s.py + '</span>' +
+                        '<span class="zh">' + s.hanzi + '</span>' +
+                        '<span class="em">' + s.emoji + '</span>';
+                    card.addEventListener('click', function () { self.pickSortCard(card, s); });
+                    pool.appendChild(card);
+                });
+            }
+
+            renderSortTrack() {
+                var self = this;
+                var track = document.getElementById('sortTrack');
+                track.innerHTML = '';
+                FINALS.forEach(function (f) {
+                    var car = document.createElement('button');
+                    car.type = 'button';
+                    car.className = 'sort-car';
+                    car.dataset.final = f;
+                    car.setAttribute('aria-label', '韵母 ' + f + ' 车厢');
+                    car.innerHTML = '<span class="f">' + f + '</span>' +
+                        '<span class="loaded-list"></span>' +
+                        '<span class="wheels" aria-hidden="true"><i></i><i></i></span>';
+                    car.addEventListener('click', function () { self.loadSortCar(car, f); });
+                    track.appendChild(car);
+                });
+            }
+
+            pickSortCard(card, s) {
+                if (this.isBusy || card.classList.contains('gone')) return;
+                if (this.selectedCard && this.selectedCard.card === card) {
+                    card.classList.remove('picked');
+                    this.selectedCard = null;
+                    return;
+                }
+                if (this.selectedCard) this.selectedCard.card.classList.remove('picked');
+                this.selectedCard = { card: card, s: s };
+                card.classList.add('picked');
+                KidsUI.TTS.speak(s.hanzi);
+            }
+
+            loadSortCar(car, f) {
+                if (this.isBusy) return;
+                if (!this.selectedCard) {
+                    document.getElementById('feedback').textContent = '先选一张字卡哦';
+                    KidsUI.SFX.tap();
+                    KidsUI.TTS.speak('先选一张字卡哦');
+                    return;
+                }
+                var picked = this.selectedCard;
+                this.selectedCard = null;
+                if (picked.s.fin === f) {
+                    picked.card.classList.remove('picked');
+                    picked.card.classList.add('gone');
+                    car.classList.add('gain');
+                    var chip = document.createElement('span');
+                    chip.textContent = picked.s.hanzi + ' ';
+                    car.querySelector('.loaded-list').appendChild(chip);
+                    KidsUI.SFX.correct();
+                    KidsUI.haptic('good');
+                    KidsUI.TTS.speak(picked.s.hanzi);
+                    this.sortLoaded++;
+                    this.updateProgress(this.sortLoaded, this.sortPool.length);
+                    document.getElementById('feedback').textContent = '装对啦！';
+                    this.guardedTimeout(() => picked.card.remove(), GONE_REMOVE_MS);
+                    this.guardedTimeout(() => car.classList.remove('gain'), GAIN_CLEAR_MS);
+                    this.recordCorrect();
+                } else {
+                    car.classList.add('wrong');
+                    picked.card.classList.add('bounced');
+                    picked.card.classList.remove('picked');
+                    KidsUI.SFX.wrong();
+                    KidsUI.haptic('bad');
+                    KidsUI.TTS.speak('装错啦');
+                    document.getElementById('feedback').textContent = '装错车厢啦，再想一想';
+                    this.recordWrong();
+                    this.guardedTimeout(() => car.classList.remove('wrong'), WRONG_CLEAR_MS);
+                    this.guardedTimeout(() => picked.card.classList.remove('bounced'), WRONG_CLEAR_MS);
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            new PinyinTrainGame();
+        });
+    </script>
+</body>
+</html>
