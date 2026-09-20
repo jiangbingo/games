@@ -3,6 +3,7 @@
  * 令牌前缀 kui-，避免与各游戏内联样式冲突。
  */
 :root {
+  color-scheme: light;
   --kui-paper: #faf5ec;
   --kui-paper-deep: #f1e8d6;
   --kui-card: #fffdf8;
@@ -13,12 +14,39 @@
   --kui-good: #3fa574;
   --kui-bad: #e5533d;
   --kui-star: #ffb703;
+  --kui-star-off: #d9cfbe;
+  --kui-tint-good: #eaf7f0;
+  --kui-tint-bad: #fdeae7;
+  --kui-tint-hi: #fff6df;
+  --kui-hi-ink: #b07d00;
   --kui-shadow: 0 3px 0 rgba(47, 42, 37, 0.16);
   --kui-radius-lg: 22px;
   --kui-radius-md: 14px;
   --kui-radius-sm: 10px;
   --kui-tap: 48px;
   --kui-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── 夜间模式：跟随系统昼夜切换，暖棕纸艺换深色宣夜，页面层令牌自动生效 ── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --kui-paper: #221e19;
+    --kui-paper-deep: #2b2620;
+    --kui-card: #2f2a23;
+    --kui-ink: #f1e9db;
+    --kui-ink-soft: #b4a894;
+    --kui-line: rgba(241, 233, 219, 0.16);
+    --kui-good: #58c78c;
+    --kui-bad: #f26e57;
+    --kui-star: #ffc531;
+    --kui-star-off: #4a4234;
+    --kui-tint-good: #223b2d;
+    --kui-tint-bad: #3d2420;
+    --kui-tint-hi: #383018;
+    --kui-hi-ink: #ffca57;
+    --kui-shadow: 0 3px 0 rgba(0, 0, 0, 0.45);
+  }
 }
 
 body {
@@ -197,7 +225,7 @@ body.kui-has-header {
 }
 .kui-star {
   display: inline-block;
-  color: #d9cfbe;
+  color: var(--kui-star-off);
   transform: scale(0);
 }
 .kui-star.on {
