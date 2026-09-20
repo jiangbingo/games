@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#3e8e5a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-touch-icon" href="/icons/icon-192.png">
+    <title>森林路线拼图</title>
+    <link rel="stylesheet" href="/css/kids.css">
+    <style>
+        :root {
+            --game-accent: #3e8e5a;
+            --tile-bg: var(--kui-card);
+            --board-bg: #e6f2d7;
+            --pipe: #c68b57;
+            --water: #3d9ae2;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--kui-paper);
+            background-image: radial-gradient(color-mix(in srgb, var(--kui-ink) 3%, transparent) 1px, transparent 1.4px);
+            background-size: 26px 26px;
+            min-height: 100vh;
+            color: var(--kui-ink);
+            display: flex;
+            justify-content: center;
+            padding: 14px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .game {
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-lg);
+            box-shadow: var(--kui-shadow);
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+            margin-top: 8px;
+        }
+        .instruction {
+            text-align: center;
+            font-size: clamp(16px, 4.5vw, 20px);
+            font-weight: 800;
+            margin-bottom: 14px;
+            min-height: 2.2em;
+        }
+        .legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+        .legend-item {
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-paper);
+            box-shadow: var(--kui-shadow);
+            padding: 12px 6px;
+            text-align: center;
+        }
+        .legend-item .legend-icon { font-size: 2.2rem; display: block; }
+        .legend-item .legend-name { font-weight: 900; font-size: 1rem; margin-top: 4px; }
+        .legend-item .legend-sub { font-size: 0.78rem; color: var(--kui-ink-soft); line-height: 1.4; }
+        .legend-item.src { border-color: rgba(61, 154, 226, 0.45); }
+        .legend-item.tap { border-color: rgba(62, 142, 90, 0.45); }
+        .legend-item.flower { border-color: rgba(214, 69, 110, 0.4); }
+        .diff-label { text-align: center; font-weight: 800; color: var(--kui-ink-soft); margin-bottom: 8px; }
+        .diff-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+        .diff-btn {
+            padding: 12px 6px;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            font-size: 0.95rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s;
+            touch-action: manipulation;
+        }
+        .diff-btn:active { transform: translateY(2px); box-shadow: none; }
+        .diff-btn.active { background: var(--game-accent); border-color: var(--game-accent); color: #fff; }
+        .big-start { width: 100%; padding: 16px; font-size: 1.3rem; font-weight: 900; }
+        .stats-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        .diff-row.mini { margin: 0 0 10px; }
+        .diff-row.mini .diff-btn { padding: 8px 4px; font-size: 0.85rem; min-height: 44px; }
+        .board-wrap { position: relative; margin-bottom: 12px; }
+        #board {
+            display: grid;
+            gap: 5px;
+            padding: 10px;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--board-bg);
+            box-shadow: var(--kui-shadow);
+        }
+        .cap-cell { position: relative; display: flex; align-items: center; justify-content: center; min-height: 38px; }
+        /* 进出水短管各朝瓦片多探出一段，跨过网格缝隙与管口对齐 */
+        .cap-stub {
+            position: absolute;
+            left: 50%;
+            width: 30%;
+            transform: translateX(-50%);
+            background: var(--pipe);
+            border-radius: 4px;
+            transition: background 0.3s ease;
+        }
+        .cap-cell.top .cap-stub { top: 12%; bottom: -7px; }
+        .cap-cell.bottom .cap-stub { top: -7px; bottom: 12%; }
+        .cap-stub.on { background: var(--water); }
+        .cap-mark { position: relative; font-size: 1.35rem; line-height: 1; filter: drop-shadow(0 1px 0 rgba(47, 42, 37, 0.15)); }
+        .cap-mark.bloom { animation: bloom 0.8s var(--kui-bounce) forwards; }
+        @keyframes bloom {
+            0% { transform: scale(1); }
+            45% { transform: scale(1.6) rotate(-12deg); }
+            100% { transform: scale(1.25) rotate(0deg); }
+        }
+        .tile {
+            position: relative;
+            aspect-ratio: 1;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-sm);
+            background: var(--tile-bg);
+            box-shadow: var(--kui-shadow);
+            cursor: pointer;
+            padding: 0;
+            transition: transform 0.1s var(--kui-bounce);
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tile:active { transform: scale(0.93); }
+        .tile:focus-visible { outline: 3px solid var(--game-accent); outline-offset: -3px; }
+        .tile.blank { box-shadow: none; border-style: dashed; cursor: default; }
+        .tile.blank::before {
+            content: "";
+            position: absolute;
+            inset: 40%;
+            border-radius: 50%;
+            background: color-mix(in srgb, var(--kui-ink) 8%, transparent);
+        }
+        .shape { position: absolute; inset: 0; transition: transform 0.18s var(--kui-bounce); will-change: transform; }
+        .shape::before, .shape::after {
+            content: "";
+            position: absolute;
+            transition: background 0.3s ease var(--flow-delay, 0ms);
+        }
+        /* 直管（基础朝向：上↔下）*/
+        .p-straight::before { top: 0; bottom: 0; left: 35%; width: 30%; background: var(--pipe); }
+        /* 弯管（基础朝向：上↔右）：65% 外扇减 35% 内扇（同圆心）挖出圆弧管 */
+        .p-elbow::before { top: 0; right: 0; width: 65%; height: 65%; border-bottom-left-radius: 100%; background: var(--pipe); }
+        .p-elbow::after { top: 0; right: 0; width: 35%; height: 35%; border-bottom-left-radius: 100%; background: var(--tile-bg); }
+        /* T 型（基础朝向：左↔上↔右）*/
+        .p-tee::before { left: 0; right: 0; top: 35%; height: 30%; background: var(--pipe); }
+        .p-tee::after { top: 0; height: 50%; left: 35%; width: 30%; background: var(--pipe); }
+        .tile.wet .p-straight::before, .tile.wet .p-elbow::before,
+        .tile.wet .p-tee::before, .tile.wet .p-tee::after { background: var(--water); }
+        #board.flowing .tile.wet .shape { animation: waterFlow 1s linear infinite; }
+        @keyframes waterFlow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.28); } }
+        .level-banner {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .level-banner span {
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: 999px;
+            padding: 8px 20px;
+            font-weight: 900;
+            font-size: 1.1rem;
+            color: var(--kui-ink);
+            box-shadow: var(--kui-shadow);
+            animation: kui-pop 0.4s var(--kui-bounce);
+        }
+        /* 作者 display 会击穿 UA 的 [hidden]，必须显式守卫（同 pinyin-train 的坑） */
+        .level-banner[hidden] { display: none; }
+        .hint { text-align: center; font-size: 0.85rem; color: var(--kui-ink-soft); margin-top: 8px; }
+        @media (prefers-reduced-motion: reduce) {
+            .shape, .tile, .cap-stub,
+            .p-straight::before, .p-elbow::before, .p-elbow::after, .p-tee::before, .p-tee::after { transition: none; }
+            #board.flowing .tile.wet .shape { animation: none; }
+            .cap-mark.bloom { animation: none; transform: scale(1.25); }
+            .level-banner span { animation: none; }
+        }
+        /* 深色覆盖放在基规则之后（同优先级后来居上）：提亮强调色、压暗盘面 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --game-accent: #6fc492;
+                --board-bg: #243422;
+                --pipe: #b58753;
+                --water: #5cb6f2;
+            }
+            .diff-btn.active { color: #221e19; }
+            .kui-btn.kui-primary { color: #221e19; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <div id="startScreen">
+            <p class="instruction">🌲 森林路线拼图</p>
+            <div class="legend">
+                <div class="legend-item src">
+                    <span class="legend-icon">🚿</span>
+                    <span class="legend-name">水源</span>
+                    <span class="legend-sub">水从左上角出发</span>
+                </div>
+                <div class="legend-item tap">
+                    <span class="legend-icon">👆</span>
+                    <span class="legend-name">转一转</span>
+                    <span class="legend-sub">点一下管子转 90°</span>
+                </div>
+                <div class="legend-item flower">
+                    <span class="legend-icon">🌸</span>
+                    <span class="legend-name">花朵</span>
+                    <span class="legend-sub">把水送到右下角的花</span>
+                </div>
+            </div>
+            <p class="diff-label">一局 5 关，越玩越大；转得越准星星越多</p>
+            <div class="diff-row" id="diffRowStart"></div>
+            <button class="kui-btn kui-primary kui-big big-start" id="startBtn" type="button">开始接水 💧</button>
+        </div>
+
+        <div id="playScreen" hidden>
+            <div class="stats-row">
+                <span class="kui-chip">🗺️ 第 <b id="statLevel">1/5</b> 关</span>
+                <span class="kui-chip">🔄 步数 <b id="statClicks">0</b></span>
+                <span class="kui-chip">🎯 最少 <b id="statMin">0</b> 步</span>
+            </div>
+            <div class="diff-row mini" id="diffRowPlay"></div>
+            <div class="board-wrap">
+                <div id="board" role="group" aria-label="水管拼图盘，点管子旋转把水接到花"></div>
+                <div class="level-banner" id="levelBanner" role="status" hidden><span></span></div>
+            </div>
+            <p class="hint">键盘也能玩：Tab 选管子，回车或空格转一转</p>
+        </div>
+    </div>
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
+    <script>
+        "use strict";
+        var gameId = 'pipe-puzzle';
+        var LS_DIFF = 'pipepuzzle_diff';
+        /* 方向位掩码：1=上 2=右 4=下 8=左；瓦片 = 基础管型 + 旋转次数 */
+        var UP = 1, RIGHT = 2, DOWN = 4, LEFT = 8;
+        var DIRS = [
+            { bit: UP, dr: -1, dc: 0, opp: DOWN }, { bit: RIGHT, dr: 0, dc: 1, opp: LEFT },
+            { bit: DOWN, dr: 1, dc: 0, opp: UP }, { bit: LEFT, dr: 0, dc: -1, opp: RIGHT }
+        ];
+        /* 一局 5 关递进：3×3 无迷惑管 → 3×3 带迷惑管 → 4×4 → 5×5 → 5×5 更多迷惑管 */
+        var LEVELS = [
+            { size: 3, branches: 0, fill: 0 }, { size: 3, branches: 2, fill: 0.7 },
+            { size: 4, branches: 2, fill: 0.5 }, { size: 5, branches: 3, fill: 0.6 },
+            { size: 5, branches: 5, fill: 1 }
+        ];
+        var DIFFS = [
+            { id: 'easy', label: '🌱 简单', tier: 1 }, { id: 'mid', label: '🌲 普通', tier: 2 }, { id: 'hard', label: '🌳 挑战', tier: 3 }
+        ];
+        /* 自适应档位对迷惑管数量的缩放（档 1 减、档 3 增）*/
+        var TIER_SCALE = [0.5, 1, 1.5];
+        var TIME_BUDGET_S = { 3: 30, 4: 50, 5: 75 };
+        var EFFICIENT_CLICK_FACTOR = 1.5;
+        var WET_STAGGER_MS = 40;
+        var FLOW_STAGGER_MS = 90;
+        var WAVE_RESTART_MS = 60;
+        var FLOW_TAIL_MS = 350;
+        var BLOOM_HOLD_MS = 650;
+        var BANNER_MS = 1200;
+        var STRAIGHT_SHARE = 0.4;
+        var TEE_SHARE = 0.2;
+        var BRANCH_GROW_CHANCE = 0.5;
+
+        function mulberry32(seed) {
+            var a = seed >>> 0;
+            return function () {
+                a |= 0;
+                a = (a + 0x6D2B79F5) | 0;
+                var t = Math.imul(a ^ (a >>> 15), 1 | a);
+                t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        function rotateMask(mask, k) {
+            var m = mask;
+            for (var i = 0; i < k; i++) m = ((m << 1) | (m >> 3)) & 15;
+            return m;
+        }
+
+        function typeName(base) {
+            return base === 5 ? 'straight' : base === 3 ? 'elbow' : 'tee';
+        }
+
+        /* 目标开口集合 → { 基础管型, 正确旋转次数 }；直管基 5（上下）、弯管基 3（上右）、T 基 11（左上右）*/
+        function maskToTile(mask) {
+            var k;
+            if (mask === 5 || mask === 10) return { base: 5, sol: mask === 5 ? 0 : 1 };
+            for (k = 0; k < 4; k++) if (rotateMask(3, k) === mask) return { base: 3, sol: k };
+            for (k = 0; k < 4; k++) if (rotateMask(11, k) === mask) return { base: 11, sol: k };
+            return null;
+        }
+
+        function maskOf(tile) {
+            return rotateMask(tile.base, tile.rot);
+        }
+
+        /* 转到任一「盖住解路径开口」朝向的最少顺时针点击数：普通管唯一等效朝向，
+           带迷惑分支的 T 型格有两个（第三口朝哪都行），取更近的一个 */
+        function minClicks(tile) {
+            var best = 4;
+            for (var o = 0; o < 4; o++) {
+                if ((rotateMask(tile.base, o) & tile.need) !== tile.need) continue;
+                var d = (o - tile.rot + 4) % 4;
+                if (d < best) best = d;
+            }
+            return best === 4 ? 0 : best;
+        }
+
+        /* 从水源（进入 (0,0) 上边）做 BFS：dist=到水距离，solved=水从右下角下边流出到花 */
+        function waterInfo(board) {
+            var n = board.n;
+            var tiles = board.tiles;
+            var dist = [];
+            var max = -1;
+            var i;
+            for (i = 0; i < n * n; i++) dist[i] = -1;
+            if (tiles[0] && (maskOf(tiles[0]) & UP)) {
+                dist[0] = 0;
+                var queue = [0], head = 0;
+                while (head < queue.length) {
+                    var cur = queue[head++];
+                    var r = Math.floor(cur / n);
+                    var c = cur % n;
+                    var m = maskOf(tiles[cur]);
+                    for (var d = 0; d < 4; d++) {
+                        if (!(m & DIRS[d].bit)) continue;
+                        var nr = r + DIRS[d].dr, nc = c + DIRS[d].dc;
+                        if (nr < 0 || nc < 0 || nr >= n || nc >= n) continue;
+                        var j = nr * n + nc;
+                        if (dist[j] >= 0 || !tiles[j] || !(maskOf(tiles[j]) & DIRS[d].opp)) continue;
+                        dist[j] = dist[cur] + 1;
+                        if (dist[j] > max) max = dist[j];
+                        queue.push(j);
+                    }
+                }
+            }
+            var last = tiles[n * n - 1];
+            var solved = !!last && dist[n * n - 1] >= 0 && !!(maskOf(last) & DOWN);
+            return { dist: dist, max: max, solved: solved };
+        }
+
+        function isSolved(board) {
+            return waterInfo(board).solved;
+        }
+
+        function computeMin(board) {
+            var sum = 0;
+            for (var i = 0; i < board.tiles.length; i++) if (board.tiles[i] && board.tiles[i].key) sum += minClicks(board.tiles[i]);
+            board.minRot = sum;
+            return sum;
+        }
+
+        /* 自避随机游走解路径（DFS 回溯），保证 (0,0)→(n-1,n-1) 必达 */
+        function generatePath(n, rand) {
+            var visited = {};
+            var path = [];
+            function walk(r, c) {
+                var idx = r * n + c;
+                visited[idx] = true;
+                path.push(idx);
+                if (r === n - 1 && c === n - 1) return true;
+                var order = [0, 1, 2, 3];
+                for (var i = 3; i > 0; i--) {
+                    var j = Math.floor(rand() * (i + 1)), t = order[i];
+                    order[i] = order[j];
+                    order[j] = t;
+                }
+                for (var d = 0; d < 4; d++) {
+                    var dir = DIRS[order[d]];
+                    var nr = r + dir.dr;
+                    var nc = c + dir.dc;
+                    if (nr < 0 || nc < 0 || nr >= n || nc >= n) continue;
+                    if (visited[nr * n + nc]) continue;
+                    if (walk(nr, nc)) return true;
+                }
+                path.pop();
+                visited[idx] = false;
+                return false;
+            }
+            walk(0, 0);
+            return path;
+        }
+
+        function dirBetween(from, to, n) {
+            var fr = Math.floor(from / n), fc = from % n;
+            var tr = Math.floor(to / n), tc = to % n;
+            for (var d = 0; d < 4; d++) {
+                if (fr + DIRS[d].dr === tr && fc + DIRS[d].dc === tc) return DIRS[d].bit;
+            }
+            return 0;
+        }
+
+        /* 死胡同尽头的装饰开口：随便朝一个非来路方向（朝盘外也无妨，只是装饰）*/
+        function deadEndDir(rand, fromDir) {
+            var options = [];
+            for (var d = 0; d < 4; d++) if (DIRS[d].bit !== fromDir.opp) options.push(DIRS[d].bit);
+            return options[Math.floor(rand() * options.length)];
+        }
+
+        /* 生成一局：解路径 → 分支迷惑管 → 空格撒迷惑管 → 全体随机旋转（保证可解且不直接可解）。
+           可解性只由解路径管（key=true）能转回 sol 朝向保证，迷惑管怎么转都破坏不了它。*/
+        function generate(n, decoys, seed, fill) {
+            if (fill == null) fill = 0;
+            var rand = mulberry32(seed);
+            var tiles = [], need = [], conns = [], hasBranch = {};
+            var i, d;
+            for (i = 0; i < n * n; i++) { tiles[i] = null; need[i] = 0; conns[i] = 0; }
+            var path = generatePath(n, rand);
+            for (i = 0; i < path.length; i++) {
+                var cell = path[i];
+                need[cell] = (i === 0 ? UP : 0) | (i === path.length - 1 ? DOWN : 0);
+                if (i > 0) need[cell] |= dirBetween(cell, path[i - 1], n);
+                if (i < path.length - 1) need[cell] |= dirBetween(cell, path[i + 1], n);
+                conns[cell] = need[cell];
+            }
+            /* 分支迷惑管：从路径格引出 1-2 格死胡同，该路径格升级成 T 型；每格限一支防出十字 */
+            var attached = 0, guard = 0;
+            while (attached < decoys && guard++ < decoys * 14) {
+                var p = path[Math.floor(rand() * path.length)];
+                if (hasBranch[p]) continue;
+                var pr = Math.floor(p / n), pc = p % n;
+                var freeDirs = [];
+                for (d = 0; d < 4; d++) {
+                    var nr = pr + DIRS[d].dr, nc = pc + DIRS[d].dc;
+                    if (nr < 0 || nc < 0 || nr >= n || nc >= n) continue;
+                    if (conns[nr * n + nc] === 0) freeDirs.push(DIRS[d]);
+                }
+                if (!freeDirs.length) continue;
+                var d1 = freeDirs[Math.floor(rand() * freeDirs.length)];
+                var c1 = (pr + d1.dr) * n + (pc + d1.dc);
+                conns[p] |= d1.bit;
+                conns[c1] |= d1.opp;
+                hasBranch[p] = true;
+                var grew = false;
+                if (rand() < BRANCH_GROW_CHANCE) {
+                    var r1 = Math.floor(c1 / n), c1c = c1 % n;
+                    var more = [];
+                    for (d = 0; d < 4; d++) {
+                        var nr2 = r1 + DIRS[d].dr, nc2 = c1c + DIRS[d].dc;
+                        if (nr2 < 0 || nc2 < 0 || nr2 >= n || nc2 >= n) continue;
+                        if (nr2 === pr && nc2 === pc) continue;
+                        if (conns[nr2 * n + nc2] === 0) more.push(DIRS[d]);
+                    }
+                    if (more.length) {
+                        var d3 = more[Math.floor(rand() * more.length)];
+                        conns[c1] |= d3.bit;
+                        conns[(r1 + d3.dr) * n + (c1c + d3.dc)] |= d3.opp | deadEndDir(rand, d3);
+                        grew = true;
+                    }
+                }
+                if (!grew) conns[c1] |= deadEndDir(rand, d1);
+                attached++;
+            }
+            /* 剩余空格按概率撒迷惑管（直/弯/T 混合，装饰用）*/
+            for (i = 0; i < n * n; i++) {
+                if (conns[i] !== 0 || rand() >= fill) continue;
+                var roll = rand();
+                var base = roll < STRAIGHT_SHARE ? 5 : roll < 1 - TEE_SHARE ? 3 : 11;
+                tiles[i] = { base: base, rot: Math.floor(rand() * 4), sol: 0, type: typeName(base), key: false, need: 0 };
+            }
+            /* 路径与分支管定型；只有解路径管（need≠0）计入最少步数 */
+            for (i = 0; i < n * n; i++) {
+                if (conns[i] === 0) continue;
+                var mt = maskToTile(conns[i]);
+                tiles[i] = { base: mt.base, rot: 0, sol: mt.sol, type: typeName(mt.base), key: need[i] !== 0, need: need[i] };
+            }
+            var board = { n: n, tiles: tiles, minRot: 0 };
+            var ok = false;
+            for (var attempt = 0; attempt < 60 && !ok; attempt++) {
+                for (var s = 0; s < tiles.length; s++) if (tiles[s]) tiles[s].rot = Math.floor(rand() * 4);
+                ok = computeMin(board) >= 1 && !isSolved(board);
+            }
+            for (var f = 0; f < 4 && isSolved(board); f++) tiles[0].rot = (tiles[0].rot + 1) % 4;
+            computeMin(board);
+            /* 迷惑管没有必须的朝向：sol 跟随打乱结果 */
+            for (var q = 0; q < tiles.length; q++) if (tiles[q] && !tiles[q].key) tiles[q].sol = tiles[q].rot;
+            return board;
+        }
+
+        /* 浇水声属于内容音效：只随主音量（与 hand-clap/whack-a-mole 约定一致），不受静音开关影响 */
+        function pourSound(ctx) {
+            var dur = 0.9;
+            var buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+            var data = buffer.getChannelData(0);
+            for (var i = 0; i < data.length; i++) {
+                var env = Math.sin(Math.min(1, (i / data.length) * 6) * Math.PI / 2);
+                data[i] = (Math.random() * 2 - 1) * env * (0.7 + 0.3 * Math.sin((i / ctx.sampleRate) * 55));
+            }
+            var src = ctx.createBufferSource();
+            src.buffer = buffer;
+            var band = ctx.createBiquadFilter();
+            band.type = 'bandpass';
+            band.Q.value = 1.1;
+            band.frequency.setValueAtTime(500, ctx.currentTime);
+            band.frequency.linearRampToValueAtTime(1100, ctx.currentTime + dur);
+            var gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.35 * KidsUI.SFX.volume, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+            src.connect(band);
+            band.connect(gain);
+            gain.connect(ctx.destination);
+            src.start();
+        }
+
+        class PipePuzzleGame {
+            constructor() {
+                this.gameId = gameId;
+                this.diffId = this.loadDiff();
+                this.timers = [];
+                this.locked = true;
+                this.buildAdaptive();
+                this.init();
+            }
+
+            get tier() {
+                return this.adaptive.getLevel();
+            }
+
+            buildAdaptive() {
+                var self = this;
+                var tier = (DIFFS.find(function (d) { return d.id === self.diffId; }) || DIFFS[1]).tier;
+                this.adaptive = new KidsUI.AdaptiveDifficulty({
+                    initialLevel: tier,
+                    windowSize: 5,
+                    onChange: function () { self.renderDiffButtons(); }
+                });
+            }
+
+            loadDiff() {
+                var saved = localStorage.getItem(LS_DIFF);
+                return DIFFS.some(function (d) { return d.id === saved; }) ? saved : 'mid';
+            }
+
+            later(fn, ms) {
+                this.timers.push(setTimeout(fn, ms));
+            }
+
+            clearTimers() {
+                this.timers.forEach(clearTimeout);
+                this.timers = [];
+            }
+
+            init() {
+                KidsUI.Touch.guard();
+                KidsUI.Header.render({
+                    title: '森林路线拼图',
+                    accent: '#3e8e5a',
+                    onReplay: () => this.backToStart()
+                });
+                this.renderDiffButtons();
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    KidsUI.SFX.tap();
+                    /* 手势内预建 AudioContext：整局静音时通关合成音在 iOS 也能出声 */
+                    KidsUI.SFX._ensure();
+                    this.startRun();
+                });
+                document.getElementById('board').addEventListener('click', (e) => {
+                    var el = e.target.closest('.tile');
+                    if (el && el.dataset.i != null) this.rotate(Number(el.dataset.i));
+                });
+            }
+
+            renderDiffButtons() {
+                var self = this;
+                ['diffRowStart', 'diffRowPlay'].forEach(function (rowId) {
+                    var row = document.getElementById(rowId);
+                    row.innerHTML = '';
+                    DIFFS.forEach(function (diff) {
+                        var btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'diff-btn' + (diff.tier === self.tier ? ' active' : '');
+                        btn.textContent = diff.label;
+                        btn.setAttribute('aria-pressed', String(diff.tier === self.tier));
+                        btn.addEventListener('click', function () {
+                            KidsUI.SFX.tap();
+                            self.setDiff(diff.id);
+                        });
+                        row.appendChild(btn);
+                    });
+                });
+            }
+
+            setDiff(id) {
+                this.diffId = id;
+                localStorage.setItem(LS_DIFF, id);
+                this.buildAdaptive();
+                this.renderDiffButtons();
+            }
+
+            startRun() {
+                this.clearTimers();
+                KidsUI.Celebrate.hide();
+                this.levelIdx = 0;
+                this.totalClicks = 0;
+                this.totalMin = 0;
+                document.getElementById('startScreen').hidden = true;
+                document.getElementById('playScreen').hidden = false;
+                this.loadLevel(0);
+            }
+
+            loadLevel(idx) {
+                this.clearTimers();
+                this.levelIdx = idx;
+                var cfg = LEVELS[idx];
+                var scale = TIER_SCALE[this.tier - 1];
+                var seed = (Math.random() * 2147483647) | 0;
+                this.board = generate(cfg.size, Math.round(cfg.branches * scale), seed, Math.min(1, cfg.fill * scale));
+                this.clicks = 0;
+                this.levelStart = Date.now();
+                this.locked = false;
+                this.renderBoard();
+                this.applyWater(0);
+                this.updateStats();
+            }
+
+            renderBoard() {
+                var b = this.board;
+                var n = b.n;
+                var board = document.getElementById('board');
+                board.classList.remove('flowing');
+                board.style.gridTemplateColumns = 'repeat(' + n + ', 1fr)';
+                board.innerHTML = '';
+                var capTop = document.createElement('div');
+                capTop.className = 'cap-cell top';
+                capTop.style.gridRow = '1'; capTop.style.gridColumn = '1';
+                capTop.innerHTML = '<span class="cap-stub on"></span><span class="cap-mark" aria-hidden="true">🚿</span>';
+                board.appendChild(capTop);
+                for (var i = 0; i < n * n; i++) {
+                    var r = Math.floor(i / n);
+                    var c = i % n;
+                    var t = b.tiles[i];
+                    var el;
+                    if (!t) {
+                        el = document.createElement('div');
+                        el.className = 'tile blank';
+                        el.setAttribute('aria-hidden', 'true');
+                    } else {
+                        el = document.createElement('button');
+                        el.type = 'button';
+                        el.className = 'tile';
+                        el.dataset.i = String(i);
+                        el.dataset.rot = String(t.rot);
+                        el.setAttribute('aria-label', '第' + (r + 1) + '行第' + (c + 1) + '列水管');
+                        t.spin = t.rot * 90;
+                        var shape = document.createElement('div');
+                        shape.className = 'shape p-' + t.type;
+                        shape.setAttribute('aria-hidden', 'true');
+                        shape.style.transform = 'rotate(' + t.spin + 'deg)';
+                        el.appendChild(shape);
+                    }
+                    el.style.gridRow = String(r + 2); el.style.gridColumn = String(c + 1);
+                    board.appendChild(el);
+                }
+                var capBottom = document.createElement('div');
+                capBottom.className = 'cap-cell bottom';
+                capBottom.style.gridRow = String(n + 2); capBottom.style.gridColumn = String(n);
+                capBottom.innerHTML = '<span class="cap-stub"></span><span class="cap-mark" id="flowerMark" aria-hidden="true">🌸</span>';
+                board.appendChild(capBottom);
+            }
+
+            rotate(i) {
+                if (this.locked) { KidsUI.SFX.tap(); return; }
+                var t = this.board.tiles[i];
+                if (!t) return;
+                t.rot = (t.rot + 1) % 4;
+                t.spin += 90;
+                var el = document.querySelector('#board .tile[data-i="' + i + '"]');
+                el.querySelector('.shape').style.transform = 'rotate(' + t.spin + 'deg)';
+                el.dataset.rot = String(t.rot);
+                this.clicks++;
+                this.totalClicks++;
+                KidsUI.SFX.tap();
+                this.updateStats();
+                var info = this.applyWater(WET_STAGGER_MS);
+                if (info.solved) this.win(info);
+            }
+
+            /* 把与水源连通的管子标湿；stagger 控制波纹逐格铺开的节奏 */
+            applyWater(stagger) {
+                var info = waterInfo(this.board);
+                var els = document.querySelectorAll('#board .tile[data-i]');
+                for (var i = 0; i < els.length; i++) {
+                    var el = els[i];
+                    if (info.dist[Number(el.dataset.i)] >= 0) {
+                        el.classList.add('wet');
+                        el.style.setProperty('--flow-delay', (info.dist[Number(el.dataset.i)] * stagger) + 'ms');
+                    } else {
+                        el.classList.remove('wet');
+                        el.style.removeProperty('--flow-delay');
+                    }
+                }
+                return info;
+            }
+
+            win(info) {
+                this.locked = true;
+                document.getElementById('board').classList.add('flowing');
+                /* 先撤湿再从水源重铺一遍，把「水走通了」演成一眼前进的行进波 */
+                var els = document.querySelectorAll('#board .tile[data-i]');
+                for (var w = 0; w < els.length; w++) {
+                    els[w].classList.remove('wet');
+                    els[w].style.removeProperty('--flow-delay');
+                }
+                this.later(() => {
+                    this.applyWater(FLOW_STAGGER_MS);
+                    var ctx = KidsUI.SFX._ensure();
+                    if (ctx && KidsUI.SFX.volume > 0) pourSound(ctx);
+                }, WAVE_RESTART_MS);
+                var flowDur = (info.max + 1) * FLOW_STAGGER_MS + FLOW_TAIL_MS;
+                this.later(() => {
+                    var mark = document.getElementById('flowerMark');
+                    if (mark) mark.classList.add('bloom');
+                    var stub = document.querySelector('.cap-cell.bottom .cap-stub');
+                    if (stub) stub.classList.add('on');
+                    KidsUI.SFX.correct();
+                    KidsUI.haptic('good');
+                }, flowDur);
+                this.later(() => {
+                    var banner = document.getElementById('levelBanner');
+                    banner.querySelector('span').textContent = '✨ 第 ' + (this.levelIdx + 1) + ' 关完成 · ' + this.clicks + ' 步';
+                    banner.hidden = false;
+                }, flowDur + BLOOM_HOLD_MS);
+                this.later(() => {
+                    document.getElementById('levelBanner').hidden = true;
+                    this.settleLevel();
+                }, flowDur + BLOOM_HOLD_MS + BANNER_MS);
+            }
+
+            settleLevel() {
+                var cfg = LEVELS[this.levelIdx];
+                var elapsedS = (Date.now() - this.levelStart) / 1000;
+                var efficient = this.clicks <= this.board.minRot * EFFICIENT_CLICK_FACTOR &&
+                    elapsedS <= TIME_BUDGET_S[cfg.size];
+                this.adaptive.record(efficient);
+                this.totalMin += this.board.minRot;
+                if (this.levelIdx + 1 < LEVELS.length) this.loadLevel(this.levelIdx + 1);
+                else this.endRun();
+            }
+
+            endRun() {
+                this.locked = true;
+                var accuracy = this.totalClicks ? Math.min(1, this.totalMin / this.totalClicks) : 1;
+                var stars = KidsUI.Progress.starsFor(accuracy);
+                KidsUI.Progress.record(this.gameId, { best: Math.round(accuracy * 100), stars: stars });
+                KidsUI.Celebrate.show({
+                    title: accuracy >= 0.9 ? '水管大师！' : accuracy >= 0.7 ? '接得漂亮！' : '再试一次吧！',
+                    sub: '你转了 ' + this.totalClicks + ' 下（最快 ' + this.totalMin + ' 下）',
+                    stars: stars,
+                    primaryLabel: '再来一局',
+                    onPrimary: () => this.startRun(),
+                    secondaryLabel: '回主页',
+                    onSecondary: () => this.backToStart(),
+                    announce: '完成全部五关，太棒了'
+                });
+            }
+
+            backToStart() {
+                this.clearTimers();
+                this.locked = true;
+                KidsUI.Celebrate.hide();
+                document.getElementById('levelBanner').hidden = true;
+                document.getElementById('playScreen').hidden = true;
+                document.getElementById('startScreen').hidden = false;
+            }
+
+            updateStats() {
+                document.getElementById('statLevel').textContent = (this.levelIdx + 1) + '/' + LEVELS.length;
+                document.getElementById('statClicks').textContent = this.clicks;
+                document.getElementById('statMin').textContent = this.board ? this.board.minRot : 0;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            /* E2E 测试钩子：纯函数生成/判定 + 游戏实例 */
+            window.__pipePuzzle = {
+                generate: generate,
+                isSolved: isSolved,
+                game: new PipePuzzleGame()
+            };
+        });
+    </script>
+</body>
+</html>
