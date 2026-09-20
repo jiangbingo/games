@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#6c5ce7">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-touch-icon" href="/icons/icon-192.png">
+    <title>生活技能小管家</title>
+    <link rel="stylesheet" href="/css/kids.css">
+    <style>
+        :root { --game-accent: #6c5ce7; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--kui-paper);
+            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-size: 26px 26px;
+            min-height: 100vh;
+            color: var(--kui-ink);
+            display: flex;
+            justify-content: center;
+            padding: 14px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .game { background: var(--kui-card); border: 2px solid var(--kui-line); border-radius: var(--kui-radius-lg); box-shadow: var(--kui-shadow); max-width: 500px; width: 100%; padding: 20px; margin-top: 8px; }
+        .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+        .mode-btn {
+            padding: 16px 10px; border: 2px solid var(--kui-line); border-radius: var(--kui-radius-md);
+            font-size: 1rem; font-weight: 800; cursor: pointer; background: var(--kui-paper); color: var(--kui-ink);
+            box-shadow: var(--kui-shadow); transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s;
+            text-align: center; line-height: 1.4; touch-action: manipulation;
+        }
+        .mode-btn:active { transform: translateY(2px); box-shadow: none; }
+        .mode-btn.active { border-color: rgba(47, 42, 37, 0.2); color: #fff; }
+        .mode-btn .mode-icon { font-size: 1.8rem; display: block; margin-bottom: 4px; }
+        .mode-btn[data-mode="dress"].active { background: #6c5ce7; }
+        .mode-btn[data-mode="brush"].active { background: #0e7490; }
+        .mode-btn[data-mode="tidy"].active { background: #15803d; }
+        .mode-btn[data-mode="safety"].active { background: #b45309; }
+        .intro-hint { text-align: center; font-size: 0.9rem; font-weight: 600; color: var(--kui-ink-soft); line-height: 1.6; }
+        .stats-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        .level-hint { text-align: center; font-size: 0.85rem; font-weight: 700; color: var(--game-accent); margin-bottom: 12px; }
+        .instruction { text-align: center; font-size: clamp(16px, 4.5vw, 20px); font-weight: 800; margin-bottom: 14px; min-height: 2.2em; }
+        .feedback { text-align: center; font-size: 1.1rem; font-weight: 800; min-height: 2em; color: var(--kui-ink-soft); margin-bottom: 8px; }
+        /* ── 穿衣顺序 ── */
+        .dress-slots { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 14px; }
+        .slot { width: clamp(56px, 16vw, 80px); height: clamp(56px, 16vw, 80px); border: 3px dashed var(--kui-line); border-radius: var(--kui-radius-md); background: var(--kui-paper); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+        .slot-icon { font-size: 1.6rem; line-height: 1.1; }
+        .slot-num { font-size: 0.72rem; font-weight: 800; color: var(--kui-ink-soft); }
+        .slot.filled { border-style: solid; border-color: var(--kui-good); background: #eaf7f0; animation: kui-pop 0.3s ease; }
+        .hand-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; }
+        .step-card {
+            padding: 12px 6px; border: 3px solid var(--kui-line); border-radius: var(--kui-radius-md);
+            background: var(--kui-card); box-shadow: var(--kui-shadow); cursor: pointer; font-size: 1.9rem;
+            line-height: 1.25; font-weight: 900; touch-action: manipulation; transition: transform 0.12s var(--kui-bounce);
+        }
+        .step-card .card-label { display: block; font-size: 0.82rem; font-weight: 800; color: var(--kui-ink-soft); }
+        .step-card:active { transform: scale(0.95); }
+        .step-card.oops { animation: kui-shake 0.4s ease; }
+        .step-card.placed { opacity: 0.35; border-style: dashed; box-shadow: none; pointer-events: none; }
+        /* ── 刷牙时间 ── */
+        .mouth { max-width: 320px; margin: 0 auto 14px; padding: 16px 12px 12px; background: linear-gradient(180deg, #f8ccd4, #efa3b0); border: 3px solid rgba(47, 42, 37, 0.2); border-radius: var(--kui-radius-lg); box-shadow: var(--kui-shadow); }
+        .teeth-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .tooth { position: relative; height: clamp(56px, 16vw, 76px); border: 2px solid rgba(47, 42, 37, 0.15); border-radius: 16px 16px 22px 22px / 18px 18px 26px 26px; background: #f3e9c8; box-shadow: var(--kui-shadow); cursor: pointer; touch-action: manipulation; transition: background 0.2s, transform 0.12s var(--kui-bounce); }
+        .tooth.next { border-color: var(--game-accent); box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.25); animation: toothPulse 1s ease-in-out infinite; }
+        @keyframes toothPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+        .tooth.clean { background: #fffdf8; }
+        .tooth.clean::after { content: '✨'; position: absolute; top: 2px; right: 4px; font-size: 1rem; }
+        .tooth.oops { animation: kui-shake 0.4s ease; }
+        .brush-timer { max-width: 320px; margin: 0 auto 12px; }
+        .brush-track { position: relative; height: 26px; border: 2px solid var(--kui-line); border-radius: 999px; background: var(--kui-paper); overflow: hidden; }
+        .brush-fill { position: absolute; top: 0; bottom: 0; left: 0; width: 0; background: linear-gradient(90deg, #9fdcf2, #4fb6d9); display: flex; align-items: center; justify-content: flex-end; }
+        .brush-fill .brush-mascot { margin-right: 3px; font-size: 1.05rem; }
+        .brush-label { text-align: center; font-size: 0.85rem; font-weight: 700; color: var(--kui-ink-soft); margin-top: 6px; }
+        /* ── 整理房间 ── */
+        .floor { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 10px; padding: 14px 10px; border: 2px solid var(--kui-line); border-radius: var(--kui-radius-md); background: linear-gradient(180deg, #f1e8d6, #eadfc6); margin-bottom: 14px; }
+        .item-chip { aspect-ratio: 1; min-height: 64px; font-size: 1.9rem; border: 3px solid var(--kui-line); border-radius: var(--kui-radius-md); background: var(--kui-card); box-shadow: var(--kui-shadow); cursor: pointer; display: flex; align-items: center; justify-content: center; touch-action: manipulation; transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s; }
+        .item-chip.selected { border-color: var(--game-accent); transform: translateY(-4px); box-shadow: 0 6px 0 rgba(47, 42, 37, 0.16), 0 0 0 4px rgba(108, 92, 231, 0.25); animation: chipPulse 1s ease-in-out infinite; }
+        @keyframes chipPulse { 0%, 100% { transform: translateY(-4px) scale(1); } 50% { transform: translateY(-4px) scale(1.05); } }
+        .item-chip.oops { animation: kui-shake 0.4s ease; }
+        .item-chip.gone { animation: itemPop 0.35s ease forwards; pointer-events: none; }
+        @keyframes itemPop { to { transform: scale(0); opacity: 0; } }
+        .bins { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .bin { min-height: 84px; padding: 10px 6px; border: 3px solid var(--kui-line); border-radius: var(--kui-radius-md); background: var(--kui-card); box-shadow: var(--kui-shadow); cursor: pointer; font-weight: 900; font-size: 0.95rem; color: var(--kui-ink); touch-action: manipulation; transition: transform 0.12s var(--kui-bounce), border-color 0.15s, background 0.15s; }
+        .bin .bin-icon { display: block; font-size: 2rem; margin-bottom: 2px; }
+        .bin:active { transform: translateY(2px); box-shadow: none; }
+        .bin.flash { animation: binFlash 0.7s ease; }
+        @keyframes binFlash {
+            0% { border-color: var(--kui-good); background: #eaf7f0; }
+            100% { border-color: var(--kui-line); background: var(--kui-card); }
+        }
+        .bin.oops { animation: kui-shake 0.4s ease; }
+        /* ── 安全判断 ── */
+        .scene { text-align: center; margin-bottom: 6px; }
+        .scene-emoji { font-size: clamp(64px, 20vw, 96px); line-height: 1.15; }
+        .question-text { text-align: center; font-size: clamp(1.05rem, 4vw, 1.25rem); font-weight: 800; margin-bottom: 14px; line-height: 1.5; }
+        .choice-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .choice-btn { min-height: 110px; padding: 12px 8px; border: 3px solid var(--kui-line); border-radius: var(--kui-radius-md); background: var(--kui-card); box-shadow: var(--kui-shadow); cursor: pointer; font-weight: 900; font-size: 0.95rem; line-height: 1.35; color: var(--kui-ink); touch-action: manipulation; transition: transform 0.12s var(--kui-bounce), border-color 0.2s; }
+        .choice-btn .choice-icon { display: block; font-size: 2.2rem; margin-bottom: 4px; }
+        .choice-btn:active { transform: scale(0.96); }
+        .choice-btn.correct { border-color: var(--kui-good); background: #eaf7f0; animation: kui-pop 0.3s ease; }
+        .choice-btn.wrong { opacity: 0.4; border-color: var(--kui-bad); border-style: dashed; pointer-events: none; }
+        @media (prefers-reduced-motion: reduce) {
+            .step-card, .tooth, .item-chip, .bin, .choice-btn, .slot.filled, .mode-btn { transition: none; animation: none; }
+            .tooth.next { animation: none; }
+            .step-card.oops, .tooth.oops, .item-chip.oops, .bin.oops { animation: none; }
+            .item-chip.gone { animation: none; opacity: 0; }
+            .brush-fill { transition: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <div id="modeSelect">
+            <p class="instruction">🧦 生活技能小管家</p>
+            <div class="mode-grid">
+                <button class="mode-btn" data-mode="dress" type="button">
+                    <span class="mode-icon">🧦</span>
+                    穿衣顺序
+                </button>
+                <button class="mode-btn" data-mode="brush" type="button">
+                    <span class="mode-icon">🪥</span>
+                    刷牙时间
+                </button>
+                <button class="mode-btn" data-mode="tidy" type="button">
+                    <span class="mode-icon">🧺</span>
+                    整理房间
+                </button>
+                <button class="mode-btn" data-mode="safety" type="button">
+                    <span class="mode-icon">🛡️</span>
+                    安全判断
+                </button>
+            </div>
+            <p class="intro-hint">点一个开始：学系鞋带、刷牙、收玩具，还能做安全小卫士</p>
+        </div>
+        <div id="gameArea" hidden>
+            <div class="stats-row">
+                <span class="kui-chip">✅ 完成 <b id="doneCount">0</b>/<b id="doneTotal">0</b></span>
+                <span class="kui-chip">🤔 试错 <b id="wrongCount">0</b></span>
+            </div>
+            <div class="level-hint" id="levelHint"></div>
+            <p class="instruction" id="instruction"></p>
+            <div id="dressArea" hidden>
+                <div class="dress-slots" id="dressSlots"></div>
+                <div class="hand-cards" id="handCards"></div>
+            </div>
+            <div id="brushArea" hidden>
+                <div class="mouth"><div class="teeth-grid" id="teethGrid"></div></div>
+                <div class="brush-timer" id="brushTimer" hidden>
+                    <div class="brush-track"><div class="brush-fill" id="brushFill"><span class="brush-mascot" aria-hidden="true">🪥</span></div></div>
+                    <p class="brush-label">刷够两分钟，牙齿亮晶晶！</p>
+                </div>
+            </div>
+            <div id="tidyArea" hidden>
+                <div class="floor" id="floorGrid"></div>
+                <div class="bins" id="binGrid"></div>
+            </div>
+            <div id="safetyArea" hidden>
+                <div class="scene"><span class="scene-emoji" id="sceneEmoji" aria-hidden="true"></span></div>
+                <p class="question-text" id="questionText"></p>
+                <div class="choice-row" id="choiceRow"></div>
+            </div>
+            <div class="feedback" id="feedback" aria-live="polite"></div>
+        </div>
+    </div>
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
+    <script>
+        "use strict";
+        var GAME_ID = 'life-skills';
+        var DRESS_SESSION_QUESTIONS = 5;
+        var DRESS_STEPS_BY_LEVEL = [3, 4, 5];
+        var BRUSH_TEETH_COUNT = 6;
+        var BRUSH_SESSION_ROUNDS = 3;
+        var BRUSH_TIMER_MS = 1800;
+        var BRUSH_TIMER_SETTLE_MS = 220;
+        var FILL_START_DELAY_MS = 30;
+        var TIDY_SESSION_ITEMS = 10;
+        var TIDY_TRICKY_BY_LEVEL = [0, 3, 4];
+        var SAFETY_SESSION_QUESTIONS = 8;
+        var ADAPTIVE_WINDOW = 5;
+        var NEXT_QUESTION_MS = 1300;
+        var LEVEL_LABELS = ['🐣 管家新手上路', '🧹 越来越能干', '🌟 超级小管家'];
+        var SESSION_TOTALS = {
+            dress: DRESS_SESSION_QUESTIONS,
+            brush: BRUSH_SESSION_ROUNDS,
+            tidy: TIDY_SESSION_ITEMS,
+            safety: SAFETY_SESSION_QUESTIONS
+        };
+        var MODE_AREAS = { dress: 'dressArea', brush: 'brushArea', tidy: 'tidyArea', safety: 'safetyArea' };
+        var FINISH_TITLES = {
+            dress: '穿得又快又好！',
+            brush: '牙齿刷得亮晶晶！',
+            tidy: '房间收拾得真整齐！',
+            safety: '安全本领学到位！'
+        };
+
+        var SEQUENCES = [
+            { title: '穿衣服出门', steps: [
+                { icon: '🧦', label: '穿袜子' }, { icon: '👖', label: '穿裤子' }, { icon: '👟', label: '穿鞋子' }, { icon: '🧥', label: '穿外套' }, { icon: '🧣', label: '戴围巾' }
+            ] },
+            { title: '早上起床啦', steps: [
+                { icon: '⏰', label: '起床' }, { icon: '🚽', label: '上厕所' }, { icon: '🪥', label: '刷牙洗脸' }, { icon: '👕', label: '穿衣服' }, { icon: '🍳', label: '吃早餐' }
+            ] },
+            { title: '洗澡准备睡觉', steps: [
+                { icon: '👟', label: '脱鞋子' }, { icon: '👕', label: '脱衣服' }, { icon: '🛁', label: '泡澡澡' }, { icon: '🧺', label: '擦干身体' }, { icon: '👘', label: '穿睡袍' }
+            ] },
+            { title: '把手洗得香香的', steps: [
+                { icon: '🚰', label: '打开水龙头' }, { icon: '🧼', label: '抹上香皂' }, { icon: '🖐️', label: '搓出泡泡' }, { icon: '💧', label: '冲干净' }, { icon: '🧻', label: '擦干小手' }
+            ] },
+            { title: '准备去上学', steps: [
+                { icon: '🎒', label: '背上书包' }, { icon: '🧥', label: '穿好外套' }, { icon: '🧢', label: '戴好帽子' }, { icon: '👟', label: '穿好鞋子' }, { icon: '🚪', label: '出门上学' }
+            ] }
+        ];
+
+        var TOOTH_ZONE_LABELS = ['上面左边', '上面中间', '上面右边', '下面左边', '下面中间', '下面右边'];
+
+        var BINS = [
+            { id: 'toy', icon: '🧸', label: '玩具箱' },
+            { id: 'book', icon: '📚', label: '书架' },
+            { id: 'cloth', icon: '👕', label: '衣柜' },
+            { id: 'trash', icon: '🗑️', label: '垃圾桶' }
+        ];
+
+        var TIDY_EASY_ITEMS = [
+            { icon: '🚗', label: '小汽车', bin: 'toy' }, { icon: '⚽', label: '小皮球', bin: 'toy' },
+            { icon: '🪁', label: '小风筝', bin: 'toy' }, { icon: '🧩', label: '小拼图', bin: 'toy' },
+            { icon: '📚', label: '故事书', bin: 'book' }, { icon: '📖', label: '小画册', bin: 'book' },
+            { icon: '👕', label: '小上衣', bin: 'cloth' }, { icon: '🧦', label: '小袜子', bin: 'cloth' },
+            { icon: '👖', label: '小裤子', bin: 'cloth' }, { icon: '🍌', label: '香蕉皮', bin: 'trash' },
+            { icon: '🥤', label: '空杯子', bin: 'trash' }, { icon: '🍎', label: '苹果核', bin: 'trash' }
+        ];
+
+        /* 近似物：归类要多想一步（鞋子进衣柜、蜡笔进书架） */
+        var TIDY_TRICKY_ITEMS = [
+            { icon: '👟', label: '小鞋子', bin: 'cloth' }, { icon: '🧢', label: '小帽子', bin: 'cloth' },
+            { icon: '✏️', label: '铅笔', bin: 'book' }, { icon: '🖍️', label: '蜡笔', bin: 'book' },
+            { icon: '📰', label: '旧报纸', bin: 'trash' }, { icon: '🪥', label: '旧牙刷', bin: 'trash' },
+            { icon: '🎨', label: '小画板', bin: 'toy' }, { icon: '🎠', label: '小木马', bin: 'toy' }
+        ];
+
+        var SAFETY_BANK = [
+            { cat: '居家', scene: '💡', text: '小手湿湿的想开灯，怎么做？',
+              good: { icon: '🧻', label: '擦干手再按开关' }, bad: { icon: '⚡', label: '用湿手去摸开关' } },
+            { cat: '居家', scene: '🚪', text: '一个人在家，陌生人敲门了。',
+              good: { icon: '🙅', label: '不开门等大人' }, bad: { icon: '🔓', label: '打开门看一看' } },
+            { cat: '居家', scene: '🔥', text: '桌上有个打火机，可以玩吗？',
+              good: { icon: '🙅', label: '不碰告诉爸妈' }, bad: { icon: '🔥', label: '拿来点火玩' } },
+            { cat: '居家', scene: '🪟', text: '想看外面的风景，能爬窗台吗？',
+              good: { icon: '🪑', label: '请大人抱着看' }, bad: { icon: '🧗', label: '自己爬上窗台' } },
+            { cat: '居家', scene: '💊', text: '药片像糖豆，能吃吗？',
+              good: { icon: '🙅', label: '不乱吃请大人拿' }, bad: { icon: '🍬', label: '当糖豆吃一颗' } },
+            { cat: '居家', scene: '🛁', text: '想在大浴缸里玩水，要怎样？',
+              good: { icon: '👀', label: '请大人陪着玩' }, bad: { icon: '🙈', label: '自己偷偷去玩' } },
+            { cat: '出行', scene: '🚦', text: '要过马路了，走哪里安全？',
+              good: { icon: '🚸', label: '斑马线绿灯走' }, bad: { icon: '🏃', label: '直接跑过去' } },
+            { cat: '出行', scene: '🚗', text: '坐小汽车的时候要怎么坐？',
+              good: { icon: '🪑', label: '安全座椅系好带' }, bad: { icon: '🧗', label: '站起来蹦蹦跳' } },
+            { cat: '出行', scene: '🛗', text: '坐电梯的时候要怎样做？',
+              good: { icon: '✋', label: '牵好大人站稳' }, bad: { icon: '🤸', label: '蹦跳打闹' } },
+            { cat: '出行', scene: '🏬', text: '在商场里和爸妈走散了怎么办？',
+              good: { icon: '🧍', label: '原地等大人来找' }, bad: { icon: '🚶', label: '自己乱跑去找' } },
+            { cat: '出行', scene: '🪜', text: '坐扶梯的时候要怎样做？',
+              good: { icon: '✋', label: '扶好扶手不乱动' }, bad: { icon: '🏃', label: '跑来跑去' } },
+            { cat: '饮食', scene: '🍮', text: '吃果冻怎么吃才安全？',
+              good: { icon: '🥄', label: '小口慢慢吃' }, bad: { icon: '😮', label: '一大口整个吞' } },
+            { cat: '饮食', scene: '🍲', text: '汤还烫烫冒烟，什么时候喝？',
+              good: { icon: '💨', label: '吹凉再喝' }, bad: { icon: '😋', label: '马上大口喝' } },
+            { cat: '饮食', scene: '🍭', text: '吃棒棒糖时能跑来跑去吗？',
+              good: { icon: '🪑', label: '坐好吃完再玩' }, bad: { icon: '🏃', label: '跑着跳着吃' } },
+            { cat: '饮食', scene: '🍇', text: '葡萄还没洗，能马上吃吗？',
+              good: { icon: '💧', label: '洗干净再吃' }, bad: { icon: '😋', label: '直接抓来吃' } },
+            { cat: '饮食', scene: '🍬', text: '地上的糖果捡起来能吃吗？',
+              good: { icon: '🙅', label: '不放进嘴里' }, bad: { icon: '😋', label: '捡起来吃掉' } }
+        ];
+
+        function shuffle(list) {
+            var copy = list.slice();
+            for (var i = copy.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var t = copy[i];
+                copy[i] = copy[j];
+                copy[j] = t;
+            }
+            return copy;
+        }
+
+        /* 内容音效只随主音量（与 hand-clap/whack-a-mole 约定一致），不受静音开关影响 */
+        function scrubSound() {
+            var ctx = KidsUI.SFX._ensure();
+            if (!ctx || KidsUI.SFX.volume <= 0) return;
+            var buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.09), ctx.sampleRate);
+            var data = buffer.getChannelData(0);
+            for (var i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+            var src = ctx.createBufferSource();
+            src.buffer = buffer;
+            var band = ctx.createBiquadFilter();
+            band.type = 'bandpass';
+            band.frequency.value = 1400;
+            var gain = ctx.createGain();
+            gain.gain.value = 0.35 * KidsUI.SFX.volume;
+            src.connect(band);
+            band.connect(gain);
+            gain.connect(ctx.destination);
+            src.start();
+        }
+
+        function popSound() {
+            var ctx = KidsUI.SFX._ensure();
+            if (!ctx || KidsUI.SFX.volume <= 0) return;
+            var t = ctx.currentTime;
+            var osc = ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(420, t);
+            osc.frequency.exponentialRampToValueAtTime(880, t + 0.12);
+            var gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.3 * KidsUI.SFX.volume, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.18);
+        }
+
+        class LifeSkillsGame {
+            constructor() {
+                this.gameId = GAME_ID;
+                this.mode = null;
+                this.round = 0;
+                this.timers = [];
+                this.session = { done: 0, total: 0, firstTry: 0, wrong: 0 };
+                this.difficulty = {};
+                var modes = ['dress', 'brush', 'tidy', 'safety'];
+                var self = this;
+                modes.forEach(function (m) {
+                    /* 每个模式各自一个实例：切模式不清乱彼此的难度 */
+                    self.difficulty[m] = new KidsUI.AdaptiveDifficulty({
+                        windowSize: ADAPTIVE_WINDOW,
+                        thresholds: { easy: 0.8, hard: 0.5 },
+                        initialLevel: 1,
+                        onChange: function () { self.updateLevelHint(); }
+                    });
+                });
+                this.init();
+            }
+
+            init() {
+                KidsUI.Touch.guard();
+                KidsUI.Header.render({
+                    title: '生活技能小管家',
+                    accent: '#6c5ce7',
+                    onReplay: () => this.backToModeSelect()
+                });
+                var self = this;
+                document.querySelectorAll('.mode-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        KidsUI.SFX.tap();
+                        self.selectMode(btn.getAttribute('data-mode'));
+                    });
+                });
+            }
+
+            later(fn, ms) {
+                var id = setTimeout(fn, ms);
+                this.timers.push(id);
+                return id;
+            }
+
+            clearTimers() {
+                this.timers.forEach(clearTimeout);
+                this.timers = [];
+            }
+
+            selectMode(mode) {
+                this.round++;
+                this.clearTimers();
+                this.mode = mode;
+                this.startSession();
+                document.querySelectorAll('.mode-btn').forEach(function (b) {
+                    b.classList.toggle('active', b.getAttribute('data-mode') === mode);
+                });
+                document.getElementById('modeSelect').hidden = true;
+                document.getElementById('gameArea').hidden = false;
+                this.nextQuestion();
+            }
+
+            startSession() {
+                this.session = { done: 0, total: SESSION_TOTALS[this.mode], firstTry: 0, wrong: 0 };
+                this.isBusy = false;
+                /* 上一局残留的选中物在 ↻ 退出后未清空，会被 tapBin 当作本局物品记幽灵完成 */
+                this.tidySelected = null;
+                if (this.mode === 'tidy') this.tidyItems = this.buildTidyItems();
+                if (this.mode === 'safety') {
+                    this.safetyQueue = shuffle(SAFETY_BANK).slice(0, SAFETY_SESSION_QUESTIONS);
+                    this.safetyIdx = 0;
+                }
+                this.updateStats();
+                this.updateLevelHint();
+            }
+
+            nextQuestion() {
+                this.isBusy = false;
+                for (var m in MODE_AREAS) {
+                    document.getElementById(MODE_AREAS[m]).hidden = m !== this.mode;
+                }
+                document.getElementById('feedback').textContent = '';
+                switch (this.mode) {
+                    case 'dress': this.startDress(); break;
+                    case 'brush': this.startBrush(); break;
+                    case 'tidy': this.startTidy(); break;
+                    case 'safety': this.startSafety(); break;
+                }
+            }
+
+            completeQuestion(clean) {
+                if (this.mode !== 'tidy') this.isBusy = true;
+                this.session.done++;
+                if (clean) this.session.firstTry++;
+                this.difficulty[this.mode].record(clean);
+                this.updateStats();
+                if (this.session.done >= this.session.total) {
+                    this.later(() => this.finishSession(), NEXT_QUESTION_MS);
+                    return;
+                }
+                if (this.mode !== 'tidy') {
+                    this.later(() => this.nextQuestion(), NEXT_QUESTION_MS);
+                }
+            }
+
+            finishSession() {
+                var accuracy = this.session.firstTry / this.session.total;
+                var stars = KidsUI.Progress.starsFor(accuracy);
+                KidsUI.Progress.record(this.gameId, { best: Math.round(accuracy * 100), stars: stars });
+                KidsUI.Celebrate.show({
+                    title: FINISH_TITLES[this.mode],
+                    sub: '完成 ' + this.session.total + ' 题，答对率 ' + Math.round(accuracy * 100) + '%',
+                    stars: stars,
+                    primaryLabel: '再来一局',
+                    onPrimary: () => this.selectMode(this.mode),
+                    secondaryLabel: '换个玩法',
+                    onSecondary: () => this.backToModeSelect(),
+                    announce: '本局完成' + this.session.total + '题'
+                });
+            }
+
+            backToModeSelect() {
+                this.round++;
+                this.clearTimers();
+                KidsUI.Celebrate.hide();
+                document.getElementById('gameArea').hidden = true;
+                document.getElementById('modeSelect').hidden = false;
+            }
+
+            updateStats() {
+                document.getElementById('doneCount').textContent = this.session.done;
+                document.getElementById('doneTotal').textContent = this.session.total;
+                document.getElementById('wrongCount').textContent = this.session.wrong;
+            }
+
+            updateLevelHint() {
+                if (!this.mode) return;
+                var level = this.difficulty[this.mode].getLevel();
+                document.getElementById('levelHint').textContent = LEVEL_LABELS[level - 1];
+            }
+
+            addWrong() {
+                this.session.wrong++;
+                this.updateStats();
+            }
+
+            /* ── 模式一：穿衣顺序 ── */
+            startDress() {
+                var level = this.difficulty.dress.getLevel();
+                var stepCount = DRESS_STEPS_BY_LEVEL[level - 1] || DRESS_STEPS_BY_LEVEL[0];
+                var seq = SEQUENCES[Math.floor(Math.random() * SEQUENCES.length)];
+                this.dressQ = { seq: seq, steps: seq.steps.slice(0, stepCount), placed: 0, clean: true };
+                document.getElementById('instruction').textContent = seq.title + '：按顺序点一点';
+                KidsUI.TTS.speak(seq.title + '，按顺序点一点');
+                this.renderDressSlots(stepCount);
+                this.renderDressHand();
+            }
+
+            renderDressSlots(count) {
+                var row = document.getElementById('dressSlots');
+                row.innerHTML = '';
+                for (var i = 0; i < count; i++) {
+                    var slot = document.createElement('div');
+                    slot.className = 'slot';
+                    slot.setAttribute('data-slot', String(i));
+                    slot.innerHTML = '<span class="slot-num">' + (i + 1) + '</span>';
+                    row.appendChild(slot);
+                }
+            }
+
+            renderDressHand() {
+                var self = this;
+                var row = document.getElementById('handCards');
+                row.innerHTML = '';
+                var cards = this.dressQ.steps.map(function (step, i) { return { step: step, order: i }; });
+                shuffle(cards).forEach(function (card) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'step-card';
+                    btn.setAttribute('data-order', String(card.order));
+                    btn.setAttribute('aria-label', card.step.label);
+                    btn.innerHTML = card.step.icon + '<span class="card-label">' + card.step.label + '</span>';
+                    btn.addEventListener('click', function () { self.tapDressCard(btn, card); });
+                    row.appendChild(btn);
+                });
+            }
+
+            tapDressCard(btn, card) {
+                if (this.isBusy || btn.classList.contains('placed')) return;
+                if (card.order !== this.dressQ.placed) {
+                    this.addWrong();
+                    this.dressQ.clean = false;
+                    btn.classList.remove('oops');
+                    void btn.offsetWidth;
+                    btn.classList.add('oops');
+                    KidsUI.SFX.wrong();
+                    KidsUI.haptic('bad');
+                    document.getElementById('feedback').textContent = '再想想，第 ' + (this.dressQ.placed + 1) + ' 步先做什么';
+                    return;
+                }
+                btn.classList.add('placed');
+                var slot = document.querySelector('.slot[data-slot="' + card.order + '"]');
+                slot.innerHTML = '<span class="slot-icon">' + card.step.icon + '</span><span class="slot-num">' + (card.order + 1) + '</span>';
+                slot.classList.add('filled');
+                KidsUI.SFX.correct();
+                KidsUI.haptic('good');
+                this.dressQ.placed++;
+                if (this.dressQ.placed >= this.dressQ.steps.length) {
+                    KidsUI.TTS.speak('排对啦');
+                    document.getElementById('feedback').textContent = '排对啦，真棒！';
+                    this.completeQuestion(this.dressQ.clean);
+                }
+            }
+
+            /* ── 模式二：刷牙时间 ── */
+            startBrush() {
+                var zones = [];
+                for (var i = 0; i < BRUSH_TEETH_COUNT; i++) zones.push(i);
+                this.brushQ = { order: shuffle(zones), pos: 0 };
+                document.getElementById('instruction').textContent = '跟着闪亮的牙齿，一颗一颗刷';
+                KidsUI.TTS.speak('跟着闪亮的牙齿，一颗一颗刷干净');
+                var fill = document.getElementById('brushFill');
+                document.getElementById('brushTimer').hidden = true;
+                fill.style.transitionDuration = '0ms';
+                fill.style.width = '0';
+                this.renderTeeth();
+            }
+
+            renderTeeth() {
+                var self = this;
+                var grid = document.getElementById('teethGrid');
+                grid.innerHTML = '';
+                for (var i = 0; i < BRUSH_TEETH_COUNT; i++) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'tooth';
+                    btn.setAttribute('data-zone', String(i));
+                    btn.setAttribute('aria-label', TOOTH_ZONE_LABELS[i]);
+                    grid.appendChild(btn);
+                    (function (zone, el) {
+                        el.addEventListener('click', function () { self.tapTooth(el, zone); });
+                    })(i, btn);
+                }
+                this.markNextTooth();
+            }
+
+            markNextTooth() {
+                var next = this.brushQ.order[this.brushQ.pos];
+                var teeth = document.querySelectorAll('#teethGrid .tooth');
+                for (var i = 0; i < teeth.length; i++) {
+                    teeth[i].classList.toggle('next', Number(teeth[i].getAttribute('data-zone')) === next);
+                }
+            }
+
+            tapTooth(btn, zone) {
+                if (this.isBusy || btn.classList.contains('clean')) return;
+                if (zone !== this.brushQ.order[this.brushQ.pos]) {
+                    /* 点错不惩罚：只轻抖提示，不记试错、不影响星级 */
+                    btn.classList.remove('oops');
+                    void btn.offsetWidth;
+                    btn.classList.add('oops');
+                    document.getElementById('feedback').textContent = '先刷闪闪发光的那颗牙哦';
+                    return;
+                }
+                btn.classList.remove('next');
+                btn.classList.add('clean');
+                scrubSound();
+                KidsUI.haptic('good');
+                this.brushQ.pos++;
+                if (this.brushQ.pos >= BRUSH_TEETH_COUNT) {
+                    this.finishBrushRound();
+                    return;
+                }
+                this.markNextTooth();
+            }
+
+            finishBrushRound() {
+                var self = this;
+                var fill = document.getElementById('brushFill');
+                document.getElementById('brushTimer').hidden = false;
+                fill.style.transitionDuration = BRUSH_TIMER_MS + 'ms';
+                this.later(function () { fill.style.width = '100%'; }, FILL_START_DELAY_MS);
+                document.getElementById('feedback').textContent = '刷完一圈啦！';
+                this.later(function () { self.completeQuestion(true); }, BRUSH_TIMER_MS + BRUSH_TIMER_SETTLE_MS);
+            }
+
+            /* ── 模式三：整理房间 ── */
+            buildTidyItems() {
+                var level = this.difficulty.tidy.getLevel();
+                var trickyCount = TIDY_TRICKY_BY_LEVEL[level - 1] || 0;
+                var easy = shuffle(TIDY_EASY_ITEMS).slice(0, TIDY_SESSION_ITEMS - trickyCount);
+                var tricky = shuffle(TIDY_TRICKY_ITEMS).slice(0, trickyCount);
+                return shuffle(easy.concat(tricky)).map(function (it) {
+                    return { icon: it.icon, label: it.label, bin: it.bin, placed: false, clean: true };
+                });
+            }
+
+            startTidy() {
+                document.getElementById('instruction').textContent = '点一件物品，再点它的家';
+                KidsUI.TTS.speak('点一件物品，再点它的家');
+                this.renderFloor();
+                this.renderBins();
+            }
+
+            renderFloor() {
+                var self = this;
+                var floor = document.getElementById('floorGrid');
+                floor.innerHTML = '';
+                this.tidyItems.forEach(function (item) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'item-chip';
+                    btn.setAttribute('data-bin', item.bin);
+                    btn.setAttribute('aria-label', item.label);
+                    btn.textContent = item.icon;
+                    btn.addEventListener('click', function () { self.tapItem(btn, item); });
+                    floor.appendChild(btn);
+                });
+            }
+
+            renderBins() {
+                var self = this;
+                var row = document.getElementById('binGrid');
+                row.innerHTML = '';
+                BINS.forEach(function (bin) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'bin';
+                    btn.setAttribute('data-bin', bin.id);
+                    btn.innerHTML = '<span class="bin-icon">' + bin.icon + '</span>' + bin.label;
+                    btn.addEventListener('click', function () { self.tapBin(bin.id, btn); });
+                    row.appendChild(btn);
+                });
+            }
+
+            clearTidySelection() {
+                document.querySelectorAll('#floorGrid .item-chip.selected').forEach(function (chip) {
+                    chip.classList.remove('selected');
+                });
+                this.tidySelected = null;
+            }
+
+            tapItem(btn, item) {
+                if (this.isBusy || item.placed) return;
+                KidsUI.SFX.tap();
+                this.clearTidySelection();
+                btn.classList.add('selected');
+                this.tidySelected = { btn: btn, item: item };
+                document.getElementById('feedback').textContent = item.label + '的家在哪里？';
+                KidsUI.TTS.speak(item.label);
+            }
+
+            tapBin(binId, btn) {
+                if (this.isBusy) return;
+                if (!this.tidySelected) {
+                    document.getElementById('feedback').textContent = '先点一件要收的物品';
+                    return;
+                }
+                var pick = this.tidySelected;
+                this.clearTidySelection();
+                if (pick.item.bin === binId) {
+                    this.placeItem(pick, btn);
+                    return;
+                }
+                pick.item.clean = false;
+                this.addWrong();
+                this.bounceBack(pick.btn);
+                btn.classList.remove('oops');
+                void btn.offsetWidth;
+                btn.classList.add('oops');
+                KidsUI.SFX.wrong();
+                KidsUI.haptic('bad');
+                document.getElementById('feedback').textContent = pick.item.label + '的家不在这里';
+            }
+
+            placeItem(pick, binBtn) {
+                pick.item.placed = true;
+                pick.btn.classList.remove('selected');
+                pick.btn.classList.add('gone');
+                binBtn.classList.remove('flash');
+                void binBtn.offsetWidth;
+                binBtn.classList.add('flash');
+                popSound();
+                KidsUI.haptic('good');
+                document.getElementById('feedback').textContent = pick.item.label + '回家啦！';
+                this.completeQuestion(pick.item.clean);
+            }
+
+            bounceBack(chip) {
+                chip.classList.remove('oops');
+                void chip.offsetWidth;
+                chip.classList.add('oops');
+            }
+
+            /* ── 模式四：安全判断 ── */
+            startSafety() {
+                var q = this.safetyQueue[this.safetyIdx];
+                q.clean = true;
+                document.getElementById('instruction').textContent = q.cat + '安全 · 想一想再选';
+                document.getElementById('sceneEmoji').textContent = q.scene;
+                document.getElementById('questionText').textContent = q.text;
+                KidsUI.TTS.speak(q.text);
+                this.renderChoices(q);
+            }
+
+            renderChoices(q) {
+                var self = this;
+                var row = document.getElementById('choiceRow');
+                row.innerHTML = '';
+                shuffle([{ opt: q.good, ok: true }, { opt: q.bad, ok: false }]).forEach(function (choice) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'choice-btn';
+                    btn.setAttribute('data-ok', choice.ok ? '1' : '0');
+                    btn.innerHTML = '<span class="choice-icon">' + choice.opt.icon + '</span>' + choice.opt.label;
+                    btn.addEventListener('click', function () { self.tapChoice(btn, choice.ok, q); });
+                    row.appendChild(btn);
+                });
+            }
+
+            tapChoice(btn, ok, q) {
+                if (this.isBusy || btn.classList.contains('correct') || btn.classList.contains('wrong')) return;
+                if (!ok) {
+                    this.addWrong();
+                    q.clean = false;
+                    btn.classList.add('wrong');
+                    KidsUI.SFX.wrong();
+                    KidsUI.haptic('bad');
+                    document.getElementById('feedback').textContent = '这样做不安全，再选一次';
+                    return;
+                }
+                btn.classList.add('correct');
+                KidsUI.SFX.correct();
+                KidsUI.haptic('good');
+                KidsUI.TTS.speak('答对了');
+                this.safetyIdx++;
+                this.completeQuestion(q.clean);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            new LifeSkillsGame();
+        });
+    </script>
+</body>
+</html>
