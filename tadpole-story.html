@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#1f8a4c">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#123c4e">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-touch-icon" href="/icons/icon-192.png">
+    <title>小蝌蚪找妈妈</title>
+    <link rel="stylesheet" href="/css/kids.css">
+    <style>
+        :root {
+            --game-accent: #1f8a4c;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--kui-paper);
+            background-image: radial-gradient(color-mix(in srgb, var(--kui-ink) 3%, transparent) 1px, transparent 1.4px);
+            background-size: 26px 26px;
+            min-height: 100vh;
+            color: var(--kui-ink);
+            display: flex;
+            justify-content: center;
+            padding: 14px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .game {
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-lg);
+            box-shadow: var(--kui-shadow);
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+            margin-top: 8px;
+        }
+        .instruction { text-align: center; font-size: clamp(16px, 4.5vw, 20px); font-weight: 800; margin-bottom: 14px; min-height: 2.2em; }
+        .intro-hint { text-align: center; font-size: 0.9rem; font-weight: 600; color: var(--kui-ink-soft); line-height: 1.7; margin-bottom: 16px; }
+        .big-start { width: 100%; padding: 16px; font-size: 1.3rem; font-weight: 900; }
+        /* ── 水面场景：颜色自管（场景色非反馈面），文字一律亮底 + #2f2a25 ── */
+        .scene {
+            position: relative;
+            height: clamp(150px, 36vw, 190px);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: linear-gradient(180deg, #aee6f7 0%, #7ccdec 55%, #57b6da 100%);
+            box-shadow: var(--kui-shadow);
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .scene::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(180deg, transparent 0 26px, rgba(255, 255, 255, 0.16) 26px 28px);
+            pointer-events: none;
+        }
+        .lily {
+            position: absolute;
+            width: var(--w, 90px);
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: radial-gradient(circle at 42% 40%, #8cc977, #57a25c 68%, #448a4b);
+            box-shadow: inset 0 -5px 9px rgba(0, 0, 0, 0.2), 0 3px 6px rgba(0, 0, 0, 0.18);
+        }
+        .lily::before {
+            content: '';
+            position: absolute;
+            inset: 14%;
+            border-radius: 50%;
+            background: repeating-radial-gradient(circle at 42% 40%, transparent 0 7px, rgba(255, 255, 255, 0.14) 7px 9px);
+        }
+        .actor {
+            position: absolute;
+            left: var(--x);
+            top: var(--y);
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1px;
+        }
+        .actor .actor-face { font-size: var(--s, 34px); line-height: 1.1; }
+        .actor .actor-tag { padding: 1px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.85); color: #2f2a25; font-size: 0.66rem; font-weight: 800; line-height: 1.5; white-space: nowrap; }
+        .actor.floaty { animation: bob 2.8s ease-in-out infinite; }
+        @keyframes bob {
+            0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+            50% { transform: translate(-50%, -50%) translateY(-5px); }
+        }
+        /* 小蝌蚪 = CSS 手绘：圆脑袋 + 会摆的小尾巴 */
+        .tad {
+            position: absolute;
+            left: var(--x);
+            top: var(--y);
+            display: flex;
+            align-items: center;
+            animation: tadBob 2.4s ease-in-out infinite;
+            animation-delay: var(--d, 0s);
+        }
+        @keyframes tadBob {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+        .tad .head { width: calc(var(--s, 16px) * 1.25); height: var(--s, 16px); background: #2f2a25; border-radius: 58% 58% 46% 46%; }
+        .tad .tail {
+            width: var(--s, 16px);
+            height: calc(var(--s, 16px) * 0.3);
+            background: #2f2a25;
+            border-radius: 0 100% 100% 0 / 0 50% 50% 0;
+            transform-origin: left center;
+            animation: tailWag 0.7s ease-in-out infinite alternate;
+        }
+        @keyframes tailWag {
+            from { transform: rotate(16deg) scaleX(0.8); }
+            to { transform: rotate(-16deg) scaleX(1.1); }
+        }
+        /* ── 路线图 ── */
+        .route {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2px;
+            margin-bottom: 12px;
+            padding: 8px 6px;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-paper);
+        }
+        .route-dot {
+            flex: 1; text-align: center; font-size: 1.25rem; line-height: 1.2; padding: 4px 0;
+            border-radius: var(--kui-radius-sm); border: 2px solid transparent; filter: grayscale(0.85); opacity: 0.55;
+        }
+        .route-dot.done { background: var(--kui-tint-good); border-color: var(--kui-good); filter: none; opacity: 1; }
+        .route-dot.now { background: var(--kui-tint-hi); border-color: var(--game-accent); filter: none; opacity: 1; }
+        .stats-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        .story { font-size: 0.98rem; font-weight: 700; line-height: 1.7; margin-bottom: 12px; min-height: 3.4em; }
+        .q-text { text-align: center; font-size: clamp(1.02rem, 4vw, 1.2rem); font-weight: 900; margin-bottom: 12px; color: var(--game-accent); }
+        .choice-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .opt {
+            min-height: 104px;
+            padding: 10px 4px;
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            box-shadow: var(--kui-shadow);
+            cursor: pointer;
+            font-weight: 900;
+            font-size: 0.92rem;
+            line-height: 1.3;
+            color: var(--kui-ink);
+            touch-action: manipulation;
+            transition: transform 0.12s var(--kui-bounce);
+        }
+        .opt:active { transform: scale(0.95); }
+        .opt .opt-face { display: block; font-size: 2.1rem; line-height: 1.2; margin-bottom: 4px; }
+        .opt.correct { border-color: var(--kui-good); background: var(--kui-tint-good); animation: kui-pop 0.3s ease; }
+        .opt.wrong { border-color: var(--kui-bad); border-style: dashed; background: var(--kui-tint-bad); pointer-events: none; }
+        .opt .swatch { display: block; width: 44px; height: 44px; margin: 0 auto 6px; border-radius: 50%; border: 3px solid color-mix(in srgb, var(--kui-ink) 25%, transparent); box-shadow: var(--kui-shadow); }
+        /* ── 顺序回忆题 ── */
+        .order-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+        .oslot {
+            min-height: 72px;
+            border: 3px dashed var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-paper);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            font-size: 0.85rem;
+            font-weight: 900;
+            color: var(--kui-ink-soft);
+        }
+        .oslot.next { border-color: var(--game-accent); border-style: dashed; background: var(--kui-tint-hi); color: var(--kui-hi-ink); }
+        .oslot.filled { border-style: solid; border-color: var(--kui-good); background: var(--kui-tint-good); color: var(--kui-ink); animation: kui-pop 0.3s ease; }
+        .oslot .oslot-face { font-size: 1.7rem; line-height: 1.15; }
+        .order-pool { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .order-pool .opt { min-height: 88px; }
+        .order-pool .opt.placed { opacity: 0.3; border-style: dashed; box-shadow: none; pointer-events: none; }
+        .feedback { text-align: center; font-size: 1.05rem; font-weight: 800; min-height: 2em; color: var(--kui-ink-soft); margin-top: 10px; }
+        .opt.oops { animation: kui-shake 0.4s ease; }
+        /* ── 妈妈拼图：六格各自平铺同一只大 🐸 背景精灵（300%×200% + 百分比定位），
+             视口无关地精确六等分，集齐即整只青蛙 ── */
+        .pz-caption { text-align: center; font-size: 0.82rem; font-weight: 700; color: var(--kui-ink-soft); margin-bottom: 6px; }
+        .pz-strip {
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 8px;
+            border: 2px solid var(--kui-line); border-radius: var(--kui-radius-md); background: var(--kui-paper); margin-bottom: 12px;
+        }
+        .pz-cell {
+            position: relative; overflow: hidden; aspect-ratio: 1;
+            border-radius: var(--kui-radius-sm); background: var(--kui-paper-deep); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--kui-ink) 12%, transparent);
+        }
+        .pz-cell.on {
+            background-color: var(--kui-card);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 200'%3E%3Ctext x='150' y='106' font-size='188' text-anchor='middle' dominant-baseline='central' font-family='sans-serif'%3E%F0%9F%90%B8%3C/text%3E%3C/svg%3E");
+            background-size: 300% 200%;
+            background-repeat: no-repeat;
+            animation: kui-pop 0.35s ease;
+        }
+        .pz-board-wrap { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 12px; }
+        .pz-board { display: grid; grid-template-columns: repeat(3, 1fr); width: min(232px, 62vw); }
+        .pz-board .pz-cell { border-radius: 12px; }
+        .pz-board.assembling .pz-cell.on { animation: pieceIn 0.5s var(--kui-bounce); }
+        @keyframes pieceIn {
+            from { opacity: 0; transform: scale(0.4) rotate(-14deg); }
+            to { opacity: 1; transform: scale(1) rotate(0deg); }
+        }
+        .pz-board.done { animation: kui-bounce 0.6s ease; }
+        .crown {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            font-size: 2rem;
+            opacity: 0;
+            transform: translateX(-50%) scale(0.4);
+            pointer-events: none;
+        }
+        .pz-board-wrap.done .crown { animation: crownIn 0.6s 0.45s var(--kui-bounce) forwards; }
+        @keyframes crownIn {
+            to { opacity: 1; transform: translateX(-50%) scale(1); }
+        }
+        .clue-line { display: flex; justify-content: center; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+        .clue-chip { padding: 4px 10px; border-radius: 999px; border: 2px solid var(--kui-line); background: var(--kui-tint-hi); color: var(--kui-hi-ink); font-size: 0.8rem; font-weight: 900; }
+        .finale-story { font-size: 0.98rem; font-weight: 700; line-height: 1.7; text-align: center; margin-bottom: 14px; }
+        .hint { text-align: center; font-size: 0.85rem; color: var(--kui-ink-soft); margin-top: 8px; }
+        /* ── 夜间模式：提亮 accent + 水面转夜色（放在基规则之后覆盖） ── */
+        @media (prefers-color-scheme: dark) {
+            :root { --game-accent: #6fd39b; }
+            .scene { background: linear-gradient(180deg, #1d5568 0%, #123c4e 55%, #0c2c3c 100%); }
+            .scene::after { background: repeating-linear-gradient(180deg, transparent 0 26px, rgba(255, 255, 255, 0.07) 26px 28px); }
+            .tad .head, .tad .tail { background: #e8f2fa; box-shadow: 0 0 0 1.5px rgba(12, 20, 32, 0.35); }
+            .lily { background: radial-gradient(circle at 42% 40%, #3f7a4a, #2b5c3d 68%, #1f4a33); }
+            /* 提亮后的 accent 上改用深字；选择器须与 kids.css 的 .kui-btn.kui-primary 同特异度才压得住 */
+            .kui-btn.kui-primary { color: #221e19; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .actor.floaty, .tad, .tad .tail { animation: none; }
+            .opt, .oslot { transition: none; }
+            .opt.oops, .opt.correct, .oslot.filled, .pz-cell.on { animation: none; }
+            .pz-board.assembling .pz-cell.on { animation: none; opacity: 1; }
+            .pz-board.done { animation: none; }
+            .pz-board-wrap.done .crown { animation: none; opacity: 1; transform: translateX(-50%) scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <div id="startScreen">
+            <p class="instruction">🐸 小蝌蚪找妈妈</p>
+            <div class="scene" id="startScene" aria-hidden="true"></div>
+            <p class="intro-hint">小蝌蚪出生啦，妈妈在哪里？<br>跟着故事一站一站找朋友，答对就能拿到一片「妈妈拼图」，集齐 6 片拼出妈妈！</p>
+            <button class="kui-btn kui-primary kui-big big-start" id="startBtn" type="button">出发找妈妈 🐸</button>
+            <p class="hint">答错了没关系，再试一次就好</p>
+        </div>
+
+        <div id="playScreen" hidden>
+            <div class="stats-row">
+                <span class="kui-chip">🧭 第 <b id="stNow">1</b>/<b id="stTotal">6</b> 站</span>
+                <span class="kui-chip">🧩 拼图 <b id="pieceNow">0</b>/<b id="pieceTotal">6</b> 片</span>
+            </div>
+            <div class="route" id="routeBar" role="img" aria-label="故事路线"></div>
+            <div class="scene" id="scene" aria-hidden="true"></div>
+            <p class="story" id="storyText"></p>
+            <p class="q-text" id="qText" aria-live="polite"></p>
+            <div class="order-slots" id="orderSlots" hidden></div>
+            <div id="qBody"></div>
+            <p class="feedback" id="feedback" aria-live="polite"></p>
+            <p class="pz-caption">妈妈拼图 <b id="pzCount">0</b>/6</p>
+            <div class="pz-strip" id="pzStrip" aria-hidden="true"></div>
+        </div>
+
+        <div id="finaleScreen" hidden>
+            <p class="instruction">🎊 找到妈妈啦！</p>
+            <p class="finale-story" id="finaleStory"></p>
+            <div class="pz-board-wrap" id="pzBoardWrap">
+                <span class="crown" aria-hidden="true">👑</span>
+                <div class="pz-board" id="pzBoard" role="img" aria-label="青蛙妈妈拼图"></div>
+            </div>
+            <div class="clue-line">
+                <span class="clue-chip">👀 大眼睛</span>
+                <span class="clue-chip">🤍 白肚皮</span>
+                <span class="clue-chip">🐾 四条腿</span>
+                <span class="clue-chip">🟢 绿衣裳</span>
+            </div>
+        </div>
+    </div>
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
+    <script>
+        "use strict";
+        var GAME_ID = 'tadpole-story';
+        var STATION_COUNT = 6;
+        var NEXT_STATION_MS = 1200;
+        var FINALE_DONE_MS = 1900;
+        var FINALE_CELEBRATE_MS = 3000;
+        var MAX_LAYOUT_ATTEMPTS = 60;
+        var RETRY_HINTS = ['差一点点，再想一想！', '没关系，再看一看题目！', '不着急，换个试试！'];
+
+        /* 每站两个题目变体 + 站点顺序固定；二周目靠「换变体 + 打乱选项」重排 */
+        var STATIONS = [
+            {
+                id: 'pond', name: '池塘', route: '🌊',
+                story: '池塘里的水暖暖的。小蝌蚪们甩着长尾巴出发啦！小鱼在荷叶下面吐泡泡，小虾在水底慢悠悠地爬，小鸭在水面上游来游去。',
+                scene: { lily: { x: 30, y: 30, w: 86 }, actors: [
+                    { e: '🐟', label: '小鱼', x: 30, y: 62, s: 32 }, { e: '🦐', label: '小虾', x: 58, y: 78, s: 28 },
+                    { e: '🦆', label: '小鸭', x: 80, y: 24, s: 36, floaty: true }
+                ], tads: [[12, 66, -8, 0], [18, 46, 6, 0.6], [46, 40, -14, 1.1]] },
+                questions: [
+                    { id: 'pond-a', type: 'choice', text: '看一看：谁游在荷叶下面？', options: [
+                        { k: 'fish', e: '🐟', l: '小鱼', ok: true }, { k: 'duck', e: '🦆', l: '小鸭' }, { k: 'shrimp', e: '🦐', l: '小虾' }] },
+                    { id: 'pond-b', type: 'choice', text: '看一看：谁在水面上游？', options: [
+                        { k: 'duck', e: '🦆', l: '小鸭', ok: true }, { k: 'fish', e: '🐟', l: '小鱼' }, { k: 'shrimp', e: '🦐', l: '小虾' }] }
+                ]
+            },
+            {
+                id: 'lotus', name: '荷叶', route: '🍃',
+                story: '游过一片大荷叶。蝴蝶姑娘在花朵旁边飞舞，小鸟在天上飞得高高的，都在给小蝌蚪加油呢！',
+                scene: { lily: { x: 22, y: 72, w: 96 }, actors: [
+                    { e: '🪷', label: '花朵', x: 66, y: 70, s: 34 }, { e: '🦋', label: '蝴蝶', x: 55, y: 44, s: 30, floaty: true },
+                    { e: '🐦', label: '小鸟', x: 84, y: 16, s: 28, floaty: true }
+                ], tads: [[10, 50, -10, 0], [38, 30, 8, 0.5], [30, 22, -4, 1]] },
+                questions: [
+                    { id: 'lotus-a', type: 'choice', text: '看一看：谁在花朵旁边飞？', options: [
+                        { k: 'butterfly', e: '🦋', l: '蝴蝶', ok: true }, { k: 'bird', e: '🐦', l: '小鸟' }, { k: 'duck', e: '🦆', l: '小鸭' }] },
+                    { id: 'lotus-b', type: 'choice', text: '看一看：谁飞得最高，在天上飞？', options: [
+                        { k: 'bird', e: '🐦', l: '小鸟', ok: true }, { k: 'butterfly', e: '🦋', l: '蝴蝶' }, { k: 'fish', e: '🐟', l: '小鱼' }] }
+                ]
+            },
+            {
+                id: 'goldfish', name: '金鱼', route: '🐠',
+                story: '金鱼阿姨眨着大眼睛说：「我不是你们的妈妈。你们的妈妈呀，头顶上有两只大眼睛！」',
+                scene: { lily: { x: 78, y: 26, w: 72 }, actors: [
+                    { e: '🐠', label: '金鱼', x: 34, y: 40, s: 52, floaty: true }, { e: '🦀', label: '螃蟹', x: 66, y: 78, s: 28 },
+                    { e: '🐢', label: '乌龟', x: 14, y: 76, s: 30 }
+                ], tads: [[16, 30, -12, 0], [52, 68, 10, 0.7], [58, 20, -6, 1.2]] },
+                questions: [
+                    { id: 'goldfish-a', type: 'choice', text: '这些朋友里，谁有大眼睛？', options: [
+                        { k: 'goldfish', e: '🐠', l: '金鱼', ok: true }, { k: 'crab', e: '🦀', l: '螃蟹' }, { k: 'turtle', e: '🐢', l: '乌龟' }] },
+                    { id: 'goldfish-b', type: 'choice', text: '金鱼阿姨说，妈妈头上有几只大眼睛？', options: [
+                        { k: 'two', e: '2️⃣', l: '两只', ok: true }, { k: 'four', e: '4️⃣', l: '四只' }, { k: 'eight', e: '8️⃣', l: '八只' }] }
+                ]
+            },
+            {
+                id: 'crab', name: '螃蟹', route: '🦀',
+                story: '螃蟹大婶挥着大钳子，挺着白白的肚皮说：「你们的妈妈，也露出白肚皮！」小蝌蚪们记得牢牢的。',
+                scene: { actors: [
+                    { e: '🦀', label: '螃蟹', x: 40, y: 52, s: 54, floaty: true }, { e: '🪨', label: '石头', x: 78, y: 74, s: 32 },
+                    { e: '🪨', label: '石头', x: 16, y: 80, s: 26 }
+                ], tads: [[12, 44, -10, 0], [64, 30, 8, 0.6], [70, 66, -12, 1.1]] },
+                questions: [
+                    { id: 'crab-a', type: 'order', text: '回忆一下：按遇到的顺序，点一点刚才见过的朋友', seq: [
+                        { k: 'fish', e: '🐟', l: '小鱼' }, { k: 'butterfly', e: '🦋', l: '蝴蝶' }, { k: 'goldfish', e: '🐠', l: '金鱼' }] },
+                    { id: 'crab-b', type: 'choice', text: '回忆一下：第一个遇到的朋友是谁？', options: [
+                        { k: 'fish', e: '🐟', l: '小鱼', ok: true }, { k: 'butterfly', e: '🦋', l: '蝴蝶' }, { k: 'goldfish', e: '🐠', l: '金鱼' }] }
+                ]
+            },
+            {
+                id: 'turtle', name: '乌龟', route: '🐢',
+                story: '乌龟爷爷慢悠悠地迈着四条腿说：「我不是你们的妈妈。你们的妈妈，也有四条腿！」',
+                scene: { actors: [
+                    { e: '🐢', label: '乌龟', x: 36, y: 56, s: 56, floaty: true }, { e: '🪨', label: '石头', x: 70, y: 78, s: 34 },
+                    { e: '🐟', label: '小鱼', x: 84, y: 34, s: 26 }
+                ], tads: [[12, 40, -8, 0], [56, 24, 10, 0.5], [62, 76, -6, 1]] },
+                questions: [
+                    { id: 'turtle-a', type: 'choice', text: '这些朋友里，谁有四条腿？', options: [
+                        { k: 'turtle', e: '🐢', l: '乌龟', ok: true }, { k: 'goldfish', e: '🐠', l: '金鱼' }, { k: 'crab', e: '🦀', l: '螃蟹' }] },
+                    { id: 'turtle-b', type: 'choice', text: '乌龟爷爷说，妈妈有几条腿？', options: [
+                        { k: 'four', e: '4️⃣', l: '四条', ok: true }, { k: 'two', e: '2️⃣', l: '两条' }, { k: 'eight', e: '8️⃣', l: '八条' }] }
+                ]
+            },
+            {
+                id: 'goose', name: '白鹅', route: '🦢',
+                story: '白鹅姑姑穿着白白的衣裳说：「你们的妈妈，穿着绿绿的衣裳！」快到大荷叶啦，加油！',
+                scene: { lily: { x: 70, y: 74, w: 90 }, actors: [
+                    { e: '🦢', label: '白鹅', x: 32, y: 38, s: 56, floaty: true }, { e: '🪷', label: '花朵', x: 84, y: 30, s: 28 },
+                    { e: '🐟', label: '小鱼', x: 12, y: 70, s: 26 }
+                ], tads: [[14, 34, -12, 0], [50, 66, 8, 0.6], [58, 28, -4, 1.1]] },
+                questions: [
+                    { id: 'goose-a', type: 'color', text: '白鹅姑姑说，妈妈的衣裳是什么颜色？', options: [
+                        { k: 'green', sw: '#3fa574', l: '绿色', ok: true }, { k: 'red', sw: '#e5533d', l: '红色' }, { k: 'yellow', sw: '#ffb703', l: '黄色' }] },
+                    { id: 'goose-b', type: 'choice', text: '这些朋友里，谁穿着白白的衣裳？', options: [
+                        { k: 'goose', e: '🦢', l: '白鹅', ok: true }, { k: 'goldfish', e: '🐠', l: '金鱼' }, { k: 'turtle', e: '🐢', l: '乌龟' }] }
+                ]
+            }
+        ];
+
+        var FINALE_STORY = '大眼睛、白肚皮、四条腿、绿衣裳——大荷叶上蹲着的，就是妈妈！小蝌蚪游到妈妈怀里，变成小青蛙，呱呱地唱起歌来！';
+
+        function shuffle(list) {
+            var copy = list.slice();
+            for (var i = copy.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var t = copy[i];
+                copy[i] = copy[j];
+                copy[j] = t;
+            }
+            return copy;
+        }
+
+        /* 水花与集碎片音属于内容音效：只随主音量（与 hand-clap/whack-a-mole 约定一致），不受静音开关影响 */
+        function splashSound() {
+            var ctx = KidsUI.SFX._ensure();
+            if (!ctx || KidsUI.SFX.volume <= 0) return;
+            var t = ctx.currentTime;
+            var buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.16), ctx.sampleRate);
+            var data = buffer.getChannelData(0);
+            for (var i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 1.6);
+            var src = ctx.createBufferSource();
+            src.buffer = buffer;
+            var band = ctx.createBiquadFilter();
+            band.type = 'bandpass';
+            band.frequency.value = 620;
+            band.Q.value = 0.8;
+            var gain = ctx.createGain();
+            gain.gain.value = 0.4 * KidsUI.SFX.volume;
+            src.connect(band);
+            band.connect(gain);
+            gain.connect(ctx.destination);
+            src.start(t);
+            var osc = ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(320, t);
+            osc.frequency.exponentialRampToValueAtTime(120, t + 0.16);
+            var og = ctx.createGain();
+            og.gain.setValueAtTime(0.22 * KidsUI.SFX.volume, t);
+            og.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+            osc.connect(og);
+            og.connect(ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.2);
+        }
+
+        function sparkleSound() {
+            var ctx = KidsUI.SFX._ensure();
+            if (!ctx || KidsUI.SFX.volume <= 0) return;
+            var notes = [659.25, 830.61, 987.77, 1318.51];
+            for (var i = 0; i < notes.length; i++) {
+                var t = ctx.currentTime + i * 0.07;
+                var osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = notes[i];
+                var gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.24 * KidsUI.SFX.volume, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(t);
+                osc.stop(t + 0.18);
+            }
+        }
+
+        class TadpoleStoryGame {
+            constructor() {
+                this.gameId = GAME_ID;
+                this.timers = [];
+                this.lastLayout = null;
+                this.buildStatic();
+                this.init();
+            }
+
+            later(fn, ms) {
+                var id = setTimeout(fn, ms);
+                this.timers.push(id);
+                return id;
+            }
+
+            clearTimers() {
+                this.timers.forEach(clearTimeout);
+                this.timers = [];
+            }
+
+            buildStatic() {
+                this.buildRoute();
+                this.buildPuzzle(document.getElementById('pzStrip'));
+                this.buildPuzzle(document.getElementById('pzBoard'));
+                this.renderSceneInto(document.getElementById('startScene'), {
+                    lily: { x: 26, y: 70, w: 92 },
+                    actors: [{ e: '🪷', label: '花朵', x: 78, y: 72, s: 32 }],
+                    tads: [[14, 34, -8, 0], [44, 26, 6, 0.5], [56, 48, -12, 1], [36, 54, 10, 1.4]]
+                });
+            }
+
+            buildRoute() {
+                var bar = document.getElementById('routeBar');
+                bar.innerHTML = '';
+                this.dots = [];
+                var self = this;
+                STATIONS.forEach(function (st) {
+                    var dot = document.createElement('span');
+                    dot.className = 'route-dot';
+                    dot.textContent = st.route;
+                    dot.title = st.name;
+                    bar.appendChild(dot);
+                    self.dots.push(dot);
+                });
+                var mom = document.createElement('span');
+                mom.className = 'route-dot';
+                mom.textContent = '❓';
+                mom.title = '妈妈';
+                bar.appendChild(mom);
+                this.dots.push(mom);
+            }
+
+            /* 六格共用同一只 300%×200% 的 🐸 背景精灵，靠 background-position 百分比取自己的六分之一 */
+            buildPuzzle(container) {
+                container.innerHTML = '';
+                this.cells = this.cells || {};
+                var list = [];
+                for (var r = 0; r < 2; r++) {
+                    for (var c = 0; c < 3; c++) {
+                        var cell = document.createElement('span');
+                        cell.className = 'pz-cell';
+                        cell.style.backgroundPosition = (c * 50) + '% ' + (r * 100) + '%';
+                        container.appendChild(cell);
+                        list.push(cell);
+                    }
+                }
+                if (container.id === 'pzStrip') this.cells.strip = list;
+                else this.cells.board = list;
+            }
+
+            renderSceneInto(el, spec) {
+                el.innerHTML = '';
+                if (spec.lily) {
+                    var lily = document.createElement('span');
+                    lily.className = 'lily';
+                    lily.style.left = spec.lily.x + '%';
+                    lily.style.top = spec.lily.y + '%';
+                    lily.style.setProperty('--w', spec.lily.w + 'px');
+                    lily.style.transform = 'translate(-50%, -50%)';
+                    el.appendChild(lily);
+                }
+                (spec.actors || []).forEach(function (a) {
+                    var actor = document.createElement('span');
+                    actor.className = 'actor' + (a.floaty ? ' floaty' : '');
+                    actor.style.setProperty('--x', a.x + '%');
+                    actor.style.setProperty('--y', a.y + '%');
+                    actor.style.setProperty('--s', a.s + 'px');
+                    actor.innerHTML = '<span class="actor-face">' + a.e + '</span>' +
+                        (a.label ? '<span class="actor-tag">' + a.label + '</span>' : '');
+                    el.appendChild(actor);
+                });
+                (spec.tads || []).forEach(function (t) {
+                    var tad = document.createElement('span');
+                    tad.className = 'tad';
+                    tad.style.setProperty('--x', t[0] + '%');
+                    tad.style.setProperty('--y', t[1] + '%');
+                    tad.style.setProperty('--d', t[3] + 's');
+                    tad.style.setProperty('--s', (t[4] || 15) + 'px');
+                    tad.innerHTML = '<i class="tail" aria-hidden="true"></i><i class="head" aria-hidden="true"></i>';
+                    el.appendChild(tad);
+                });
+            }
+
+            init() {
+                KidsUI.Touch.guard();
+                KidsUI.Header.render({
+                    title: '小蝌蚪找妈妈',
+                    accent: '#1f8a4c',
+                    onReplay: () => this.backToStart()
+                });
+                document.getElementById('stTotal').textContent = STATION_COUNT;
+                document.getElementById('pieceTotal').textContent = STATION_COUNT;
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    KidsUI.SFX.tap();
+                    this.startRound();
+                });
+                this.exposeHooks();
+            }
+
+            exposeHooks() {
+                var self = this;
+                window.__tadpole = {
+                    get station() { return self.station; },
+                    get pieces() { return self.pieces; },
+                    get qtype() { return self.curQ ? self.curQ.type : null; },
+                    get layout() { return self.layout ? JSON.parse(JSON.stringify(self.layout)) : null; },
+                    get answer() {
+                        if (!self.curQ) return null;
+                        if (self.curQ.type === 'order') return self.curQ.seq.map(function (o) { return o.k; });
+                        var hit = self.curQ.options.find(function (o) { return o.ok; });
+                        return hit ? hit.k : null;
+                    }
+                };
+            }
+
+            /* 二周目重排：站点顺序不变，每站换题目变体并打乱选项；与上一局相比保证至少一半站点不同 */
+            generateLayout(prev) {
+                var layout = null;
+                for (var attempt = 0; attempt < MAX_LAYOUT_ATTEMPTS; attempt++) {
+                    layout = STATIONS.map(function (st) {
+                        var q = st.questions[Math.floor(Math.random() * st.questions.length)];
+                        var pool = q.type === 'order' ? q.seq : q.options;
+                        return { q: q.id, order: shuffle(pool.map(function (o) { return o.k; })) };
+                    });
+                    if (!prev) break;
+                    var diff = 0;
+                    for (var i = 0; i < layout.length; i++) {
+                        if (layout[i].q !== prev[i].q || layout[i].order.join() !== prev[i].order.join()) diff++;
+                    }
+                    if (diff >= Math.ceil(STATION_COUNT / 2)) break;
+                }
+                return layout;
+            }
+
+            findQuestion(st, qId) {
+                return st.questions.find(function (q) { return q.id === qId; });
+            }
+
+            startRound() {
+                this.clearTimers();
+                this.layout = this.generateLayout(this.lastLayout);
+                this.lastLayout = this.layout;
+                this.station = 0;
+                this.pieces = 0;
+                this.firstTry = 0;
+                this.wrong = 0;
+                this.isBusy = false;
+                this.stationClean = true;
+                this.cells.strip.concat(this.cells.board).forEach(function (cell) {
+                    cell.classList.remove('on');
+                });
+                this.dots[this.dots.length - 1].textContent = '❓';
+                document.getElementById('pzBoardWrap').classList.remove('done');
+                document.getElementById('pzBoard').classList.remove('done', 'assembling');
+                KidsUI.Celebrate.hide();
+                document.getElementById('startScreen').hidden = true;
+                document.getElementById('finaleScreen').hidden = true;
+                document.getElementById('playScreen').hidden = false;
+                this.renderStation(0);
+            }
+
+            backToStart() {
+                this.clearTimers();
+                this.station = -1;
+                this.isBusy = true;
+                /* 回主页即掐断进行中的故事朗读，避免越过开始界面继续读 */
+                try { if (window.speechSynthesis) window.speechSynthesis.cancel(); } catch (e) { /* 无语音环境 */ }
+                KidsUI.Celebrate.hide();
+                document.getElementById('playScreen').hidden = true;
+                document.getElementById('finaleScreen').hidden = true;
+                document.getElementById('startScreen').hidden = false;
+            }
+
+            renderStation(index) {
+                this.station = index;
+                this.isBusy = false;
+                this.stationClean = true;
+                var st = STATIONS[index];
+                var entry = this.layout[index];
+                this.curQ = this.findQuestion(st, entry.q);
+                this.curQ.pos = 0;
+                this.renderSceneInto(document.getElementById('scene'), st.scene);
+                document.getElementById('storyText').textContent = st.story;
+                document.getElementById('feedback').textContent = '';
+                this.updateProgress();
+                splashSound();
+                KidsUI.TTS.speak(st.story.replace(/[。！？，」]$/, '') + '。' + this.curQ.text);
+                this.renderQuestion();
+            }
+
+            renderQuestion() {
+                var q = this.curQ;
+                var entry = this.layout[this.station];
+                document.getElementById('qText').textContent = q.text;
+                var slots = document.getElementById('orderSlots');
+                var body = document.getElementById('qBody');
+                slots.innerHTML = '';
+                body.innerHTML = '';
+                body.className = q.type === 'order' ? 'order-pool' : 'choice-row';
+                slots.hidden = q.type !== 'order';
+                if (q.type === 'order') {
+                    this.renderOrder(q);
+                    return;
+                }
+                var byKey = {};
+                q.options.forEach(function (o) { byKey[o.k] = o; });
+                entry.order.forEach(function (k) {
+                    body.appendChild(this.buildChoice(byKey[k]));
+                }, this);
+            }
+
+            buildChoice(opt) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'opt';
+                btn.setAttribute('data-k', opt.k);
+                btn.setAttribute('data-ok', opt.ok ? '1' : '0');
+                btn.setAttribute('aria-label', opt.l);
+                var face = opt.sw
+                    ? '<span class="swatch" style="background:' + opt.sw + '" aria-hidden="true"></span>'
+                    : '<span class="opt-face" aria-hidden="true">' + opt.e + '</span>';
+                btn.innerHTML = face + opt.l;
+                btn.addEventListener('click', () => this.tapChoice(btn, opt));
+                return btn;
+            }
+
+            tapChoice(btn, opt) {
+                if (this.isBusy || this.station < 0) return;
+                if (!opt.ok) {
+                    this.handleWrong(btn);
+                    return;
+                }
+                btn.classList.add('correct');
+                this.completeStation();
+            }
+
+            renderOrder(q) {
+                var slots = document.getElementById('orderSlots');
+                var body = document.getElementById('qBody');
+                body.className = 'order-pool';
+                for (var i = 0; i < q.seq.length; i++) {
+                    var slot = document.createElement('div');
+                    slot.className = 'oslot';
+                    slot.setAttribute('data-slot', String(i));
+                    slot.innerHTML = '<span class="oslot-num">第 ' + (i + 1) + ' 个</span>';
+                    slots.appendChild(slot);
+                }
+                var byKey = {};
+                q.seq.forEach(function (o) { byKey[o.k] = o; });
+                var self = this;
+                this.layout[this.station].order.forEach(function (k) {
+                    var entry = byKey[k];
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'opt';
+                    btn.setAttribute('data-k', entry.k);
+                    btn.setAttribute('aria-label', entry.l);
+                    btn.innerHTML = '<span class="opt-face" aria-hidden="true">' + entry.e + '</span>' + entry.l;
+                    btn.addEventListener('click', function () { self.tapOrder(btn, entry); });
+                    body.appendChild(btn);
+                });
+                this.markNextSlot();
+            }
+
+            markNextSlot() {
+                var q = this.curQ;
+                var slots = document.querySelectorAll('#orderSlots .oslot');
+                for (var i = 0; i < slots.length; i++) {
+                    slots[i].classList.toggle('next', i === q.pos);
+                }
+            }
+
+            tapOrder(btn, entry) {
+                if (this.isBusy || this.station < 0 || btn.classList.contains('placed')) return;
+                var q = this.curQ;
+                var expected = q.seq[q.pos];
+                if (expected.k !== entry.k) {
+                    this.handleWrong(btn);
+                    return;
+                }
+                KidsUI.SFX.tap();
+                var slot = document.querySelector('#orderSlots .oslot[data-slot="' + q.pos + '"]');
+                slot.innerHTML = '<span class="oslot-face" aria-hidden="true">' + entry.e + '</span>' + entry.l;
+                slot.classList.remove('next');
+                slot.classList.add('filled');
+                btn.classList.add('placed');
+                q.pos++;
+                if (q.pos >= q.seq.length) {
+                    this.completeStation();
+                    return;
+                }
+                this.markNextSlot();
+                document.getElementById('feedback').textContent = '真棒，接着点第 ' + (q.pos + 1) + ' 个';
+            }
+
+            handleWrong(btn) {
+                this.wrong++;
+                this.stationClean = false;
+                if (btn) {
+                    btn.classList.remove('oops');
+                    void btn.offsetWidth;
+                    btn.classList.add('oops');
+                    if (this.curQ.type !== 'order') {
+                        btn.classList.add('wrong');
+                        btn.disabled = true;
+                    }
+                }
+                KidsUI.SFX.wrong();
+                KidsUI.haptic('bad');
+                document.getElementById('feedback').textContent = RETRY_HINTS[this.wrong % RETRY_HINTS.length];
+            }
+
+            completeStation() {
+                if (this.isBusy) return;
+                this.isBusy = true;
+                if (this.stationClean) this.firstTry++;
+                KidsUI.SFX.correct();
+                KidsUI.haptic('good');
+                sparkleSound();
+                this.pieces++;
+                this.cells.strip[this.pieces - 1].classList.add('on');
+                this.updateProgress();
+                document.getElementById('feedback').textContent = '答对啦！得到一片妈妈拼图 🧩';
+                if (this.station + 1 >= STATION_COUNT) {
+                    this.later(() => this.showFinale(), NEXT_STATION_MS);
+                } else {
+                    this.later(() => this.renderStation(this.station + 1), NEXT_STATION_MS);
+                }
+            }
+
+            updateProgress() {
+                document.getElementById('stNow').textContent = Math.min(this.station + 1, STATION_COUNT);
+                document.getElementById('pieceNow').textContent = this.pieces;
+                document.getElementById('pzCount').textContent = this.pieces;
+                for (var i = 0; i < this.dots.length; i++) {
+                    var dot = this.dots[i];
+                    dot.classList.remove('done', 'now');
+                    if (i < this.station) dot.classList.add('done');
+                    else if (i === this.station) dot.classList.add('now');
+                }
+                document.getElementById('routeBar').setAttribute(
+                    'aria-label',
+                    '故事路线，共 ' + STATION_COUNT + ' 站，当前第 ' + Math.min(this.station + 1, STATION_COUNT) + ' 站，已集 ' + this.pieces + ' 片拼图'
+                );
+            }
+
+            showFinale() {
+                this.station = STATION_COUNT;
+                this.updateProgress();
+                var momDot = this.dots[this.dots.length - 1];
+                momDot.classList.remove('now');
+                momDot.classList.add('done');
+                momDot.textContent = '🐸';
+                document.getElementById('playScreen').hidden = true;
+                document.getElementById('finaleScreen').hidden = false;
+                document.getElementById('finaleStory').textContent = FINALE_STORY;
+                KidsUI.TTS.speak(FINALE_STORY);
+                var board = document.getElementById('pzBoard');
+                board.classList.add('assembling');
+                var self = this;
+                this.cells.board.forEach(function (cell, i) {
+                    self.later(function () {
+                        cell.classList.add('on');
+                        splashSound();
+                    }, 240 * i + 120);
+                });
+                this.later(function () {
+                    board.classList.add('done');
+                    document.getElementById('pzBoardWrap').classList.add('done');
+                    sparkleSound();
+                }, FINALE_DONE_MS);
+                this.later(function () { self.finishRound(); }, FINALE_CELEBRATE_MS);
+            }
+
+            finishRound() {
+                var accuracy = this.firstTry / STATION_COUNT;
+                var stars = KidsUI.Progress.starsFor(accuracy);
+                KidsUI.Progress.record(this.gameId, { best: Math.round(accuracy * 100), stars: stars });
+                KidsUI.Celebrate.show({
+                    title: '妈妈找到啦！',
+                    sub: '走完 6 站，一次答对 ' + this.firstTry + ' 站，集齐 6 片拼图',
+                    stars: stars,
+                    primaryLabel: '再玩一次',
+                    onPrimary: () => this.startRound(),
+                    secondaryLabel: '回到开头',
+                    onSecondary: () => this.backToStart()
+                });
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            window.__tadpoleGame = new TadpoleStoryGame();
+        });
+    </script>
+</body>
+</html>
