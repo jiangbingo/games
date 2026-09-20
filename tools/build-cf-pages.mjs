@@ -54,7 +54,7 @@ const mazeSw = join(mazeDest, "sw.js");
 if (existsSync(mazeSw)) rmSync(mazeSw);
 console.log("✅ 迷宫 dist/public → dist/maze/（sw.js 已删除）");
 
-// 15 个入口页（历史测试页 ai-api-test / animal-sounds-voice-demo / test_category 已下线，仅留在仓库）
+// 16 个入口页（历史测试页 ai-api-test / animal-sounds-voice-demo / test_category 已下线，仅留在仓库）
 const pages = [
   "index.html",
   "color-matching.html",
@@ -72,6 +72,7 @@ const pages = [
   "english-words.html",
   "shadow-pattern.html",
   "hand-clap.html",
+  "whack-a-mole.html",
 ];
 for (const p of pages) copy(p);
 

@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#8b5e34">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-touch-icon" href="/icons/icon-192.png">
+    <title>打地鼠</title>
+    <link rel="stylesheet" href="/css/kids.css">
+    <style>
+        :root {
+            --game-accent: #8b5e34;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--kui-paper);
+            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-size: 26px 26px;
+            min-height: 100vh;
+            color: var(--kui-ink);
+            display: flex;
+            justify-content: center;
+            padding: 14px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .game {
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-lg);
+            box-shadow: var(--kui-shadow);
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+            margin-top: 8px;
+        }
+        .instruction {
+            text-align: center;
+            font-size: clamp(16px, 4.5vw, 20px);
+            font-weight: 800;
+            margin-bottom: 14px;
+            min-height: 2.2em;
+        }
+        .legend {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .legend-item {
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-paper);
+            box-shadow: var(--kui-shadow);
+            padding: 12px 6px;
+            text-align: center;
+        }
+        .legend-item .legend-icon { font-size: 2.2rem; display: block; }
+        .legend-item .legend-name { font-weight: 900; font-size: 1rem; margin-top: 4px; }
+        .legend-item .legend-sub { font-size: 0.78rem; color: var(--kui-ink-soft); line-height: 1.4; }
+        .legend-item.mole { border-color: rgba(139, 94, 52, 0.45); }
+        .legend-item.star { border-color: rgba(224, 159, 0, 0.5); }
+        .legend-item.bunny { border-color: rgba(214, 69, 69, 0.45); }
+        .speed-label {
+            text-align: center;
+            font-weight: 800;
+            color: var(--kui-ink-soft);
+            margin-bottom: 8px;
+        }
+        .speed-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .speed-btn {
+            padding: 12px 6px;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            font-size: 0.95rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s;
+            touch-action: manipulation;
+        }
+        .speed-btn:active { transform: translateY(2px); box-shadow: none; }
+        .speed-btn.active { background: var(--game-accent); border-color: var(--game-accent); color: #fff; }
+        .big-start {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.3rem;
+            font-weight: 900;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .speed-row.mini { margin: 0 0 10px; }
+        .speed-row.mini .speed-btn { padding: 8px 4px; font-size: 0.85rem; }
+        .field {
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 14px 12px;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: linear-gradient(180deg, #e3f1cd, #d7ebc0);
+            box-shadow: var(--kui-shadow);
+            margin-bottom: 12px;
+        }
+        .hole {
+            position: relative;
+            height: clamp(88px, 23vw, 112px);
+            overflow: hidden;
+            border: 0;
+            border-radius: var(--kui-radius-md);
+            background: transparent;
+            padding: 0;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .hole:focus-visible { outline: 3px solid var(--game-accent); outline-offset: -3px; }
+        .mound {
+            position: absolute;
+            left: 50%;
+            bottom: 6px;
+            width: 74%;
+            height: 30px;
+            transform: translateX(-50%);
+            background: radial-gradient(ellipse at 50% 35%, #7c5c34 0%, #5d431f 62%, #4a3418 100%);
+            border-radius: 50%;
+            box-shadow: inset 0 5px 8px rgba(0, 0, 0, 0.5), 0 3px 0 rgba(47, 42, 37, 0.15);
+            z-index: 2;
+        }
+        /* 地鼠藏在土丘后面弹出：隐藏态整体沉到洞底（被 overflow 裁掉），
+           弹起时下半身仍被土丘挡住，像从洞里钻出来 */
+        .critter {
+            position: absolute;
+            left: 50%;
+            bottom: 6px;
+            font-size: clamp(42px, 12vw, 54px);
+            line-height: 1;
+            z-index: 1;
+            pointer-events: none;
+            transform: translateX(-50%) translateY(115%);
+            transition: transform 0.16s var(--kui-bounce);
+            will-change: transform;
+        }
+        .hole.up .critter { transform: translateX(-50%) translateY(-8%); }
+        .hole.hit .critter {
+            transform: translateX(-50%) translateY(38%) scale(1.15, 0.8);
+            opacity: 0;
+            transition: transform 0.18s ease-in, opacity 0.18s ease-in;
+        }
+        .hole.oops { animation: kui-shake 0.4s ease; }
+        .mallet {
+            position: absolute;
+            right: 4px;
+            top: 2px;
+            font-size: 1.5rem;
+            z-index: 3;
+            opacity: 0;
+            transform: rotate(-60deg) scale(0.7);
+            transform-origin: 80% 80%;
+            pointer-events: none;
+        }
+        .mallet.swing { animation: malletSwing 0.22s ease-out; }
+        @keyframes malletSwing {
+            0% { opacity: 0; transform: rotate(-60deg) scale(0.7); }
+            45% { opacity: 1; transform: rotate(10deg) scale(1.1); }
+            100% { opacity: 0; transform: rotate(-20deg) scale(0.95); }
+        }
+        .float {
+            position: absolute;
+            left: 50%;
+            top: 10%;
+            transform: translateX(-50%);
+            font-size: 1.2rem;
+            font-weight: 900;
+            opacity: 0;
+            z-index: 4;
+            pointer-events: none;
+        }
+        .float.plus { color: #2f8f46; }
+        .float.minus { color: #d64545; }
+        .float.on { animation: floatUp 0.7s ease-out; }
+        /* 终点上移量不能越出洞顶（.hole overflow:hidden 会水平裁切字形） */
+        @keyframes floatUp {
+            0% { opacity: 0; transform: translate(-50%, 8px) scale(0.7); }
+            30% { opacity: 1; transform: translate(-50%, -2px) scale(1.15); }
+            100% { opacity: 0; transform: translate(-50%, -8px) scale(1); }
+        }
+        .combo-pop {
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: 900;
+            font-size: 1.15rem;
+            color: var(--game-accent);
+            background: var(--kui-card);
+            border: 2px solid rgba(139, 94, 52, 0.4);
+            border-radius: 999px;
+            padding: 3px 14px;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 5;
+        }
+        .combo-pop.on { animation: comboIn 0.7s var(--kui-bounce); }
+        @keyframes comboIn {
+            0% { opacity: 0; transform: translateX(-50%) scale(0.6); }
+            30% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-50%) scale(1); }
+        }
+        .hint {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--kui-ink-soft);
+            margin-top: 8px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .critter, .speed-btn { transition: none; }
+            .hole.oops, .mallet, .float, .combo-pop { animation: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <div id="startScreen">
+            <p class="instruction">🔨 打地鼠</p>
+            <div class="legend">
+                <div class="legend-item mole">
+                    <span class="legend-icon">🐹</span>
+                    <span class="legend-name">地鼠</span>
+                    <span class="legend-sub">敲中 +1 分</span>
+                </div>
+                <div class="legend-item star">
+                    <span class="legend-icon">⭐</span>
+                    <span class="legend-name">星星</span>
+                    <span class="legend-sub">敲中 +3 分，一闪就没</span>
+                </div>
+                <div class="legend-item bunny">
+                    <span class="legend-icon">🐰</span>
+                    <span class="legend-name">小兔</span>
+                    <span class="legend-sub">不能敲！敲了 −1 分</span>
+                </div>
+            </div>
+            <p class="speed-label">地鼠会从洞里钻出来，看准了就敲下去</p>
+            <div class="speed-row" id="speedRowStart"></div>
+            <button class="kui-btn kui-primary kui-big big-start" id="startBtn" type="button">开始游戏 🔨</button>
+        </div>
+
+        <div id="playScreen" hidden>
+            <div class="stats-row">
+                <span class="kui-chip">🏆 得分 <b id="score">0</b></span>
+                <span class="kui-chip">✅ 打中 <b id="hitCount">0</b></span>
+                <span class="kui-chip">💤 跑掉 <b id="missCount">0</b></span>
+                <span class="kui-chip">🔥 连击 <b id="combo">0</b></span>
+            </div>
+            <div class="speed-row mini" id="speedRowPlay"></div>
+            <div class="field" id="field">
+                <div class="combo-pop" id="comboPop"></div>
+            </div>
+            <p class="hint">键盘也能玩：数字键 1-9 对应九个洞</p>
+        </div>
+    </div>
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
+    <script>
+        "use strict";
+        var gameId = 'whack-a-mole';
+        var LS_SPEED = 'whacamole_speed';
+        var HOLE_COUNT = 9;
+        var TOTAL_MOLES = 16;
+        var TOTAL_STARS = 3;
+        var TOTAL_BUNNIES = 3;
+        var TOTAL_GOOD = TOTAL_MOLES + TOTAL_STARS;
+        /* 开局先只出地鼠热身，星星和小兔稍后再登场 */
+        var WARMUP_MOLES = 3;
+        var BUNNY_PENALTY = 1;
+        var COMBO_POP_STEP = 3;
+        var FIRST_SPAWN_DELAY_MS = 500;
+        var END_DELAY_MS = 600;
+        var CLICK_FALLBACK_MS = 500;
+        var GAP_JITTER = 0.22;
+        /* up/starUp 为钻出后停留毫秒数，gap 为出洞节奏，maxActive 为同屏最多几只 */
+        var SPEEDS = [
+            { id: 'slow', label: '🐢 慢慢', gap: 750, up: 1500, starUp: 1300, maxActive: 1 },
+            { id: 'mid', label: '🚶 中速', gap: 800, up: 1200, starUp: 1000, maxActive: 2 },
+            { id: 'fast', label: '🐇 快快', gap: 560, up: 900, starUp: 800, maxActive: 3 }
+        ];
+        var KINDS = {
+            mole: { emoji: '🐹', upKey: 'up', points: 1, isGood: true },
+            star: { emoji: '⭐', upKey: 'starUp', points: 3, isGood: true },
+            bunny: { emoji: '🐰', upKey: 'up', isGood: false }
+        };
+
+        function shuffle(list) {
+            var copy = list.slice();
+            for (var i = copy.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var t = copy[i];
+                copy[i] = copy[j];
+                copy[j] = t;
+            }
+            return copy;
+        }
+
+        /* 敲击声属于内容音效：只随主音量（与 hand-clap/animal-sounds 约定一致），不受静音开关影响 */
+        function thock(ctx) {
+            var t = ctx.currentTime;
+            var buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.08), ctx.sampleRate);
+            var data = buffer.getChannelData(0);
+            for (var i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+            var noise = ctx.createBufferSource();
+            noise.buffer = buffer;
+            var band = ctx.createBiquadFilter();
+            band.type = 'bandpass';
+            band.frequency.value = 850;
+            band.Q.value = 1;
+            var noiseGain = ctx.createGain();
+            noiseGain.gain.value = 0.5 * KidsUI.SFX.volume;
+            noise.connect(band);
+            band.connect(noiseGain);
+            noiseGain.connect(ctx.destination);
+            noise.start(t);
+            var osc = ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(210, t);
+            osc.frequency.exponentialRampToValueAtTime(80, t + 0.09);
+            var gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.4 * KidsUI.SFX.volume, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.11);
+        }
+
+        function chime(ctx) {
+            [880, 1318.5].forEach(function (freq, i) {
+                var t = ctx.currentTime + i * 0.09;
+                var osc = ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                var gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.3 * KidsUI.SFX.volume, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(t);
+                osc.stop(t + 0.2);
+            });
+        }
+
+        function sadTone(ctx) {
+            var t = ctx.currentTime;
+            var osc = ctx.createOscillator();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(170, t);
+            osc.frequency.exponentialRampToValueAtTime(110, t + 0.25);
+            var gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.35 * KidsUI.SFX.volume, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.32);
+        }
+
+        function whiffSound(ctx) {
+            var t = ctx.currentTime;
+            var buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.05), ctx.sampleRate);
+            var data = buffer.getChannelData(0);
+            for (var i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+            var src = ctx.createBufferSource();
+            src.buffer = buffer;
+            var low = ctx.createBiquadFilter();
+            low.type = 'lowpass';
+            low.frequency.value = 600;
+            var gain = ctx.createGain();
+            gain.gain.value = 0.12 * KidsUI.SFX.volume;
+            src.connect(low);
+            low.connect(gain);
+            gain.connect(ctx.destination);
+            src.start(t);
+        }
+
+        var SOUND_TABLE = { mole: thock, star: chime, bunny: sadTone, whiff: whiffSound };
+
+        class WhackAMoleGame {
+            constructor() {
+                this.gameId = gameId;
+                this.speedId = this.loadSpeed();
+                this.ended = true;
+                this.timers = [];
+                this.buildField();
+                this.init();
+            }
+
+            get speed() {
+                var self = this;
+                return SPEEDS.find(function (s) { return s.id === self.speedId; }) || SPEEDS[1];
+            }
+
+            loadSpeed() {
+                var saved = localStorage.getItem(LS_SPEED);
+                return SPEEDS.some(function (s) { return s.id === saved; }) ? saved : 'mid';
+            }
+
+            saveSpeed() {
+                localStorage.setItem(LS_SPEED, this.speedId);
+            }
+
+            later(fn, ms) {
+                var id = setTimeout(fn, ms);
+                this.timers.push(id);
+                return id;
+            }
+
+            clearTimers() {
+                this.timers.forEach(clearTimeout);
+                this.timers = [];
+            }
+
+            buildField() {
+                this.cells = [];
+                this.critters = [];
+                var field = document.getElementById('field');
+                for (var i = 0; i < HOLE_COUNT; i++) {
+                    var cell = document.createElement('button');
+                    cell.type = 'button';
+                    cell.className = 'hole';
+                    cell.setAttribute('aria-label', '第' + (i + 1) + '个洞');
+                    cell.innerHTML = '<span class="mound" aria-hidden="true"></span>' +
+                        '<span class="critter" aria-hidden="true"></span>' +
+                        '<span class="mallet" aria-hidden="true">🔨</span>' +
+                        '<span class="float" aria-hidden="true"></span>';
+                    field.appendChild(cell);
+                    this.cells.push(cell);
+                    this.critters.push(cell.querySelector('.critter'));
+                }
+            }
+
+            resetField() {
+                for (var i = 0; i < HOLE_COUNT; i++) {
+                    this.cells[i].className = 'hole';
+                    this.critters[i].textContent = '';
+                }
+            }
+
+            init() {
+                KidsUI.Touch.guard();
+                KidsUI.Header.render({
+                    title: '打地鼠',
+                    accent: '#8b5e34',
+                    onReplay: () => this.backToStart()
+                });
+                this.renderSpeedButtons('speedRowStart');
+                this.renderSpeedButtons('speedRowPlay');
+                document.getElementById('startBtn').addEventListener('click', () => {
+                    KidsUI.SFX.tap();
+                    this.startRound();
+                });
+                var field = document.getElementById('field');
+                var pointerAt = 0;
+                field.addEventListener('pointerdown', (e) => {
+                    pointerAt = Date.now();
+                    var hole = e.target.closest('.hole');
+                    if (hole) this.whack(this.cells.indexOf(hole));
+                });
+                /* click 兜底：键盘 Enter/Space 与 VoiceOver 双击只合成 click；
+                   真 touch/mouse 已走 pointerdown，短窗口内忽略 click 防双计 */
+                field.addEventListener('click', (e) => {
+                    if (Date.now() - pointerAt < CLICK_FALLBACK_MS) return;
+                    var hole = e.target.closest('.hole');
+                    if (hole) this.whack(this.cells.indexOf(hole));
+                });
+                window.addEventListener('keydown', (e) => {
+                    if (this.ended || e.repeat) return;
+                    var key = Number(e.key);
+                    if (key >= 1 && key <= 9) this.whack(key - 1);
+                });
+            }
+
+            renderSpeedButtons(containerId) {
+                var self = this;
+                var row = document.getElementById(containerId);
+                row.innerHTML = '';
+                SPEEDS.forEach(function (speed) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'speed-btn' + (speed.id === self.speedId ? ' active' : '');
+                    btn.textContent = speed.label;
+                    btn.setAttribute('aria-pressed', String(speed.id === self.speedId));
+                    btn.addEventListener('click', function () {
+                        KidsUI.SFX.tap();
+                        self.setSpeed(speed.id);
+                    });
+                    row.appendChild(btn);
+                });
+            }
+
+            setSpeed(speedId) {
+                this.speedId = speedId;
+                this.saveSpeed();
+                this.renderSpeedButtons('speedRowStart');
+                this.renderSpeedButtons('speedRowPlay');
+            }
+
+            buildQueue() {
+                var rest = [];
+                var i;
+                for (i = 0; i < TOTAL_MOLES - WARMUP_MOLES; i++) rest.push('mole');
+                for (i = 0; i < TOTAL_STARS; i++) rest.push('star');
+                for (i = 0; i < TOTAL_BUNNIES; i++) rest.push('bunny');
+                var warmup = [];
+                for (i = 0; i < WARMUP_MOLES; i++) warmup.push('mole');
+                return warmup.concat(shuffle(rest));
+            }
+
+            resetScore() {
+                this.score = 0;
+                this.hits = 0;
+                this.misses = 0;
+                this.combo = 0;
+                this.bestCombo = 0;
+                this.bunnyTaps = 0;
+            }
+
+            startRound() {
+                this.clearTimers();
+                this.ended = false;
+                this.queue = this.buildQueue();
+                this.spawnIndex = 0;
+                this.pops = [];
+                this.activeCount = 0;
+                this.resetScore();
+                this.updateStats();
+                document.getElementById('startScreen').hidden = true;
+                document.getElementById('playScreen').hidden = false;
+                this.resetField();
+                this.later(() => this.spawnTick(), FIRST_SPAWN_DELAY_MS);
+            }
+
+            backToStart() {
+                this.ended = true;
+                this.clearTimers();
+                KidsUI.Celebrate.hide();
+                document.getElementById('playScreen').hidden = true;
+                document.getElementById('startScreen').hidden = false;
+            }
+
+            gapMs() {
+                return this.speed.gap * (1 + (Math.random() * 2 - 1) * GAP_JITTER);
+            }
+
+            spawnTick() {
+                if (this.ended) return;
+                if (this.spawnIndex < this.queue.length && this.activeCount < this.speed.maxActive) {
+                    this.spawnOne();
+                }
+                if (this.spawnIndex < this.queue.length) {
+                    this.later(() => this.spawnTick(), this.gapMs());
+                }
+            }
+
+            freeHole() {
+                var empty = [];
+                for (var i = 0; i < HOLE_COUNT; i++) {
+                    var busy = this.pops.some(function (p) {
+                        return p.hole === i && p.state === 'up';
+                    });
+                    if (!busy) empty.push(i);
+                }
+                return empty[Math.floor(Math.random() * empty.length)];
+            }
+
+            spawnOne() {
+                var kind = this.queue[this.spawnIndex++];
+                var pop = { kind: kind, hole: this.freeHole(), state: 'up', timer: 0 };
+                this.pops.push(pop);
+                this.activeCount++;
+                var cell = this.cells[pop.hole];
+                cell.classList.remove('hit', 'oops');
+                this.critters[pop.hole].textContent = KINDS[kind].emoji;
+                cell.classList.add('up');
+                pop.timer = this.later(() => this.escape(pop), this.speed[KINDS[kind].upKey]);
+            }
+
+            escape(pop) {
+                if (pop.state !== 'up') return;
+                pop.state = 'escaped';
+                this.activeCount--;
+                this.cells[pop.hole].classList.remove('up');
+                if (KINDS[pop.kind].isGood) {
+                    this.misses++;
+                    this.combo = 0;
+                    this.updateStats();
+                }
+                this.checkEnd();
+            }
+
+            whack(hole) {
+                if (this.ended) return;
+                var cell = this.cells[hole];
+                this.swingMallet(cell);
+                var pop = this.pops.find(function (p) {
+                    return p.hole === hole && p.state === 'up';
+                });
+                if (!pop) {
+                    this.playSound('whiff');
+                    return;
+                }
+                pop.state = 'hit';
+                clearTimeout(pop.timer);
+                this.activeCount--;
+                cell.classList.remove('up');
+                if (KINDS[pop.kind].isGood) this.hitGood(pop, cell);
+                else this.hitBunny(cell);
+            }
+
+            hitGood(pop, cell) {
+                var points = KINDS[pop.kind].points;
+                this.score += points;
+                this.hits++;
+                this.combo++;
+                this.bestCombo = Math.max(this.bestCombo, this.combo);
+                cell.classList.add('hit');
+                this.float(cell, '+' + points, 'plus');
+                this.playSound(pop.kind);
+                KidsUI.haptic('good');
+                this.updateStats();
+                if (this.combo >= COMBO_POP_STEP && this.combo % COMBO_POP_STEP === 0) this.popCombo();
+                this.checkEnd();
+            }
+
+            hitBunny(cell) {
+                this.score = Math.max(0, this.score - BUNNY_PENALTY);
+                this.combo = 0;
+                this.bunnyTaps++;
+                cell.classList.remove('oops');
+                void cell.offsetWidth;
+                cell.classList.add('oops');
+                this.float(cell, '−' + BUNNY_PENALTY, 'minus');
+                this.playSound('bunny');
+                KidsUI.haptic('bad');
+                this.updateStats();
+                this.checkEnd();
+            }
+
+            checkEnd() {
+                if (this.ended) return;
+                if (this.spawnIndex < this.queue.length || this.activeCount > 0) return;
+                this.ended = true;
+                this.clearTimers();
+                this.later(() => this.endRound(), END_DELAY_MS);
+            }
+
+            endRound() {
+                var accuracy = this.hits / TOTAL_GOOD;
+                var stars = KidsUI.Progress.starsFor(accuracy);
+                KidsUI.Progress.record(this.gameId, { best: this.score, stars: stars });
+                var sub = '得分 ' + this.score + '，最长连击 ' + this.bestCombo +
+                    (this.bunnyTaps ? '，误伤小兔 ' + this.bunnyTaps + ' 次' : '');
+                KidsUI.Celebrate.show({
+                    title: accuracy >= 0.9 ? '锤王诞生！' : accuracy >= 0.6 ? '眼疾手快！' : '再来一次吧！',
+                    sub: sub,
+                    stars: stars,
+                    primaryLabel: '再来一局',
+                    onPrimary: () => this.startRound(),
+                    secondaryLabel: '回主页',
+                    onSecondary: () => this.backToStart(),
+                    announce: '本局得分' + this.score
+                });
+            }
+
+            swingMallet(cell) {
+                var mallet = cell.querySelector('.mallet');
+                mallet.classList.remove('swing');
+                void mallet.offsetWidth;
+                mallet.classList.add('swing');
+            }
+
+            float(cell, text, dir) {
+                var el = cell.querySelector('.float');
+                el.textContent = text;
+                el.className = 'float ' + dir;
+                void el.offsetWidth;
+                el.classList.add('on');
+            }
+
+            popCombo() {
+                var pop = document.getElementById('comboPop');
+                pop.textContent = '🔥 连击 ' + this.combo;
+                pop.classList.remove('on');
+                void pop.offsetWidth;
+                pop.classList.add('on');
+            }
+
+            updateStats() {
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('hitCount').textContent = this.hits;
+                document.getElementById('missCount').textContent = this.misses;
+                document.getElementById('combo').textContent = this.combo;
+            }
+
+            playSound(kind) {
+                var ctx = KidsUI.SFX._ensure();
+                if (!ctx || KidsUI.SFX.volume <= 0) return;
+                SOUND_TABLE[kind](ctx);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            new WhackAMoleGame();
+        });
+    </script>
+</body>
+</html>
