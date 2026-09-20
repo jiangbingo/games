@@ -242,9 +242,10 @@
             .critter, .speed-btn { transition: none; }
             .hole.oops, .mallet, .float, .combo-pop { animation: none; }
         }
-        /* 放在基规则之后才能覆盖 .speed-btn.active 的白字 */
+        /* 放在基规则之后才能覆盖白字；选择器须与 kids.css 的 .kui-btn.kui-primary 同特异度 */
         @media (prefers-color-scheme: dark) {
             .speed-btn.active { color: #221e19; }
+            .kui-btn.kui-primary { color: #221e19; }
         }
     </style>
 </head>

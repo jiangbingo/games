@@ -231,7 +231,7 @@
             <div class="stats-row">
                 <span class="kui-chip">🗺️ 第 <b id="statLevel">1/5</b> 关</span>
                 <span class="kui-chip">🔄 步数 <b id="statClicks">0</b></span>
-                <span class="kui-chip">🎯 最少 <b id="statMin">0</b> 步</span>
+                <span class="kui-chip">🎯 目标 <b id="statMin">0</b> 步</span>
             </div>
             <div class="diff-row mini" id="diffRowPlay"></div>
             <div class="board-wrap">
@@ -760,7 +760,7 @@
                 KidsUI.Progress.record(this.gameId, { best: Math.round(accuracy * 100), stars: stars });
                 KidsUI.Celebrate.show({
                     title: accuracy >= 0.9 ? '水管大师！' : accuracy >= 0.7 ? '接得漂亮！' : '再试一次吧！',
-                    sub: '你转了 ' + this.totalClicks + ' 下（最快 ' + this.totalMin + ' 下）',
+                    sub: '你转了 ' + this.totalClicks + ' 下（目标 ' + this.totalMin + ' 下）',
                     stars: stars,
                     primaryLabel: '再来一局',
                     onPrimary: () => this.startRun(),
