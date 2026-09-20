@@ -22,7 +22,7 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
             background: var(--kui-paper);
-            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-image: radial-gradient(color-mix(in srgb, var(--kui-ink) 3%, transparent) 1px, transparent 1.4px);
             background-size: 26px 26px;
             min-height: 100vh;
             color: var(--kui-ink);
@@ -154,8 +154,8 @@
             border-bottom: 2px dashed var(--kui-line);
             transition: background 0.15s;
         }
-        .cell.hit-hand { background: #fde8f1; animation: pop 0.35s var(--kui-bounce); }
-        .cell.hit-circle { background: #eaf7f0; animation: pop 0.35s var(--kui-bounce); }
+        .cell.hit-hand { background: color-mix(in srgb, #e84393 16%, var(--kui-card)); animation: pop 0.35s var(--kui-bounce); }
+        .cell.hit-circle { background: var(--kui-tint-good); animation: pop 0.35s var(--kui-bounce); }
         .cell.missed { opacity: 0.35; filter: grayscale(1); }
         .judge-zone {
             position: absolute;

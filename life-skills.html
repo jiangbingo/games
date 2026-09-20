@@ -13,11 +13,14 @@
     <link rel="stylesheet" href="/css/kids.css">
     <style>
         :root { --game-accent: #6c5ce7; }
+        @media (prefers-color-scheme: dark) {
+            :root { --game-accent: #948af2; }
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
             background: var(--kui-paper);
-            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-image: radial-gradient(color-mix(in srgb, var(--kui-ink) 3%, transparent) 1px, transparent 1.4px);
             background-size: 26px 26px;
             min-height: 100vh;
             color: var(--kui-ink);
@@ -53,7 +56,7 @@
         .slot { width: clamp(56px, 16vw, 80px); height: clamp(56px, 16vw, 80px); border: 3px dashed var(--kui-line); border-radius: var(--kui-radius-md); background: var(--kui-paper); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
         .slot-icon { font-size: 1.6rem; line-height: 1.1; }
         .slot-num { font-size: 0.72rem; font-weight: 800; color: var(--kui-ink-soft); }
-        .slot.filled { border-style: solid; border-color: var(--kui-good); background: #eaf7f0; animation: kui-pop 0.3s ease; }
+        .slot.filled { border-style: solid; border-color: var(--kui-good); background: var(--kui-tint-good); animation: kui-pop 0.3s ease; }
         .hand-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 10px; }
         .step-card {
             padding: 12px 6px; border: 3px solid var(--kui-line); border-radius: var(--kui-radius-md);
@@ -92,7 +95,7 @@
         .bin:active { transform: translateY(2px); box-shadow: none; }
         .bin.flash { animation: binFlash 0.7s ease; }
         @keyframes binFlash {
-            0% { border-color: var(--kui-good); background: #eaf7f0; }
+            0% { border-color: var(--kui-good); background: var(--kui-tint-good); }
             100% { border-color: var(--kui-line); background: var(--kui-card); }
         }
         .bin.oops { animation: kui-shake 0.4s ease; }
@@ -104,7 +107,7 @@
         .choice-btn { min-height: 110px; padding: 12px 8px; border: 3px solid var(--kui-line); border-radius: var(--kui-radius-md); background: var(--kui-card); box-shadow: var(--kui-shadow); cursor: pointer; font-weight: 900; font-size: 0.95rem; line-height: 1.35; color: var(--kui-ink); touch-action: manipulation; transition: transform 0.12s var(--kui-bounce), border-color 0.2s; }
         .choice-btn .choice-icon { display: block; font-size: 2.2rem; margin-bottom: 4px; }
         .choice-btn:active { transform: scale(0.96); }
-        .choice-btn.correct { border-color: var(--kui-good); background: #eaf7f0; animation: kui-pop 0.3s ease; }
+        .choice-btn.correct { border-color: var(--kui-good); background: var(--kui-tint-good); animation: kui-pop 0.3s ease; }
         .choice-btn.wrong { opacity: 0.4; border-color: var(--kui-bad); border-style: dashed; pointer-events: none; }
         @media (prefers-reduced-motion: reduce) {
             .step-card, .tooth, .item-chip, .bin, .choice-btn, .slot.filled, .mode-btn { transition: none; animation: none; }

@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="/manifest.webmanifest">
-    <meta name="theme-color" content="#faf5ec">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#faf5ec">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#221e19">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -25,8 +26,8 @@
             background: var(--kui-paper);
             /* 纸面颗粒：两层极淡的径向点纹 */
             background-image:
-                radial-gradient(rgba(47, 42, 37, 0.035) 1px, transparent 1.4px),
-                radial-gradient(rgba(47, 42, 37, 0.025) 1px, transparent 1.4px);
+                radial-gradient(color-mix(in srgb, var(--kui-ink) 35%, transparent) 1px, transparent 1.4px),
+                radial-gradient(color-mix(in srgb, var(--kui-ink) 25%, transparent) 1px, transparent 1.4px);
             background-size: 26px 26px, 34px 34px;
             background-position: 0 0, 13px 17px;
             min-height: 100vh;
@@ -74,7 +75,7 @@
             text-align: center;
         }
         .stat-item.hero {
-            background: #fff6df;
+            background: var(--kui-tint-hi);
             border-color: rgba(255, 183, 3, 0.4);
             transform: scale(1.08);
         }
@@ -84,7 +85,7 @@
             display: block;
             line-height: 1.2;
         }
-        .stat-item.hero .stat-number { font-size: 2.3rem; color: #e09f00; }
+        .stat-item.hero .stat-number { font-size: 2.3rem; color: var(--kui-hi-ink); }
         .stat-label { font-size: 0.85rem; font-weight: 700; color: var(--kui-ink-soft); }
 
         /* ── 分区标题 ── */
@@ -140,8 +141,8 @@
             height: 62px;
             font-size: 2rem;
             border-radius: 18px;
-            background: color-mix(in srgb, var(--card-accent, var(--game-accent)) 16%, white);
-            border: 2px solid color-mix(in srgb, var(--card-accent, var(--game-accent)) 40%, white);
+            background: color-mix(in srgb, var(--card-accent, var(--game-accent)) 16%, var(--kui-card));
+            border: 2px solid color-mix(in srgb, var(--card-accent, var(--game-accent)) 40%, var(--kui-card));
             margin-bottom: 12px;
         }
         .game-title {
@@ -177,15 +178,15 @@
             gap: 4px;
             padding: 4px 10px;
             border-radius: 999px;
-            background: #fff6df;
+            background: var(--kui-tint-hi);
             border: 2px solid rgba(255, 183, 3, 0.45);
             font-size: 0.82rem;
             font-weight: 900;
-            color: #b07d00;
+            color: var(--kui-hi-ink);
         }
         .card-badge.continue {
-            background: color-mix(in srgb, var(--card-accent, var(--game-accent)) 14%, white);
-            border-color: color-mix(in srgb, var(--card-accent, var(--game-accent)) 45%, white);
+            background: color-mix(in srgb, var(--card-accent, var(--game-accent)) 14%, var(--kui-card));
+            border-color: color-mix(in srgb, var(--card-accent, var(--game-accent)) 45%, var(--kui-card));
             color: var(--kui-ink);
         }
 
@@ -224,7 +225,7 @@
             position: fixed;
             inset: 0;
             z-index: 1000;
-            background: #fff;
+            background: var(--kui-paper);
         }
         .game-shell.is-open { display: block; }
         .game-frame { width: 100%; height: 100%; border: 0; display: block; }

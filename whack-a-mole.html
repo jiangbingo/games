@@ -15,11 +15,14 @@
         :root {
             --game-accent: #8b5e34;
         }
+        @media (prefers-color-scheme: dark) {
+            :root { --game-accent: #c99a6a; }
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
             background: var(--kui-paper);
-            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-image: radial-gradient(color-mix(in srgb, var(--kui-ink) 3%, transparent) 1px, transparent 1.4px);
             background-size: 26px 26px;
             min-height: 100vh;
             color: var(--kui-ink);
@@ -194,8 +197,8 @@
             z-index: 4;
             pointer-events: none;
         }
-        .float.plus { color: #2f8f46; }
-        .float.minus { color: #d64545; }
+        .float.plus { color: var(--kui-good); }
+        .float.minus { color: var(--kui-bad); }
         .float.on { animation: floatUp 0.7s ease-out; }
         /* 终点上移量不能越出洞顶（.hole overflow:hidden 会水平裁切字形） */
         @keyframes floatUp {
@@ -232,9 +235,16 @@
             color: var(--kui-ink-soft);
             margin-top: 8px;
         }
+        @media (prefers-color-scheme: dark) {
+            :root { --game-accent: #c99a6a; }
+        }
         @media (prefers-reduced-motion: reduce) {
             .critter, .speed-btn { transition: none; }
             .hole.oops, .mallet, .float, .combo-pop { animation: none; }
+        }
+        /* 放在基规则之后才能覆盖 .speed-btn.active 的白字 */
+        @media (prefers-color-scheme: dark) {
+            .speed-btn.active { color: #221e19; }
         }
     </style>
 </head>

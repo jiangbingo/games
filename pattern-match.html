@@ -25,7 +25,7 @@
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
             background: var(--kui-paper);
-            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-image: radial-gradient(color-mix(in srgb, var(--kui-ink) 3%, transparent) 1px, transparent 1.4px);
             background-size: 26px 26px;
             min-height: 100vh;
             overflow-x: hidden;
@@ -126,7 +126,7 @@
         }
 
         .pattern-item.blank {
-            background: #fff6e6;
+            background: var(--kui-tint-hi);
             border: 3px dashed var(--game-accent);
             color: var(--game-accent);
         }
@@ -205,7 +205,7 @@
         .option-btn.wrong {
             animation: kui-shake 0.4s ease;
             border-color: var(--kui-bad);
-            background: #fdeae7;
+            background: var(--kui-tint-bad);
         }
 
         .stats-area {

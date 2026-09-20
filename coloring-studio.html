@@ -14,6 +14,7 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23ff6b4a'/%3E%3Ctext x='16' y='23' font-size='18' text-anchor='middle' fill='white'%3E🖍%3C/text%3E%3C/svg%3E">
     <style>
         :root {
+            color-scheme: light;
             --paper: #faf5ec;
             --card: #fffdf8;
             --ink: #2f2a25;
@@ -28,12 +29,24 @@
             --font-round: "Yuanti SC", "YouYuan", "PingFang SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
 
+        /* 夜间模式：纸面换深色宣夜；画布/线稿缩略图保持白纸（内容本身是白纸线稿） */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                color-scheme: dark;
+                --paper: #221e19;
+                --card: #2f2a23;
+                --ink: #f1e9db;
+                --ink-soft: #b4a894;
+                --shadow: 4px 4px 0 rgba(0, 0, 0, 0.45);
+            }
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: var(--font-round);
             background: var(--paper);
-            background-image: radial-gradient(rgba(47, 42, 37, 0.045) 1px, transparent 1px);
+            background-image: radial-gradient(color-mix(in srgb, var(--ink) 5%, transparent) 1px, transparent 1px);
             background-size: 22px 22px;
             color: var(--ink);
             min-height: 100vh;
@@ -131,7 +144,7 @@
             cursor: pointer;
             transition: background 0.15s, transform 0.15s;
         }
-        .dropzone.drag { background: #fff3e8; transform: scale(1.01); border-color: var(--accent); }
+        .dropzone.drag { background: color-mix(in srgb, var(--accent) 12%, var(--card)); transform: scale(1.01); border-color: var(--accent); }
         .dropzone .dz-icon { font-size: 2.6rem; display: block; margin-bottom: 8px; }
         .dropzone h2 { font-size: 1.25rem; margin-bottom: 6px; }
         .dropzone p { color: var(--ink-soft); font-size: 0.9rem; }
@@ -154,7 +167,7 @@
         .sample-btn:nth-child(2) { transform: rotate(-1.2deg); }
         .sample-btn:nth-child(3) { transform: rotate(0.8deg); }
         .sample-btn:nth-child(4) { transform: rotate(-0.6deg); }
-        .sample-btn:hover { background: #fff3e8; }
+        .sample-btn:hover { background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
 
         /* ---------- 控制区 ---------- */
         .controls {
@@ -171,7 +184,7 @@
         }
         .ctrl-group { display: flex; flex-direction: column; gap: 6px; }
         .ctrl-label { font-size: 0.82rem; color: var(--ink-soft); font-weight: 600; }
-        .seg { display: flex; border: var(--border); border-radius: 12px; overflow: hidden; background: #fff; }
+        .seg { display: flex; border: var(--border); border-radius: 12px; overflow: hidden; background: var(--card); }
         .seg button {
             border: none;
             background: transparent;
@@ -246,16 +259,16 @@
         .chip {
             border: 2px solid var(--ink);
             border-radius: 999px;
-            background: #fff;
+            background: var(--card);
             padding: 5px 12px;
             font-size: 0.85rem;
             font-weight: 600;
         }
         .chip.primary { background: var(--accent); color: #fff; }
-        .chip.danger { background: #ffe9e2; }
+        .chip.danger { background: color-mix(in srgb, var(--accent-deep) 20%, var(--card)); }
         .chip.check { display: inline-flex; align-items: center; gap: 5px; }
         .chip.check input { width: 15px; height: 15px; accent-color: var(--accent); }
-        .chip:hover:not(:disabled) { background: #fff3e8; }
+        .chip:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
 
         /* ---------- 涂色视图 ---------- */
         #colorView {
@@ -265,7 +278,7 @@
             display: flex;
             flex-direction: column;
             background: var(--paper);
-            background-image: radial-gradient(rgba(47, 42, 37, 0.045) 1px, transparent 1px);
+            background-image: radial-gradient(color-mix(in srgb, var(--ink) 5%, transparent) 1px, transparent 1px);
             background-size: 22px 22px;
         }
         .color-top {
@@ -280,14 +293,14 @@
         .top-btn {
             border: var(--border);
             border-radius: 12px;
-            background: #fff;
+            background: var(--card);
             padding: 8px 13px;
             font-size: 0.9rem;
             font-weight: 700;
             box-shadow: 3px 3px 0 rgba(47, 42, 37, 0.14);
         }
         .top-btn.accent { background: var(--accent); color: #fff; }
-        .top-btn.mint { background: var(--mint); }
+        .top-btn.mint { background: var(--mint); color: #2f2a25; }
         .color-main { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; padding: 12px; }
         #colorStage {
             position: relative;
@@ -342,7 +355,7 @@
             min-height: 44px;
             border: 2px solid var(--ink);
             border-radius: 12px;
-            background: #fff;
+            background: var(--card);
             font-size: 0.9rem;
             font-weight: 700;
             padding: 0 12px;
@@ -352,7 +365,7 @@
         .brush-btn[data-size="0"] .dot { width: 7px; height: 7px; }
         .brush-btn[data-size="1"] .dot { width: 13px; height: 13px; }
         .brush-btn[data-size="2"] .dot { width: 19px; height: 19px; }
-        .tb-sep { width: 2px; height: 30px; background: rgba(47, 42, 37, 0.18); border-radius: 2px; }
+        .tb-sep { width: 2px; height: 30px; background: color-mix(in srgb, var(--ink) 18%, transparent); border-radius: 2px; }
 
         #palette { display: flex; justify-content: center; gap: 7px; flex-wrap: wrap; }
         .swatch {
