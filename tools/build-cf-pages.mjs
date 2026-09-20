@@ -54,7 +54,7 @@ const mazeSw = join(mazeDest, "sw.js");
 if (existsSync(mazeSw)) rmSync(mazeSw);
 console.log("✅ 迷宫 dist/public → dist/maze/（sw.js 已删除）");
 
-// 18 个入口页（历史测试页 ai-api-test / animal-sounds-voice-demo / test_category 已下线，仅留在仓库）
+// 19 个游戏入口页 + 主页（历史测试页 ai-api-test / animal-sounds-voice-demo / test_category 已下线，仅留在仓库）
 const pages = [
   "index.html",
   "color-matching.html",
@@ -75,6 +75,7 @@ const pages = [
   "whack-a-mole.html",
   "life-skills.html",
   "pinyin-train.html",
+  "tadpole-story.html",
 ];
 for (const p of pages) copy(p);
 
