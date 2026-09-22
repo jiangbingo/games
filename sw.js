@@ -52,6 +52,8 @@ const PRECACHE = [
   "/pinyin-train.html",
   "/pipe-puzzle.html",
   "/tadpole-story.html",
+  "/science-lab.html",
+  "/repair-island.html",
   "/js/coloring-studio.js",
   "/js/coloring-paint.js",
   "/js/coloring-lineart.js",

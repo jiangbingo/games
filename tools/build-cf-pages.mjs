@@ -77,6 +77,8 @@ const pages = [
   "pinyin-train.html",
   "pipe-puzzle.html",
   "tadpole-story.html",
+  "science-lab.html",
+  "repair-island.html",
 ];
 for (const p of pages) copy(p);
 
