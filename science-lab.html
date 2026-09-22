@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#079992">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-touch-icon" href="/icons/icon-192.png">
+    <title>科学探索实验室</title>
+    <link rel="stylesheet" href="/css/kids.css">
+    <style>
+        :root { --game-accent: #079992; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--kui-paper);
+            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-size: 26px 26px;
+            min-height: 100vh;
+            color: var(--kui-ink);
+            display: flex;
+            justify-content: center;
+            padding: 14px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .game {
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-lg);
+            box-shadow: var(--kui-shadow);
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+            margin-top: 8px;
+        }
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .mode-btn {
+            padding: 16px 10px;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            background: var(--kui-paper);
+            color: var(--kui-ink);
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s;
+            text-align: center;
+            line-height: 1.4;
+            touch-action: manipulation;
+        }
+        .mode-btn:active { transform: translateY(2px); box-shadow: none; }
+        .mode-btn.active { border-color: rgba(47, 42, 37, 0.2); color: #fff; }
+        .mode-btn .mode-icon { font-size: 1.8rem; display: block; margin-bottom: 4px; }
+        .mode-btn[data-mode="plant"].active { background: #079992; }
+        .mode-btn[data-mode="feed"].active { background: #e9c46a; color: #2f2a25; }
+        .mode-btn[data-mode="lifecycle"].active { background: #2a9d8f; }
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .instruction {
+            text-align: center;
+            font-size: clamp(16px, 4.5vw, 20px);
+            font-weight: 800;
+            margin-bottom: 14px;
+            min-height: 2.2em;
+        }
+        .level-hint {
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--game-accent);
+            margin-bottom: 14px;
+        }
+        .grow-stage {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            min-height: 180px;
+            margin-bottom: 18px;
+            position: relative;
+        }
+        .plant {
+            font-size: clamp(80px, 24vw, 140px);
+            line-height: 1;
+            transition: all 0.8s var(--kui-bounce);
+            transform-origin: bottom center;
+        }
+        .plant.hidden { transform: scaleY(0); opacity: 0; }
+        .plant.visible { transform: scaleY(1); opacity: 1; }
+        .soil {
+            width: 120px;
+            height: 14px;
+            background: var(--kui-paper-deep);
+            border-radius: 7px 7px 0 0;
+            margin-bottom: 4px;
+        }
+        .actions-area {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+        .action-btn {
+            padding: 12px 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), border-color 0.2s;
+            touch-action: manipulation;
+        }
+        .action-btn:active { transform: translateY(2px); box-shadow: none; }
+        .action-btn.next { border-color: var(--game-accent); background: #eaf7f0; }
+        .action-btn.used { opacity: 0.35; pointer-events: none; }
+        .feed-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+        .animal {
+            font-size: clamp(64px, 20vw, 100px);
+            padding: 14px 18px;
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.3s var(--kui-bounce);
+        }
+        .animal.ate {
+            transform: scale(1.1);
+            border-color: var(--kui-good);
+            background: #eaf7f0;
+        }
+        .animal.wrong-feed { animation: shake 0.35s ease; }
+        .food-btn {
+            padding: 12px 14px;
+            font-size: clamp(28px, 9vw, 44px);
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), border-color 0.2s;
+            touch-action: manipulation;
+        }
+        .food-btn:active { transform: scale(0.95); }
+        .food-btn.correct { background: var(--kui-good); border-color: var(--kui-good); }
+        .food-btn.wrong { opacity: 0.45; border-color: var(--kui-bad); border-style: dashed; pointer-events: none; animation: shake 0.35s ease; }
+        .lifecycle-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+        .lifecycle-item {
+            width: clamp(60px, 17vw, 80px);
+            height: clamp(60px, 17vw, 80px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(32px, 10vw, 52px);
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            box-shadow: var(--kui-shadow);
+            cursor: pointer;
+            transition: transform 0.12s var(--kui-bounce), border-color 0.2s;
+            touch-action: manipulation;
+        }
+        .lifecycle-item:active { transform: scale(0.95); }
+        .lifecycle-item.placed { border-color: var(--kui-good); background: #eaf7f0; }
+        .lifecycle-item.wrong { opacity: 0.45; border-color: var(--kui-bad); border-style: dashed; pointer-events: none; animation: shake 0.35s ease; }
+        .lifecycle-slots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .lifecycle-slot {
+            width: clamp(60px, 17vw, 80px);
+            height: clamp(60px, 17vw, 80px);
+            border: 3px dashed var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(28px, 8vw, 40px);
+            font-weight: 900;
+            color: var(--kui-ink-soft);
+            background: var(--kui-paper);
+        }
+        .lifecycle-slot.filled { border-style: solid; border-color: var(--kui-good); background: #eaf7f0; color: var(--kui-ink); }
+        .feedback {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 800;
+            min-height: 2em;
+            color: var(--kui-ink-soft);
+            margin-bottom: 8px;
+        }
+        .fact-card {
+            background: var(--kui-paper);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            padding: 10px 14px;
+            margin-bottom: 14px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            text-align: center;
+            color: var(--kui-ink);
+        }
+        .options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .option-btn {
+            aspect-ratio: 1;
+            min-height: 80px;
+            font-size: clamp(28px, 10vw, 52px);
+            font-weight: 900;
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), border-color 0.2s;
+            touch-action: manipulation;
+        }
+        .option-btn:active { transform: scale(0.95); }
+        .option-btn.correct { background: var(--kui-good); border-color: var(--kui-good); color: #fff; animation: pop 0.35s var(--kui-bounce); }
+        .option-btn.wrong { opacity: 0.45; border-color: var(--kui-bad); border-style: dashed; pointer-events: none; animation: shake 0.35s ease; }
+        @keyframes pop {
+            0% { transform: scale(0.9); }
+            50% { transform: scale(1.12); }
+            100% { transform: scale(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+        @keyframes sway {
+            0%, 100% { transform: rotate(-3deg); }
+            50% { transform: rotate(3deg); }
+        }
+        .shake-soft { animation: sway 0.4s ease; }
+        @media (prefers-reduced-motion: reduce) {
+            .plant, .option-btn, .mode-btn, .action-btn, .food-btn, .lifecycle-item { animation: none; transition: none; }
+            .option-btn.correct, .option-btn.wrong { animation-duration: 0.01s; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <div id="modeSelect">
+            <p class="instruction">🔬 科学探索实验室</p>
+            <div class="mode-grid">
+                <button class="mode-btn active" data-mode="plant" type="button">
+                    <span class="mode-icon">🌱</span>
+                    种一棵植物
+                </button>
+                <button class="mode-btn" data-mode="feed" type="button">
+                    <span class="mode-icon">🐰</span>
+                    动物爱吃什么
+                </button>
+                <button class="mode-btn" data-mode="lifecycle" type="button">
+                    <span class="mode-icon">🔄</span>
+                    长大排序
+                </button>
+            </div>
+            <div class="score-board">
+                <span class="kui-chip">✅ 答对 <b id="correct">0</b></span>
+                <span class="kui-chip">🤔 试错 <b id="wrong">0</b></span>
+            </div>
+        </div>
+        <div id="gameArea" hidden>
+            <div class="level-hint" id="level-hint"></div>
+            <p class="instruction" id="instruction"></p>
+            <div class="grow-stage" id="growStage"></div>
+            <div class="actions-area" id="actionsArea" hidden></div>
+            <div class="feed-area" id="feedArea" hidden></div>
+            <div id="lifecycleArea" hidden></div>
+            <div class="fact-card" id="factCard" hidden></div>
+            <div class="options" id="options" hidden></div>
+            <div class="feedback" id="feedback" aria-live="polite"></div>
+        </div>
+    </div>
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
+    <script>
+        "use strict";
+        const CELEBRATE_EVERY = 5;
+        const gameId = 'science-lab';
+
+        const PLANTS = [
+            { name: '向日葵', emoji: '🌻', steps: ['🌰播种', '💧浇水', '☀️晒太阳', '💧浇水'], fact: '向日葵会跟着太阳转' },
+            { name: '番茄', emoji: '🍅', steps: ['🌰播种', '💧浇水', '🧺施肥', '💧浇水'], fact: '番茄由绿变红' },
+            { name: '郁金香', emoji: '🌷', steps: ['🌰播种', '💧浇水', '☀️晒太阳', '🧺施肥'], fact: '郁金香春天开花' },
+        ];
+
+        const FEED_PAIRS = [
+            { animal: '🐰', name: '兔子', food: '🥕', foodName: '胡萝卜' },
+            { animal: '🐼', name: '熊猫', food: '🎋', foodName: '竹子' },
+            { animal: '🐨', name: '考拉', food: '🍃', foodName: '树叶' },
+            { animal: '🐸', name: '青蛙', food: '🐛', foodName: '虫子' },
+            { animal: '🐹', name: '仓鼠', food: '🌻', foodName: '瓜子' },
+            { animal: '🦁', name: '狮子', food: '🍖', foodName: '肉' },
+            { animal: '🐟', name: '鱼', food: '🦐', foodName: '虾' },
+            { animal: '🐦', name: '鸟', food: '🫐', foodName: '浆果' },
+        ];
+
+        const LIFECYCLES = [
+            { name: '向日葵', emoji: '🌻', stages: ['🌰', '🌱', '🌿', '🌻'] },
+            { name: '青蛙', emoji: '🐸', stages: ['🥚', '🐸', '🐸', '🐸'] },
+            { name: '鸡', emoji: '🐔', stages: ['🥚', '🐣', '🐓'] },
+            { name: '蝴蝶', emoji: '🦋', stages: ['🐛', '🪵', '🦋'] },
+        ];
+
+        function getFact(text) {
+            return text.length <= 15 ? text : text.slice(0, 15) + '…';
+        }
+
+        class ScienceLabGame {
+            constructor() {
+                this.gameId = gameId;
+                this.mode = 'plant';
+                this.score = { correct: 0, wrong: 0 };
+                this.isBusy = false;
+                this.difficulty = new KidsUI.AdaptiveDifficulty({
+                    windowSize: 5,
+                    thresholds: { easy: 0.8, hard: 0.5 },
+                    initialLevel: 1,
+                    onChange: () => this.updateLevelHint()
+                });
+                this.plantStep = 0;
+                this.animalIdx = null;
+                this.seqChosen = [];
+                this.init();
+            }
+
+            init() {
+                KidsUI.Touch.guard();
+                KidsUI.Header.render({
+                    title: '科学探索实验室',
+                    accent: '#079992',
+                    onReplay: () => this.reset()
+                });
+                this.bindModeButtons();
+                this.updateScore();
+                this.updateLevelHint();
+            }
+
+            reset() {
+                this.score = { correct: 0, wrong: 0 };
+                this.difficulty.reset();
+                this.isBusy = false;
+                this.plantStep = 0;
+                this.seqChosen = [];
+                this.updateScore();
+                this.updateLevelHint();
+                document.getElementById('gameArea').hidden = true;
+                document.getElementById('modeSelect').hidden = false;
+            }
+
+            bindModeButtons() {
+                var self = this;
+                document.querySelectorAll('.mode-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        KidsUI.SFX.tap();
+                        self.selectMode(btn.getAttribute('data-mode'));
+                    });
+                });
+            }
+
+            selectMode(mode) {
+                var self = this;
+                this.mode = mode;
+                this.score = { correct: 0, wrong: 0 };
+                this.difficulty.reset();
+                this.isBusy = false;
+                this.plantStep = 0;
+                this.seqChosen = [];
+                this.updateScore();
+                this.updateLevelHint();
+
+                document.querySelectorAll('.mode-btn').forEach(function (b) {
+                    b.classList.toggle('active', b.getAttribute('data-mode') === mode);
+                });
+                document.getElementById('modeSelect').hidden = true;
+                document.getElementById('gameArea').hidden = false;
+
+                document.getElementById('growStage').hidden = true;
+                document.getElementById('actionsArea').hidden = true;
+                document.getElementById('feedArea').hidden = true;
+                document.getElementById('lifecycleArea').hidden = true;
+                document.getElementById('factCard').hidden = true;
+                document.getElementById('options').hidden = true;
+                document.getElementById('instruction').textContent = '';
+
+                switch (mode) {
+                    case 'plant': this.startPlant(); break;
+                    case 'feed': this.startFeed(); break;
+                    case 'lifecycle': this.startLifecycle(); break;
+                }
+            }
+
+            updateScore() {
+                document.getElementById('correct').textContent = this.score.correct;
+                document.getElementById('wrong').textContent = this.score.wrong;
+            }
+
+            updateLevelHint() {
+                var level = this.difficulty.getLevel();
+                var labels = ['🐾 小小观察', '🔍 仔细观察', '🌟 小小科学家'];
+                document.getElementById('level-hint').textContent = labels[level - 1];
+            }
+
+            celebrate() {
+                var self = this;
+                var stars = KidsUI.Progress.starsFor(this.score.correct / (this.score.correct + this.score.wrong));
+                KidsUI.Progress.record(this.gameId, { best: this.score.correct, stars });
+                KidsUI.Celebrate.show({
+                    title: '实验成功！',
+                    sub: '答对 ' + this.score.correct + ' 题',
+                    stars: stars,
+                    primaryLabel: '继续实验',
+                    onPrimary: function () { self.continueGame(); },
+                    announce: '太棒了！'
+                });
+            }
+
+            continueGame() { this.selectMode(this.mode); }
+
+            recordCorrect() {
+                this.difficulty.record(true);
+                this.score.correct++;
+                this.updateScore();
+                if (this.score.correct % CELEBRATE_EVERY === 0) this.celebrate();
+            }
+
+            recordWrong() {
+                this.difficulty.record(false);
+                this.score.wrong++;
+                this.updateScore();
+            }
+
+            /* ── Mode 1: 种一棵植物 ── */
+            startPlant() {
+                var self = this;
+                var level = this.difficulty.getLevel();
+                var plantIdx = Math.min(level - 1, PLANTS.length - 1);
+                var plant = PLANTS[plantIdx];
+                this.plantStep = 0;
+                this.isBusy = false;
+
+                document.getElementById('instruction').textContent = '种一棵' + plant.name;
+                document.getElementById('growStage').hidden = false;
+                document.getElementById('actionsArea').hidden = false;
+                document.getElementById('factCard').hidden = true;
+                document.getElementById('options').hidden = true;
+
+                this.updatePlantStage();
+
+                var area = document.getElementById('actionsArea');
+                area.innerHTML = '';
+                plant.steps.forEach(function (step, idx) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'action-btn';
+                    btn.textContent = step;
+                    if (idx === 0) btn.classList.add('next');
+                    btn.addEventListener('click', function () {
+                        if (self.isBusy) return;
+                        if (idx === self.plantStep) {
+                            btn.classList.add('used');
+                            btn.classList.remove('next');
+                            self.plantStep++;
+                            KidsUI.SFX.correct();
+                            KidsUI.haptic('good');
+                            KidsUI.TTS.speak(step);
+                            self.updatePlantStage();
+                            self.showFact(plant.fact);
+                            self.recordCorrect();
+                            if (self.plantStep >= plant.steps.length) {
+                                var span = document.getElementById('factCard');
+                                span.innerHTML = '🎉 ' + plant.name + '开花了！';
+                                span.hidden = false;
+                                span.classList.add('visible');
+                                KidsUI.Celebrate.show({
+                                    title: plant.name + '开花了！',
+                                    sub: '你种出了一棵' + plant.name,
+                                    stars: KidsUI.Progress.starsFor(self.score.correct / (self.score.correct + self.score.wrong)),
+                                    primaryLabel: '再种一棵',
+                                    onPrimary: function () { self.continueGame(); }
+                                });
+                            } else {
+                                var btns = area.querySelectorAll('.action-btn');
+                                for (var i = 0; i < btns.length; i++) {
+                                    if (!btns[i].classList.contains('used')) {
+                                        btns[i].classList.add('next');
+                                    }
+                                }
+                            }
+                        } else {
+                            btn.classList.add('shake-soft');
+                            KidsUI.SFX.wrong();
+                            KidsUI.haptic('bad');
+                            KidsUI.TTS.speak('这不是现在要做的');
+                            self.recordWrong();
+                            setTimeout(function () { btn.classList.remove('shake-soft'); }, 400);
+                        }
+                    });
+                    area.appendChild(btn);
+                });
+            }
+
+            updatePlantStage() {
+                var stage = document.getElementById('growStage');
+                var level = this.plantStep;
+                var plant = PLANTS[Math.min(this.difficulty.getLevel() - 1, PLANTS.length - 1)];
+                var emojis = ['🌰', '🌱', '🌿', '🌻'];
+                var idx = Math.min(level, emojis.length - 1);
+                stage.innerHTML = '';
+                var plantEl = document.createElement('div');
+                plantEl.className = 'plant visible';
+                plantEl.textContent = emojis[idx];
+                stage.appendChild(plantEl);
+                var soil = document.createElement('div');
+                soil.className = 'soil';
+                stage.appendChild(soil);
+            }
+
+            showFact(text) {
+                var card = document.getElementById('factCard');
+                card.textContent = getFact(text);
+                card.hidden = false;
+                setTimeout(function () { card.hidden = true; }, 3000);
+            }
+
+            /* ── Mode 2: 动物爱吃什么 ── */
+            startFeed() {
+                var self = this;
+                var level = this.difficulty.getLevel();
+                var poolSize = Math.min(4 + level, FEED_PAIRS.length);
+                var pool = FEED_PAIRS.slice(0, poolSize);
+                var pairIdx = Math.floor(Math.random() * pool.length);
+                var pair = pool[pairIdx];
+                this.isBusy = false;
+
+                document.getElementById('instruction').textContent = '给动物喂食物';
+                document.getElementById('growStage').hidden = true;
+                document.getElementById('actionsArea').hidden = true;
+                document.getElementById('feedArea').hidden = false;
+                document.getElementById('factCard').hidden = true;
+                document.getElementById('options').hidden = true;
+
+                var feedArea = document.getElementById('feedArea');
+                feedArea.innerHTML = '';
+
+                var animal = document.createElement('div');
+                animal.className = 'animal';
+                animal.id = 'feed-animal';
+                animal.textContent = pair.animal;
+                animal.title = pair.name;
+                feedArea.appendChild(animal);
+
+                var foods = [pair.food];
+                var others = pool.filter(function (p, i) { return i !== pairIdx; });
+                others.sort(function () { return Math.random() - 0.5; });
+                var count = [3, 3, 4][level - 1] || 3;
+                for (var i = 0; i < count - 1 && i < others.length; i++) {
+                    foods.push(others[i].food);
+                }
+                foods.sort(function () { return Math.random() - 0.5; });
+
+                foods.forEach(function (food) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'food-btn';
+                    btn.textContent = food;
+                    btn.addEventListener('click', function () {
+                        if (self.isBusy) return;
+                        if (food === pair.food) {
+                            btn.classList.add('correct');
+                            animal.classList.add('ate');
+                            KidsUI.SFX.correct();
+                            KidsUI.haptic('good');
+                            KidsUI.TTS.speak(pair.name + '吃' + pair.foodName);
+                            self.recordCorrect();
+                            setTimeout(function () { self.continueGame(); }, 1200);
+                        } else {
+                            btn.classList.add('wrong');
+                            animal.classList.add('wrong-feed');
+                            KidsUI.SFX.wrong();
+                            KidsUI.haptic('bad');
+                            KidsUI.TTS.speak('不对哦');
+                            self.recordWrong();
+                            setTimeout(function () {
+                                btn.classList.remove('wrong');
+                                animal.classList.remove('wrong-feed');
+                            }, 600);
+                        }
+                    });
+                    feedArea.appendChild(btn);
+                });
+            }
+
+            /* ── Mode 3: 长大排序 ── */
+            startLifecycle() {
+                var self = this;
+                var level = this.difficulty.getLevel();
+                var count = [3, 3, 4][level - 1] || 3;
+                var pool = LIFECYCLES.slice(0, Math.min(4, LIFECYCLES.length));
+                var lc = pool[Math.floor(Math.random() * pool.length)];
+
+                this.seqChosen = [];
+                this.isBusy = false;
+
+                document.getElementById('instruction').textContent = lc.name + '长大排序';
+                document.getElementById('growStage').hidden = true;
+                document.getElementById('actionsArea').hidden = true;
+                document.getElementById('feedArea').hidden = true;
+                document.getElementById('factCard').hidden = true;
+                document.getElementById('options').hidden = true;
+
+                var area = document.getElementById('lifecycleArea');
+                area.hidden = false;
+                area.innerHTML = '';
+
+                var shuffled = lc.stages.slice().sort(function () { return Math.random() - 0.5; });
+                var slotsDiv = document.createElement('div');
+                slotsDiv.className = 'lifecycle-slots';
+                for (var i = 0; i < count; i++) {
+                    var slot = document.createElement('div');
+                    slot.className = 'lifecycle-slot';
+                    slot.setAttribute('data-index', String(i));
+                    slotsDiv.appendChild(slot);
+                }
+                area.appendChild(slotsDiv);
+
+                var btnsDiv = document.createElement('div');
+                btnsDiv.className = 'options';
+                shuffled.slice(0, count).forEach(function (stage) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'lifecycle-item';
+                    btn.textContent = stage;
+                    btn.addEventListener('click', function () {
+                        if (self.isBusy || btn.classList.contains('placed')) return;
+                        btn.classList.add('placed');
+                        KidsUI.SFX.tap();
+                        self.seqChosen.push(stage);
+                        self.updateLifecycleSlots(lc.stages);
+                    });
+                    btnsDiv.appendChild(btn);
+                });
+                area.appendChild(btnsDiv);
+            }
+
+            updateLifecycleSlots(correct) {
+                var self = this;
+                var slots = document.getElementById('lifecycleArea').querySelectorAll('.lifecycle-slot');
+                for (var i = 0; i < this.seqChosen.length; i++) {
+                    slots[i].textContent = this.seqChosen[i];
+                    slots[i].classList.add('filled');
+                }
+                if (this.seqChosen.length === correct.length) {
+                    var isCorrect = true;
+                    for (var j = 0; j < correct.length; j++) {
+                        if (this.seqChosen[j] !== correct[j]) { isCorrect = false; break; }
+                    }
+                    if (isCorrect) {
+                        KidsUI.SFX.celebrate();
+                        KidsUI.haptic('good');
+                        KidsUI.TTS.speak('顺序对了！');
+                        this.recordCorrect();
+                        var slotArea = document.getElementById('lifecycleArea').querySelector('.lifecycle-slots');
+                        if (slotArea) {
+                            slotArea.classList.add('shake-soft');
+                            setTimeout(function () { slotArea.classList.remove('shake-soft'); }, 500);
+                        }
+                        setTimeout(function () { self.continueGame(); }, 1200);
+                    } else {
+                        KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
+                        KidsUI.TTS.speak('顺序不对');
+                        this.recordWrong();
+                        var self2 = this;
+                        setTimeout(function () {
+                            self2.seqChosen = [];
+                            var allSlots = document.getElementById('lifecycleArea').querySelectorAll('.lifecycle-slot');
+                            for (var k = 0; k < allSlots.length; k++) {
+                                allSlots[k].textContent = '';
+                                allSlots[k].classList.remove('filled');
+                            }
+                            var allBtns = document.getElementById('lifecycleArea').querySelectorAll('.lifecycle-item');
+                            for (var m = 0; m < allBtns.length; m++) {
+                                allBtns[m].classList.remove('placed');
+                            }
+                        }, 800);
+                    }
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            new ScienceLabGame();
+        });
+    </script>
+</body>
+</html>
