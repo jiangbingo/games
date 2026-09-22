@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#d63031">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-touch-icon" href="/icons/icon-192.png">
+    <title>奇妙修理岛</title>
+    <link rel="stylesheet" href="/css/kids.css">
+    <style>
+        :root { --game-accent: #d63031; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--kui-paper);
+            background-image: radial-gradient(rgba(47, 42, 37, 0.03) 1px, transparent 1.4px);
+            background-size: 26px 26px;
+            min-height: 100vh;
+            color: var(--kui-ink);
+            display: flex;
+            justify-content: center;
+            padding: 14px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .game {
+            background: var(--kui-card);
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-lg);
+            box-shadow: var(--kui-shadow);
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+            margin-top: 8px;
+        }
+        .mode-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .mode-btn {
+            padding: 16px 10px;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            font-size: 1rem;
+            font-weight: 800;
+            cursor: pointer;
+            background: var(--kui-paper);
+            color: var(--kui-ink);
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), box-shadow 0.12s;
+            text-align: center;
+            line-height: 1.4;
+            touch-action: manipulation;
+        }
+        .mode-btn:active { transform: translateY(2px); box-shadow: none; }
+        .mode-btn.active { border-color: rgba(47, 42, 37, 0.2); color: #fff; }
+        .mode-btn .mode-icon { font-size: 1.8rem; display: block; margin-bottom: 4px; }
+        .mode-btn[data-mode="tool"].active { background: #d63031; }
+        .mode-btn[data-mode="find"].active { background: #6c5ce7; }
+        .mode-btn[data-mode="fix"].active { background: #00b894; }
+        .mode-btn[data-mode="part"].active { background: #e17055; }
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+        .instruction {
+            text-align: center;
+            font-size: clamp(16px, 4.5vw, 20px);
+            font-weight: 800;
+            margin-bottom: 14px;
+            min-height: 2.2em;
+        }
+        .level-hint {
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--game-accent);
+            margin-bottom: 14px;
+        }
+        .symptom-card {
+            background: var(--kui-paper);
+            border: 3px solid var(--game-accent);
+            border-radius: var(--kui-radius-md);
+            padding: 14px;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+        .symptom-emoji {
+            font-size: clamp(52px, 16vw, 80px);
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .symptom-text {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--kui-ink-soft);
+            margin-top: 6px;
+        }
+        .tools-area {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .tool-btn {
+            padding: 14px;
+            font-size: clamp(32px, 10vw, 48px);
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), border-color 0.2s;
+            touch-action: manipulation;
+        }
+        .tool-btn:active { transform: scale(0.95); }
+        .tool-btn.correct { background: var(--kui-good); border-color: var(--kui-good); }
+        .tool-btn.wrong { opacity: 0.45; border-color: var(--kui-bad); border-style: dashed; pointer-events: none; animation: shake 0.35s ease; }
+        .scene {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .scene-item {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(36px, 12vw, 56px);
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            box-shadow: var(--kui-shadow);
+            cursor: pointer;
+            transition: transform 0.12s var(--kui-bounce), border-color 0.2s;
+            touch-action: manipulation;
+        }
+        .scene-item:active { transform: scale(0.95); }
+        .scene-item.bad { border-color: var(--kui-bad); background: #fdeaea; }
+        .scene-item.bad::after { content: '❌'; font-size: 0.6em; position: absolute; bottom: 4px; }
+        .scene-item.correct-pick { border-color: var(--kui-good); background: #eaf7f0; }
+        .scene-item.idle-hint { animation: idleWiggle 1.5s infinite; }
+        @keyframes idleWiggle {
+            0%, 100% { transform: rotate(0); }
+            25% { transform: rotate(-2deg); }
+            75% { transform: rotate(2deg); }
+        }
+        .repair台 {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+            padding: 14px;
+            background: var(--kui-paper);
+            border: 3px dashed var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            min-height: 70px;
+        }
+        .repair台.filled { border-style: solid; border-color: var(--kui-good); }
+        .fix-btn {
+            width: clamp(56px, 16vw, 72px);
+            height: clamp(56px, 16vw, 72px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(28px, 9vw, 44px);
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce);
+            touch-action: manipulation;
+        }
+        .fix-btn:active { transform: scale(0.95); }
+        .fix-btn.used { opacity: 0.3; pointer-events: none; }
+        .fix-btn.placed { border-color: var(--kui-good); background: #eaf7f0; }
+        .parts-area {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .part-btn {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(32px, 10vw, 48px);
+            border: 3px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            cursor: pointer;
+            box-shadow: var(--kui-shadow);
+            transition: transform 0.12s var(--kui-bounce), border-color 0.2s;
+            touch-action: manipulation;
+        }
+        .part-btn:active { transform: scale(0.95); }
+        .part-btn.correct { background: var(--kui-good); border-color: var(--kui-good); }
+        .part-btn.wrong { opacity: 0.45; border-color: var(--kui-bad); border-style: dashed; pointer-events: none; animation: shake 0.35s ease; }
+        .outline-board {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 18px;
+        }
+        .outline-svg { width: clamp(160px, 48vw, 220px); height: clamp(160px, 48vw, 220px); }
+        .feedback {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 800;
+            min-height: 2em;
+            color: var(--kui-ink-soft);
+            margin-bottom: 8px;
+        }
+        .repair-target {
+            text-align: center;
+            font-size: clamp(48px, 15vw, 80px);
+            margin-bottom: 14px;
+        }
+        .step-card {
+            padding: 10px 14px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            border: 2px solid var(--kui-line);
+            border-radius: var(--kui-radius-md);
+            background: var(--kui-card);
+            box-shadow: var(--kui-shadow);
+            text-align: center;
+            touch-action: manipulation;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .symptom-emoji, .option-btn, .mode-btn, .scene-item { animation: none; transition: none; }
+            .option-btn.correct, .option-btn.wrong { animation-duration: 0.01s; }
+            .scene-item.idle-hint { animation: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game">
+        <div id="modeSelect">
+            <p class="instruction">🔧 奇妙修理岛</p>
+            <div class="mode-grid">
+                <button class="mode-btn active" data-mode="tool" type="button">
+                    <span class="mode-icon">🪛</span>
+                    找对工具
+                </button>
+                <button class="mode-btn" data-mode="find" type="button">
+                    <span class="mode-icon">🔍</span>
+                    找故障
+                </button>
+                <button class="mode-btn" data-mode="fix" type="button">
+                    <span class="mode-icon">🛠️</span>
+                    修好它
+                </button>
+                <button class="mode-btn" data-mode="part" type="button">
+                    <span class="mode-icon">🧩</span>
+                    零件补位
+                </button>
+            </div>
+            <div class="score-board">
+                <span class="kui-chip">✅ 答对 <b id="correct">0</b></span>
+                <span class="kui-chip">🤔 试错 <b id="wrong">0</b></span>
+            </div>
+        </div>
+        <div id="gameArea" hidden>
+            <div class="level-hint" id="level-hint"></div>
+            <p class="instruction" id="instruction"></p>
+            <div class="symptom-card" id="symptomCard" hidden>
+                <div class="symptom-emoji" id="symptomEmoji"></div>
+                <div class="symptom-text" id="symptomText"></div>
+            </div>
+            <div class="tools-area" id="toolsArea" hidden></div>
+            <div class="scene" id="sceneArea" hidden></div>
+            <div class="repair-target" id="repairTarget" hidden></div>
+            <div class="repair台" id="repair台" hidden></div>
+            <div class="parts-area" id="partsArea" hidden></div>
+            <div class="outline-board" id="outlineBoard" hidden></div>
+            <div class="feedback" id="feedback" aria-live="polite"></div>
+        </div>
+    </div>
+    <script src="/js/kids-ui.js"></script>
+    <script src="/pwa.js" defer></script>
+    <script>
+        "use strict";
+        const CELEBRATE_EVERY = 5;
+        const gameId = 'repair-island';
+
+        const TOOL_MATCH = [
+            { item: '🚗', symptom: '轮子掉了', tool: '🪛', distractors: ['🧹', '🧽', '🩹'] },
+            { item: '💡', symptom: '灯不亮了', tool: '🔧', distractors: ['🪛', '🧹', '🧽'] },
+            { item: '🏠', symptom: '窗户破了', tool: '🪛', distractors: ['🧽', '🩹', '🧹'] },
+            { item: '🛞', symptom: '气不足了', tool: '🔧', distractors: ['🧹', '🩹', '🧽'] },
+            { item: '🧸', symptom: '眼睛松了', tool: '🩹', distractors: ['🪛', '🧹', '🧽'] },
+            { item: '🚲', symptom: '链条掉了', tool: '🔧', distractors: ['🪛', '🩹', '🧹'] },
+            { item: '📱', symptom: '屏幕裂了', tool: '🩹', distractors: ['🪛', '🔧', '🧹'] },
+            { item: '🪑', symptom: '腿松了', tool: '🪛', distractors: ['🔧', '🧹', '🧽'] },
+            { item: '🚪', symptom: '门把手掉了', tool: '🔧', distractors: ['🪛', '🩹', '🧹'] },
+            { item: '🧊', symptom: '角撞了', tool: '🩹', distractors: ['🪛', '🔧', '🧽'] },
+            { item: '🛋️', symptom: '坐垫松了', tool: '🪛', distractors: ['🔧', '🧹', '🧽'] },
+            { item: '🖥️', symptom: '键盘坏了', tool: '🧹', distractors: ['🪛', '🔧', '🩹'] },
+        ];
+
+        const SCENES = [
+            { items: ['🚗', '💡', '🏠', '🚲', '📚', '🪑'], badIdx: 0, badEmoji: '🚲', badFix: '🛞' },
+            { items: ['💡', '🖥️', '🛋️', '🪑', '🚪', '📱'], badIdx: 1, badEmoji: '💡', badFix: '🔧' },
+            { items: ['🏠', '🧸', '🚪', '🖥️', '🛋️', '🛞'], badIdx: 2, badEmoji: '🏠', badFix: '🪛' },
+            { items: ['🚲', '🪑', '📱', '🚗', '🧸', '💡'], badIdx: 3, badEmoji: '🚲', badFix: '🔧' },
+            { items: ['🛋️', '🏠', '🚪', '🖥️', '📱', '🚗'], badIdx: 4, badEmoji: '🛋️', badFix: '🪛' },
+            { items: ['📱', '🛞', '🪑', '🚪', '🧸', '💡'], badIdx: 5, badEmoji: '📱', badFix: '🩹' },
+        ];
+
+        const FIX_ITEMS = [
+            { name: '玩具车', emoji: '🚗', steps: ['🛞轮子', '🪛螺丝', '✨贴纸'] },
+            { name: '木马', emoji: '🐴', steps: ['🪜扶手', '🪛螺丝', '🎨上色'] },
+            { name: '积木塔', emoji: '🧱', steps: ['🧱底座', '🧱中层', '🧱顶层'] },
+            { name: '风筝', emoji: '🪁', steps: ['🪁骨架', '🪀线', '🪁面'] },
+            { name: '小凳子', emoji: '🪑', steps: ['🪑腿', '🪑面', '🪛螺丝'] },
+            { name: '布娃娃', emoji: '🧸', steps: ['🧸头', '🧸身体', '🧸四肢'] },
+        ];
+
+        const PARTS_OUTLINES = [
+            { name: '风车', shape: 'pinwheel' },
+            { name: '机器人', shape: 'robot' },
+            { name: '小火车', shape: 'train' },
+            { name: '星星', shape: 'star' },
+        ];
+
+        class RepairIslandGame {
+            constructor() {
+                this.gameId = gameId;
+                this.mode = 'tool';
+                this.score = { correct: 0, wrong: 0 };
+                this.isBusy = false;
+                this.difficulty = new KidsUI.AdaptiveDifficulty({
+                    windowSize: 5,
+                    thresholds: { easy: 0.8, hard: 0.5 },
+                    initialLevel: 1,
+                    onChange: () => this.updateLevelHint()
+                });
+                this.repairSteps = [];
+                this.init();
+            }
+
+            init() {
+                KidsUI.Touch.guard();
+                KidsUI.Header.render({
+                    title: '奇妙修理岛',
+                    accent: '#d63031',
+                    onReplay: () => this.reset()
+                });
+                this.bindModeButtons();
+                this.updateScore();
+                this.updateLevelHint();
+            }
+
+            reset() {
+                this.score = { correct: 0, wrong: 0 };
+                this.difficulty.reset();
+                this.repairSteps = [];
+                this.isBusy = false;
+                this.updateScore();
+                this.updateLevelHint();
+                document.getElementById('gameArea').hidden = true;
+                document.getElementById('modeSelect').hidden = false;
+            }
+
+            bindModeButtons() {
+                var self = this;
+                document.querySelectorAll('.mode-btn').forEach(function (btn) {
+                    btn.addEventListener('click', function () {
+                        KidsUI.SFX.tap();
+                        self.selectMode(btn.getAttribute('data-mode'));
+                    });
+                });
+            }
+
+            selectMode(mode) {
+                var self = this;
+                this.mode = mode;
+                this.score = { correct: 0, wrong: 0 };
+                this.difficulty.reset();
+                this.repairSteps = [];
+                this.isBusy = false;
+                this.updateScore();
+                this.updateLevelHint();
+
+                document.querySelectorAll('.mode-btn').forEach(function (b) {
+                    b.classList.toggle('active', b.getAttribute('data-mode') === mode);
+                });
+                document.getElementById('modeSelect').hidden = true;
+                document.getElementById('gameArea').hidden = false;
+
+                document.getElementById('symptomCard').hidden = true;
+                document.getElementById('toolsArea').hidden = true;
+                document.getElementById('sceneArea').hidden = true;
+                document.getElementById('repairTarget').hidden = true;
+                document.getElementById('repair台').hidden = true;
+                document.getElementById('partsArea').hidden = true;
+                document.getElementById('outlineBoard').hidden = true;
+
+                switch (mode) {
+                    case 'tool': this.startTool(); break;
+                    case 'find': this.startFind(); break;
+                    case 'fix': this.startFix(); break;
+                    case 'part': this.startPart(); break;
+                }
+            }
+
+            updateScore() {
+                document.getElementById('correct').textContent = this.score.correct;
+                document.getElementById('wrong').textContent = this.score.wrong;
+            }
+
+            updateLevelHint() {
+                var level = this.difficulty.getLevel();
+                var labels = ['🐾 小小修理', '🔍 仔细检查', '🌟 修理大师'];
+                document.getElementById('level-hint').textContent = labels[level - 1];
+            }
+
+            celebrate() {
+                var self = this;
+                var stars = KidsUI.Progress.starsFor(this.score.correct / (this.score.correct + this.score.wrong));
+                KidsUI.Progress.record(this.gameId, { best: this.score.correct, stars });
+                KidsUI.Celebrate.show({
+                    title: '修好了！',
+                    sub: '答对 ' + this.score.correct + ' 题',
+                    stars: stars,
+                    primaryLabel: '继续修',
+                    onPrimary: function () { self.continueGame(); }
+                });
+            }
+
+            continueGame() { this.selectMode(this.mode); }
+
+            recordCorrect() {
+                this.difficulty.record(true);
+                this.score.correct++;
+                this.updateScore();
+                if (this.score.correct % CELEBRATE_EVERY === 0) this.celebrate();
+            }
+
+            recordWrong() {
+                this.difficulty.record(false);
+                this.score.wrong++;
+                this.updateScore();
+            }
+
+            generateOptions(correct, max) {
+                var count = [3, 3, 4][this.difficulty.getLevel() - 1] || 3;
+                var others = [];
+                for (var i = 0; i < max; i++) {
+                    if (i !== correct) others.push(i);
+                }
+                others.sort(function () { return Math.random() - 0.5; });
+                var opts = [correct];
+                for (var j = 0; j < count - 1 && j < others.length; j++) {
+                    opts.push(others[j]);
+                }
+                return opts.sort(function () { return Math.random() - 0.5; });
+            }
+
+            renderButtons(items, container, onChoice) {
+                var self = this;
+                var div = document.getElementById(container);
+                div.innerHTML = '';
+                div.hidden = false;
+                items.forEach(function (item, idx) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'tool-btn';
+                    btn.textContent = typeof item === 'string' ? item : item;
+                    btn.addEventListener('click', function () { onChoice(btn, idx); });
+                    div.appendChild(btn);
+                });
+            }
+
+            /* ── Mode 1: 找对工具 ── */
+            startTool() {
+                var self = this;
+                var level = this.difficulty.getLevel();
+                var count = [8, 10, 12][level - 1];
+                var pool = TOOL_MATCH.slice(0, count);
+                var entry = pool[Math.floor(Math.random() * pool.length)];
+                this.isBusy = false;
+
+                document.getElementById('instruction').textContent = '找到对的工具';
+                document.getElementById('symptomCard').hidden = false;
+                document.getElementById('toolsArea').hidden = false;
+
+                document.getElementById('symptomEmoji').textContent = entry.item;
+                document.getElementById('symptomText').textContent = entry.symptom;
+
+                var tools = [entry.tool].concat(entry.distractors).slice(0, [3, 3, 4][this.difficulty.getLevel() - 1] || 3);
+                tools.sort(function () { return Math.random() - 0.5; });
+
+                this.renderButtons(tools, 'toolsArea', function (btn, idx) {
+                    if (self.isBusy) return;
+                    var tool = tools[idx];
+                    if (tool === entry.tool) {
+                        self.isBusy = true;
+                        btn.classList.add('correct');
+                        KidsUI.SFX.correct();
+                        KidsUI.haptic('good');
+                        KidsUI.TTS.speak('用' + entry.tool + '修好它');
+                        self.recordCorrect();
+                        setTimeout(function () { self.continueGame(); }, 1200);
+                    } else {
+                        btn.classList.add('wrong');
+                        KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
+                        KidsUI.TTS.speak('不是这个');
+                        self.recordWrong();
+                        setTimeout(function () { btn.classList.remove('wrong'); }, 600);
+                    }
+                });
+            }
+
+            /* ── Mode 2: 找故障 ── */
+            startFind() {
+                var self = this;
+                var level = this.difficulty.getLevel();
+                var sceneIdx = Math.floor(Math.random() * SCENES.length);
+                var scene = SCENES[sceneIdx];
+                this.isBusy = false;
+
+                document.getElementById('instruction').textContent = '找到坏了的东西';
+                document.getElementById('sceneArea').hidden = false;
+
+                var area = document.getElementById('sceneArea');
+                area.innerHTML = '';
+                scene.items.forEach(function (emoji, idx) {
+                    var div = document.createElement('div');
+                    div.className = 'scene-item';
+                    div.textContent = emoji;
+                    if (idx === scene.badIdx) {
+                        div.classList.add('bad');
+                        div.classList.add('idle-hint');
+                    }
+                    div.addEventListener('click', function () {
+                        if (self.isBusy) return;
+                        if (idx === scene.badIdx) {
+                            div.classList.remove('idle-hint');
+                            div.classList.add('correct-pick');
+                            KidsUI.SFX.correct();
+                            KidsUI.haptic('good');
+                            KidsUI.TTS.speak('找到了');
+                            self.recordCorrect();
+                            setTimeout(function () { self.continueGame(); }, 1000);
+                        } else {
+                            KidsUI.SFX.wrong();
+                            KidsUI.haptic('bad');
+                            KidsUI.TTS.speak('这个没问题');
+                            self.recordWrong();
+                        }
+                    });
+                    area.appendChild(div);
+                });
+            }
+
+            /* ── Mode 3: 修好它 ── */
+            startFix() {
+                var self = this;
+                var level = this.difficulty.getLevel();
+                var itemCount = [3, 4, 5][level - 1];
+                var item = FIX_ITEMS[Math.floor(Math.random() * FIX_ITEMS.length)];
+                var stepCount = Math.min(item.steps.length, itemCount);
+                var steps = item.steps.slice(0, stepCount);
+                var shuffled = steps.slice().sort(function () { return Math.random() - 0.5; });
+
+                this.repairSteps = [];
+                this.isBusy = false;
+
+                document.getElementById('instruction').textContent = '按顺序修好它';
+                document.getElementById('repairTarget').hidden = false;
+                document.getElementById('repair台').hidden = false;
+                document.getElementById('partsArea').hidden = true;
+
+                document.getElementById('repairTarget').textContent = item.emoji;
+
+                var 台 = document.getElementById('repair台');
+                台.innerHTML = '';
+                台.classList.remove('filled');
+                for (var i = 0; i < stepCount; i++) {
+                    var slot = document.createElement('div');
+                    slot.className = 'step-card';
+                    slot.textContent = '';
+                    slot.setAttribute('data-index', String(i));
+                    台.appendChild(slot);
+                }
+
+                var btnArea = document.getElementById('partsArea');
+                btnArea.hidden = false;
+                btnArea.innerHTML = '';
+                shuffled.forEach(function (step) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'fix-btn';
+                    btn.textContent = step;
+                    btn.addEventListener('click', function () {
+                        if (self.isBusy || btn.classList.contains('used')) return;
+                        btn.classList.add('used');
+                        KidsUI.SFX.tap();
+                        self.repairSteps.push(step);
+                        self.updateRepair台(steps);
+                    });
+                    btnArea.appendChild(btn);
+                });
+            }
+
+            updateRepair台(correct) {
+                var self = this;
+                var 台 = document.getElementById('repair台');
+                var slots = 台.querySelectorAll('.step-card');
+                for (var i = 0; i < this.repairSteps.length; i++) {
+                    slots[i].textContent = this.repairSteps[i];
+                    slots[i].classList.add('placed');
+                }
+                if (this.repairSteps.length === correct.length) {
+                    var isCorrect = true;
+                    for (var j = 0; j < correct.length; j++) {
+                        if (this.repairSteps[j] !== correct[j]) { isCorrect = false; break; }
+                    }
+                    if (isCorrect) {
+                        台.classList.add('filled');
+                        KidsUI.SFX.celebrate();
+                        KidsUI.haptic('good');
+                        KidsUI.TTS.speak('修好啦');
+                        this.recordCorrect();
+                        setTimeout(function () { self.continueGame(); }, 1200);
+                    } else {
+                        KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
+                        KidsUI.TTS.speak('顺序不对');
+                        this.recordWrong();
+                        var self2 = this;
+                        setTimeout(function () {
+                            self2.repairSteps = [];
+                            var allSlots = document.getElementById('repair台').querySelectorAll('.step-card');
+                            for (var k = 0; k < allSlots.length; k++) {
+                                allSlots[k].textContent = '';
+                                allSlots[k].classList.remove('placed');
+                            }
+                        }, 800);
+                    }
+                }
+            }
+
+            /* ── Mode 4: 零件补位 ── */
+            startPart() {
+                var self = this;
+                this.isBusy = false;
+
+                document.getElementById('instruction').textContent = '补上缺失的零件';
+                document.getElementById('symptomCard').hidden = true;
+                document.getElementById('toolsArea').hidden = true;
+                document.getElementById('sceneArea').hidden = true;
+                document.getElementById('repairTarget').hidden = true;
+                document.getElementById('repair台').hidden = true;
+                document.getElementById('partsArea').hidden = false;
+                document.getElementById('outlineBoard').hidden = false;
+
+                var outline = PARTS_OUTLINES[Math.floor(Math.random() * PARTS_OUTLINES.length)];
+                var level = this.difficulty.getLevel();
+                var optionCount = [3, 3, 4][level - 1] || 3;
+
+                var board = document.getElementById('outlineBoard');
+                board.innerHTML = '';
+                var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('class', 'outline-svg');
+                svg.setAttribute('viewBox', '0 0 100 100');
+                var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', this.getOutlinePath(outline.shape));
+                path.setAttribute('fill', 'var(--kui-paper-deep)');
+                path.setAttribute('stroke', 'var(--game-accent)');
+                path.setAttribute('stroke-width', '2');
+                svg.appendChild(path);
+                board.appendChild(svg);
+
+                var parts = ['🟢', '🔴', '🔵'];
+                var shuffled = parts.slice().sort(function () { return Math.random() - 0.5; });
+                this.renderButtons(shuffled, 'partsArea', function (btn, idx) {
+                    if (self.isBusy) return;
+                    if (idx === 0) {
+                        btn.classList.add('correct');
+                        KidsUI.SFX.correct();
+                        KidsUI.haptic('good');
+                        KidsUI.TTS.speak('补上了');
+                        self.recordCorrect();
+                        setTimeout(function () { self.continueGame(); }, 1200);
+                    } else {
+                        btn.classList.add('wrong');
+                        KidsUI.SFX.wrong();
+                        KidsUI.haptic('bad');
+                        self.recordWrong();
+                        setTimeout(function () { btn.classList.remove('wrong'); }, 600);
+                    }
+                });
+            }
+
+            getOutlinePath(shape) {
+                switch (shape) {
+                    case 'pinwheel': return 'M50 50 L50 15 A35 35 0 0 1 85 50 L50 50 M50 50 L85 50 A35 35 0 0 1 50 85 L50 50 M50 50 L50 85 A35 35 0 0 1 15 50 L50 50 M50 50 L15 50 A35 35 0 0 1 50 15 Z';
+                    case 'robot': return 'M35 20 L65 20 L65 35 L75 35 L75 80 L25 80 L25 35 L35 35 Z M30 30 L20 30 L20 45 L30 45 Z M70 30 L80 30 L80 45 L70 45 Z M42 50 L58 50 L58 65 L42 65 Z';
+                    case 'train': return 'M20 40 L20 70 L80 70 L80 40 L70 30 L30 30 Z M30 25 L70 25 L70 30 L30 30 Z M35 50 L45 50 L45 60 L35 60 Z M55 50 L65 50 L65 60 L55 60 Z M85 50 A5 5 0 1 1 85 60 A5 5 0 1 1 85 50';
+                    case 'star': return 'M50 10 L61 40 L92 40 L67 58 L77 88 L50 70 L23 88 L33 58 L8 40 L39 40 Z';
+                    default: return 'M50 50 L50 50';
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            new RepairIslandGame();
+        });
+    </script>
+</body>
+</html>
