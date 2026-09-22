@@ -12,7 +12,7 @@
     <title>英语单词探险</title>
     <link rel="stylesheet" href="/css/kids.css">
     <style>
-        :root { --game-accent: #e17055; }
+        :root { --game-accent: #e17055; --game-accent-ink: var(--kui-ink-strong); }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
@@ -201,7 +201,7 @@
             cursor: pointer;
             touch-action: manipulation;
         }
-        .cat-tab.active { background: var(--game-accent); color: #fff; border-color: rgba(47, 42, 37, 0.2); }
+        .cat-tab.active { background: var(--game-accent); color: var(--game-accent-ink); border-color: rgba(47, 42, 37, 0.2); }
         .word-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
         .word-btn {
             padding: 14px;

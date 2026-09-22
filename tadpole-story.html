@@ -15,6 +15,7 @@
     <style>
         :root {
             --game-accent: #1f8a4c;
+            --game-accent-ink: #fff;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -233,7 +234,7 @@
         .hint { text-align: center; font-size: 0.85rem; color: var(--kui-ink-soft); margin-top: 8px; }
         /* ── 夜间模式：提亮 accent + 水面转夜色（放在基规则之后覆盖） ── */
         @media (prefers-color-scheme: dark) {
-            :root { --game-accent: #6fd39b; }
+            :root { --game-accent: #6fd39b; --game-accent-ink: var(--kui-ink-strong); }
             .scene { background: linear-gradient(180deg, #1d5568 0%, #123c4e 55%, #0c2c3c 100%); }
             .scene::after { background: repeating-linear-gradient(180deg, transparent 0 26px, rgba(255, 255, 255, 0.07) 26px 28px); }
             .tad .head, .tad .tail { background: #e8f2fa; box-shadow: 0 0 0 1.5px rgba(12, 20, 32, 0.35); }

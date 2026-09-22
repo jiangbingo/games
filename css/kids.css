@@ -11,6 +11,10 @@
   --kui-ink-soft: #6f6559;
   --kui-line: rgba(47, 42, 37, 0.16);
   --game-accent: #ff6b4a;
+  /* 主题无关的固定深墨：浅强调色上白字会掉对比度，accent 底文字统一用它 */
+  --kui-ink-strong: #2f2a25;
+  /* 强调色上的文字色：默认深墨适配默认橙 #ff6b4a；深强调色的游戏须在各自 :root 覆写为 #fff */
+  --game-accent-ink: var(--kui-ink-strong);
   --kui-good: #3fa574;
   --kui-bad: #e5533d;
   --kui-star: #ffb703;
@@ -156,7 +160,7 @@ body.kui-has-header {
 }
 .kui-btn.kui-primary {
   background: var(--game-accent);
-  color: #fff;
+  color: var(--game-accent-ink, #fff);
   border-color: rgba(47, 42, 37, 0.22);
 }
 .kui-btn.kui-big {

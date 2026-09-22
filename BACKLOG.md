@@ -64,6 +64,7 @@
 ## 待办任务
 
 > 详细路线图与各游戏 MVP 规格：[docs/plans/2026-09-20-game-roadmap.md](docs/plans/2026-09-20-game-roadmap.md)
+> 批次 4 全部待开发游戏的详细设计（2026-09-20 定稿，未排期）：[docs/plans/2026-09-20-batch4-detailed-designs.md](docs/plans/2026-09-20-batch4-detailed-designs.md)
 
 ### P0（近期必须）
 | # | 任务 | 验收标准 |

@@ -14,9 +14,10 @@
     <style>
         :root {
             --game-accent: #8b5e34;
+            --game-accent-ink: #fff;
         }
         @media (prefers-color-scheme: dark) {
-            :root { --game-accent: #c99a6a; }
+            :root { --game-accent: #c99a6a; --game-accent-ink: var(--kui-ink-strong); }
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -95,7 +96,7 @@
             touch-action: manipulation;
         }
         .speed-btn:active { transform: translateY(2px); box-shadow: none; }
-        .speed-btn.active { background: var(--game-accent); border-color: var(--game-accent); color: #fff; }
+        .speed-btn.active { background: var(--game-accent); border-color: var(--game-accent); color: var(--game-accent-ink); }
         .big-start {
             width: 100%;
             padding: 16px;

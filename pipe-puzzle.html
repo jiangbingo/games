@@ -14,6 +14,7 @@
     <style>
         :root {
             --game-accent: #3e8e5a;
+            --game-accent-ink: #fff;
             --tile-bg: var(--kui-card);
             --board-bg: #e6f2d7;
             --pipe: #c68b57;
@@ -81,7 +82,7 @@
             touch-action: manipulation;
         }
         .diff-btn:active { transform: translateY(2px); box-shadow: none; }
-        .diff-btn.active { background: var(--game-accent); border-color: var(--game-accent); color: #fff; }
+        .diff-btn.active { background: var(--game-accent); border-color: var(--game-accent); color: var(--game-accent-ink); }
         .big-start { width: 100%; padding: 16px; font-size: 1.3rem; font-weight: 900; }
         .stats-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
         .diff-row.mini { margin: 0 0 10px; }
@@ -192,6 +193,7 @@
         @media (prefers-color-scheme: dark) {
             :root {
                 --game-accent: #6fc492;
+                --game-accent-ink: var(--kui-ink-strong);
                 --board-bg: #243422;
                 --pipe: #b58753;
                 --water: #5cb6f2;

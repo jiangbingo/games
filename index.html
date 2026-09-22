@@ -17,6 +17,13 @@
     <style>
         :root {
             --game-accent: #ff6b4a;
+            /* 分区调色板：每区一个基色 + 深/浅两档，统一明度带；卡片按 1→2→3 轮换取色 */
+            --pa-logic-1: #ef8a3f; --pa-logic-2: #e06e2f; --pa-logic-3: #f5a45f;
+            --pa-observe-1: #5b9bf0; --pa-observe-2: #4285dd; --pa-observe-3: #7fb4f5;
+            --pa-art-1: #e56a94; --pa-art-2: #d4517d; --pa-art-3: #ec86a8;
+            --pa-cognitive-1: #4fb283; --pa-cognitive-2: #3b9d6e; --pa-cognitive-3: #6fc49a;
+            --pa-space-1: #33a598; --pa-space-2: #258f82; --pa-space-3: #55b9ad;
+            --pa-classic-1: #7a6ae0; --pa-classic-2: #6352cf; --pa-classic-3: #9486e8;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -113,6 +120,10 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 18px;
+        }
+        .games-grid.grid-2 {
+            grid-template-columns: repeat(2, minmax(0, 380px));
+            justify-content: center;
         }
         .game-card {
             position: relative;
@@ -253,6 +264,7 @@
         @media (max-width: 768px) {
             body { padding-top: 18px; }
             .games-grid { grid-template-columns: 1fr; }
+            .games-grid.grid-2 { grid-template-columns: 1fr; justify-content: normal; }
             .stats { gap: 10px; }
             .stat-item { padding: 10px 16px; }
         }
@@ -287,10 +299,10 @@
         </div>
 
         <!-- 🧠 逻辑思维 -->
-        <div class="section kids">
+        <div class="section kids" style="--section-color: rgba(239,138,63,0.32)">
             <h2 class="section-title">🧠 逻辑思维</h2>
             <div class="games-grid">
-                <a href="shape-puzzle.html" class="game-card" data-game="shape-puzzle" style="--card-accent:#f2994a">
+                <a href="shape-puzzle.html" class="game-card" data-game="shape-puzzle" style="--card-accent:var(--pa-logic-1)">
                     <span class="game-icon">⭐</span>
                     <h3 class="game-title">形状拼图</h3>
                     <p class="game-desc">把形状碎片拼回完整图案</p>
@@ -300,7 +312,7 @@
                     </div>
                 </a>
 
-                <a href="shape-matching.html" class="game-card" data-game="shape-matching" style="--card-accent:#43aa8b">
+                <a href="shape-matching.html" class="game-card" data-game="shape-matching" style="--card-accent:var(--pa-logic-2)">
                     <span class="game-icon">🔷</span>
                     <h3 class="game-title">形状配对</h3>
                     <p class="game-desc">找到和它一样的形状</p>
@@ -310,7 +322,7 @@
                     </div>
                 </a>
 
-                <a href="pattern-match.html" class="game-card" data-game="pattern-match" style="--card-accent:#ff9f1c">
+                <a href="pattern-match.html" class="game-card" data-game="pattern-match" style="--card-accent:var(--pa-logic-3)">
                     <span class="game-icon">🔶</span>
                     <h3 class="game-title">模式匹配</h3>
                     <p class="game-desc">发现规律，补上问号那一格</p>
@@ -320,7 +332,7 @@
                     </div>
                 </a>
 
-                <a href="math-detective.html" class="game-card" data-game="math-detective" style="--card-accent:#f2994a">
+                <a href="math-detective.html" class="game-card" data-game="math-detective" style="--card-accent:var(--pa-logic-1)">
                     <span class="game-icon">🕵️</span>
                     <h3 class="game-title">数学侦探岛</h3>
                     <p class="game-desc">数数、比大小、排序、加减，四种侦探任务</p>
@@ -330,7 +342,7 @@
                     </div>
                 </a>
 
-                <a href="shadow-pattern.html" class="game-card" data-game="shadow-pattern" style="--card-accent:#00cec9">
+                <a href="shadow-pattern.html" class="game-card" data-game="shadow-pattern" style="--card-accent:var(--pa-logic-2)">
                     <span class="game-icon">🌑</span>
                     <h3 class="game-title">影子与规律挑战</h3>
                     <p class="game-desc">影子配对、找规律、事件排序四种挑战</p>
@@ -340,7 +352,7 @@
                     </div>
                 </a>
 
-                <a href="hand-clap.html" class="game-card" data-game="hand-clap" style="--card-accent:#e84393">
+                <a href="hand-clap.html" class="game-card" data-game="hand-clap" style="--card-accent:var(--pa-logic-3)">
                     <span class="game-icon">🖐️</span>
                     <h3 class="game-title">双手拍拍</h3>
                     <p class="game-desc">纸带自动滚下来，手掌拍拍、圆圈摸摸，速度可调</p>
@@ -350,7 +362,7 @@
                     </div>
                 </a>
 
-                <a href="whack-a-mole.html" class="game-card" data-game="whack-a-mole" style="--card-accent:#8b5e34">
+                <a href="whack-a-mole.html" class="game-card" data-game="whack-a-mole" style="--card-accent:var(--pa-logic-1)">
                     <span class="game-icon">🐹</span>
                     <h3 class="game-title">打地鼠</h3>
                     <p class="game-desc">地鼠钻出来就敲，小心别敲到小兔子</p>
@@ -360,7 +372,7 @@
                     </div>
                 </a>
 
-                <a href="tadpole-story.html" class="game-card" data-game="tadpole-story" style="--card-accent:#1f8a4c">
+                <a href="tadpole-story.html" class="game-card" data-game="tadpole-story" style="--card-accent:var(--pa-logic-2)">
                     <span class="game-icon">🐸</span>
                     <h3 class="game-title">小蝌蚪找妈妈</h3>
                     <p class="game-desc">六站冒险集拼图，拼出青蛙妈妈</p>
@@ -373,10 +385,10 @@
         </div>
 
         <!-- 👀 观察记忆 -->
-        <div class="section kids">
+        <div class="section kids" style="--section-color: rgba(91,155,240,0.32)">
             <h2 class="section-title">👀 观察记忆</h2>
-            <div class="games-grid">
-                <a href="find-differences.html" class="game-card" data-game="find-differences" style="--card-accent:#4f8ff7">
+            <div class="games-grid grid-2">
+                <a href="find-differences.html" class="game-card" data-game="find-differences" style="--card-accent:var(--pa-observe-1)">
                     <span class="game-icon">🔍</span>
                     <h3 class="game-title">找不同</h3>
                     <p class="game-desc">观察两幅图，找出藏着的不同</p>
@@ -386,7 +398,7 @@
                     </div>
                 </a>
 
-                <a href="memory-cards.html" class="game-card" data-game="memory-cards" style="--card-accent:#9b5de5">
+                <a href="memory-cards.html" class="game-card" data-game="memory-cards" style="--card-accent:var(--pa-observe-2)">
                     <span class="game-icon">🧠</span>
                     <h3 class="game-title">记忆翻牌</h3>
                     <p class="game-desc">翻开卡片，找出相同的一对</p>
@@ -399,10 +411,10 @@
         </div>
 
         <!-- 🎨 美术绘画 -->
-        <div class="section kids">
+        <div class="section kids" style="--section-color: rgba(229,106,148,0.32)">
             <h2 class="section-title">🎨 美术绘画</h2>
-            <div class="games-grid">
-                <a href="drawing-board.html" class="game-card" data-game="drawing-board" style="--card-accent:#457b9d">
+            <div class="games-grid grid-2">
+                <a href="drawing-board.html" class="game-card" data-game="drawing-board" style="--card-accent:var(--pa-art-1)">
                     <span class="game-icon">✏️</span>
                     <h3 class="game-title">涂鸦板</h3>
                     <p class="game-desc">自由画画，发挥创意</p>
@@ -412,7 +424,7 @@
                     </div>
                 </a>
 
-                <a href="coloring-studio.html" class="game-card" data-game="coloring-studio" style="--card-accent:#ff6b4a">
+                <a href="coloring-studio.html" class="game-card" data-game="coloring-studio" style="--card-accent:var(--pa-art-2)">
                     <span class="game-icon">🖍️</span>
                     <h3 class="game-title">涂色画工坊</h3>
                     <p class="game-desc">把彩色图片变成线稿，打印或涂色</p>
@@ -425,10 +437,10 @@
         </div>
 
         <!-- 🌈 认知启蒙 -->
-        <div class="section kids">
+        <div class="section kids" style="--section-color: rgba(79,178,131,0.32)">
             <h2 class="section-title">🌈 认知启蒙</h2>
             <div class="games-grid">
-                <a href="color-matching.html" class="game-card" data-game="color-matching" style="--card-accent:#e5533d">
+                <a href="color-matching.html" class="game-card" data-game="color-matching" style="--card-accent:var(--pa-cognitive-1)">
                     <span class="game-icon">🎨</span>
                     <h3 class="game-title">颜色配对</h3>
                     <p class="game-desc">认识6种基本颜色，找到相同的颜色配对</p>
@@ -438,7 +450,7 @@
                     </div>
                 </a>
 
-                <a href="number-counting.html" class="game-card" data-game="number-counting" style="--card-accent:#3fa574">
+                <a href="number-counting.html" class="game-card" data-game="number-counting" style="--card-accent:var(--pa-cognitive-2)">
                     <span class="game-icon">🔢</span>
                     <h3 class="game-title">数字认知</h3>
                     <p class="game-desc">数一数，认识1-10的数字</p>
@@ -448,7 +460,7 @@
                     </div>
                 </a>
 
-                <a href="picture-recognition.html" class="game-card" data-game="picture-recognition" style="--card-accent:#e63946">
+                <a href="picture-recognition.html" class="game-card" data-game="picture-recognition" style="--card-accent:var(--pa-cognitive-3)">
                     <span class="game-icon">🖼️</span>
                     <h3 class="game-title">看图识物</h3>
                     <p class="game-desc">认识动物、水果、交通工具</p>
@@ -458,7 +470,7 @@
                     </div>
                 </a>
 
-                <a href="animal-sounds.html" class="game-card" data-game="animal-sounds" style="--card-accent:#2a9d8f">
+                <a href="animal-sounds.html" class="game-card" data-game="animal-sounds" style="--card-accent:var(--pa-cognitive-1)">
                     <span class="game-icon">🐮</span>
                     <h3 class="game-title">动物叫声</h3>
                     <p class="game-desc">听声音猜动物，认识各种小动物</p>
@@ -468,7 +480,7 @@
                     </div>
                 </a>
 
-                <a href="english-words.html" class="game-card" data-game="english-words" style="--card-accent:#e17055">
+                <a href="english-words.html" class="game-card" data-game="english-words" style="--card-accent:var(--pa-cognitive-2)">
                     <span class="game-icon">📖</span>
                     <h3 class="game-title">英语单词探险</h3>
                     <p class="game-desc">听音选图、看词选图、单词分类四种模式</p>
@@ -478,7 +490,7 @@
                     </div>
                 </a>
 
-                <a href="life-skills.html" class="game-card" data-game="life-skills" style="--card-accent:#6c5ce7">
+                <a href="life-skills.html" class="game-card" data-game="life-skills" style="--card-accent:var(--pa-cognitive-3)">
                     <span class="game-icon">🧦</span>
                     <h3 class="game-title">生活技能小管家</h3>
                     <p class="game-desc">穿衣顺序、刷牙、整理房间、安全判断四种模式</p>
@@ -488,7 +500,7 @@
                     </div>
                 </a>
 
-                <a href="pinyin-train.html" class="game-card" data-game="pinyin-train" style="--card-accent:#4a69bd">
+                <a href="pinyin-train.html" class="game-card" data-game="pinyin-train" style="--card-accent:var(--pa-cognitive-1)">
                     <span class="game-icon">🚂</span>
                     <h3 class="game-title">拼音火车</h3>
                     <p class="game-desc">拼一拼、听一听，声母韵母开火车</p>
@@ -501,10 +513,10 @@
         </div>
 
         <!-- 🧭 空间探索 -->
-        <div class="section kids">
+        <div class="section kids" style="--section-color: rgba(51,165,152,0.32)">
             <h2 class="section-title">🧭 空间探索</h2>
-            <div class="games-grid">
-                <a href="/maze/" class="game-card" data-game="maze" style="--card-accent:#5c8b83">
+            <div class="games-grid grid-2">
+                <a href="/maze/" class="game-card" data-game="maze" style="--card-accent:var(--pa-space-1)">
                     <span class="game-icon">🧭</span>
                     <h3 class="game-title">迷宫小小探险家</h3>
                     <p class="game-desc">森林邮局主题3D迷宫，120个关卡</p>
@@ -514,7 +526,7 @@
                     </div>
                 </a>
 
-                <a href="pipe-puzzle.html" class="game-card" data-game="pipe-puzzle" style="--card-accent:#3e8e5a">
+                <a href="pipe-puzzle.html" class="game-card" data-game="pipe-puzzle" style="--card-accent:var(--pa-space-2)">
                     <span class="game-icon">🌲</span>
                     <h3 class="game-title">森林路线拼图</h3>
                     <p class="game-desc">转动水管，把水从水源接到花朵</p>
@@ -527,10 +539,10 @@
         </div>
 
         <!-- 经典游戏 -->
-        <div class="section classic">
+        <div class="section classic" style="--section-color: rgba(122,106,224,0.32)">
             <h2 class="section-title">🎯 经典游戏</h2>
-            <div class="games-grid">
-                <a href="classic-games/snake-game.html" class="game-card" data-game="snake" style="--card-accent:#3fa34d">
+            <div class="games-grid grid-2">
+                <a href="classic-games/snake-game.html" class="game-card" data-game="snake" style="--card-accent:var(--pa-classic-1)">
                     <span class="game-icon">🐍</span>
                     <h3 class="game-title">贪吃蛇</h3>
                     <p class="game-desc">经典贪吃蛇，4种模式3种速度</p>
@@ -540,7 +552,7 @@
                     </div>
                 </a>
 
-                <a href="classic-games/tetris-ink.html" class="game-card" data-game="tetris-ink" style="--card-accent:#8d6e63">
+                <a href="classic-games/tetris-ink.html" class="game-card" data-game="tetris-ink" style="--card-accent:var(--pa-classic-2)">
                     <span class="game-icon">🧱</span>
                     <h3 class="game-title">水墨方块</h3>
                     <p class="game-desc">中国风水墨俄罗斯方块</p>
