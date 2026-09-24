@@ -142,7 +142,7 @@
             box-shadow: 0 8px 0 rgba(47, 42, 37, 0.16);
         }
         .game-card:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(47, 42, 37, 0.16); }
-        .game-card:focus-visible { outline: 3px solid var(--card-accent, var(--game-accent)); outline-offset: 3px; }
+        .game-card:focus-visible { outline: 3px solid var(--kui-ink); outline-offset: 3px; }
 
         .game-icon {
             display: inline-flex;
@@ -500,7 +500,7 @@
                     </div>
                 </a>
 
-                <a href="science-lab.html" class="game-card" data-game="science-lab" style="--card-accent:#079992">
+                <a href="science-lab.html" class="game-card" data-game="science-lab" style="--card-accent:var(--pa-cognitive-2)">
                     <span class="game-icon">🔬</span>
                     <h3 class="game-title">科学探索实验室</h3>
                     <p class="game-desc">种植物、喂动物、排成长。四种科学实验</p>
@@ -642,6 +642,7 @@
             var cards = document.querySelectorAll(".game-card");
             for (var i = 0; i < cards.length; i++) badgeFor(cards[i]);
             document.getElementById("stat-stars").textContent = "⭐ " + KidsUI.Progress.starsTotal();
+            document.getElementById("stat-games").textContent = cards.length;
 
             /* ── 游戏壳：iframe 打开 + 历史记录集成 ── */
             var shell = document.getElementById("game-shell");

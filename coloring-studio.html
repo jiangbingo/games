@@ -19,6 +19,8 @@
             --card: #fffdf8;
             --ink: #2f2a25;
             --ink-soft: #6f675e;
+            /* 本页不引 kids.css；三处 accent 底文字依赖此固定深墨（暗色下 --ink 会翻转，不能替代） */
+            --kui-ink-strong: #2f2a25;
             --accent: #ff6b4a;
             --accent-deep: #e2532f;
             --sun: #ffb84d;
@@ -90,7 +92,7 @@
             margin-left: 4px;
             border-radius: 999px;
             background: var(--accent);
-            color: #fff;
+            color: var(--kui-ink-strong);
             font-size: 0.8rem;
             text-align: center;
         }

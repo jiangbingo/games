@@ -236,17 +236,9 @@
             color: var(--kui-ink-soft);
             margin-top: 8px;
         }
-        @media (prefers-color-scheme: dark) {
-            :root { --game-accent: #c99a6a; }
-        }
         @media (prefers-reduced-motion: reduce) {
             .critter, .speed-btn { transition: none; }
             .hole.oops, .mallet, .float, .combo-pop { animation: none; }
-        }
-        /* 放在基规则之后才能覆盖白字；选择器须与 kids.css 的 .kui-btn.kui-primary 同特异度 */
-        @media (prefers-color-scheme: dark) {
-            .speed-btn.active { color: #221e19; }
-            .kui-btn.kui-primary { color: #221e19; }
         }
     </style>
 </head>

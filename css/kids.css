@@ -155,7 +155,7 @@ body.kui-has-header {
   box-shadow: 0 0 0 rgba(47, 42, 37, 0);
 }
 .kui-btn:focus-visible {
-  outline: 3px solid var(--game-accent);
+  outline: 3px solid var(--kui-ink);
   outline-offset: 2px;
 }
 .kui-btn.kui-primary {
